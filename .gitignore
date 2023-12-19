@@ -1,0 +1,12 @@
+/src/cppconv/grammarcpp.d
+/src/cppconv/grammarcpp_lexer.d
+/src/cppconv/grammarcpreproc.d
+/src/cppconv/grammarcpreproc_lexer.d
+*.lst
+/cppconv
+/dub.selections.json
+/projects/*/orig
+/projects/*/conv
+/projects/*/*.tar*
+/projects/*/*.7z
+/projects/*/*.errors

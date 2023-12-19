@@ -1,0 +1,21 @@
+{
+    "name": "cppconv",
+    "description": "Converter for C/C++ code to D",
+    "authors": ["Tim Schendekehl"],
+    "license": "BSL-1.0",
+    "targetType": "executable",
+    "dependencies": {
+        "dparsergen:core": "~>0.1.1",
+        "dparsergen:generator": "~>0.1.1"
+    },
+    "sourceFiles": [
+        "src/cppconv/grammarcpp.d",
+        "src/cppconv/grammarcpp_lexer.d",
+        "src/cppconv/grammarcpreproc.d",
+        "src/cppconv/grammarcpreproc_lexer.d",
+    ],
+    "preBuildCommands": [
+        "\"$DUB\" run dparsergen:generator -- src/cppconv/grammarcpreproc.ebnf --package cppconv -o src/cppconv/grammarcpreproc.d --lexer src/cppconv/grammarcpreproc_lexer.d",
+        "\"$DUB\" run dparsergen:generator -- src/cppconv/grammarcpp.ebnf --package cppconv --glr --mergesimilarstates --optempty --glr-global-cache -o src/cppconv/grammarcpp.d --lexer src/cppconv/grammarcpp_lexer.d"
+    ]
+}

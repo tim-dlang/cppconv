@@ -1,0 +1,91 @@
+{
+    "modulePatterns": [
+    {"match": {"filename": "wine.*"}, "moduleName": "libc.%B", "extraPrefix": "wine"},
+    {"match": {"filename": "glibc.*"}, "moduleName": "libc.%B", "extraPrefix": "glibc"},
+
+    {"match": {"filename": "wine.*", "name": "mem.*|str.*"}, "moduleName": "core.stdc.string", "extraPrefix": "wine"},
+    {"match": {"filename": "glibc.*", "name": "mem.*|str.*"}, "moduleName": "core.stdc.string", "extraPrefix": "glibc"},
+    
+    {"match": {"filename": "wine.*", "name": ["free", "malloc",
+                "calloc", "realloc", "abort", "wcstombs", "exit", "qsort", "atoi",
+                "strtol", "strtoll", "rand", "srand"]}, "moduleName": "core.stdc.stdlib", "extraPrefix": "wine"},
+    {"match": {"filename": "glibc.*", "name": ["free", "malloc",
+                "calloc", "realloc", "abort", "wcstombs", "exit", "qsort", "atoi",
+                "strtol", "strtoll", "rand", "srand"]}, "moduleName": "core.stdc.stdlib", "extraPrefix": "glibc"},
+    
+    {"match": {"filename": "wine.*", "name": ["FILE", "_iobuf",
+                "_IO_FILE", "fprintf", "fopen", "fread", "perror", "printf", "fclose", "fileno", "stdin", "stdout",
+                "stderr", "fflush", "fputc", "fwrite", "ferror", "fseek", "SEEK_SET", "SEEK_END", "SEEK_CUR", "ftell",
+                "snprintf", "sprintf", "fputs", "puts", "putchar", "putc",
+                "rename", "vsprintf", "vsnprintf", "BUFSIZ"]},
+            "moduleName": "core.stdc.stdio", "extraPrefix": "wine"},
+    {"match": {"filename": "glibc.*", "name": ["FILE", "_iobuf",
+                "_IO_FILE", "fprintf", "fopen", "fread", "perror", "printf", "fclose", "fileno", "stdin", "stdout",
+                "stderr", "fflush", "fputc", "fwrite", "ferror", "fseek", "SEEK_SET", "SEEK_END", "SEEK_CUR", "ftell",
+                "snprintf", "sprintf", "fputs", "puts", "putchar", "putc",
+                "rename", "vsprintf", "vsnprintf", "BUFSIZ"]},
+            "moduleName": "core.stdc.stdio", "extraPrefix": "glibc"},
+
+    {"match": {"filename": "gcc-rt/orig/include-cxx/.*"}, "moduleName": "libcxx.libcxx"},
+
+    {"match": {"name": "ulong"}, "moduleName": "core.stdc.config"},
+    ],
+    "typeRenames": [
+    {"match": {"name": "stat"}, "rename": "stat_t"},
+    {"match": {"name": "p_stat"}, "rename": "p_stat_t"},
+    {"match": {"name": "statvfs"}, "rename": "statvfs_t"},
+    {"match": {"name": "timezone"}, "rename": "timezone_t"},
+    {"match": {"name": "tm"}, "rename": "tm_t"},
+    ],
+    "macroReplacements": {
+        "SHRT_MAX": "short.max",
+        "USHRT_MAX": "ushort.max",
+        "INT_MIN": "int.min",
+        "INT_MAX": "int.max",
+        "UINT_MAX": "uint.max",
+        "LONG_MIN": "long.min",
+        "LONG_MAX": "long.max",
+        "ULONG_MAX": "ulong.max",
+        "__INT_MIN__": "int.min",
+        "__INT_MAX__": "int.max",
+        "__UINT_MAX__": "uint.max",
+        "__LONG_MIN__": "long.min",
+        "__LONG_MAX__": "long.max",
+        "__ULONG_MAX__": "ulong.max",
+        "__LONG_LONG_MAX__": "long.max",
+        "SIZE_MAX": "size_t.max",
+        "SSIZE_MAX": "ptrdiff_t.max",
+        "NULL": "null",
+        "false": "false",
+        "true": "true"
+    },
+    "versionReplacements": {
+        // https://dlang.org/spec/version.html
+        "__MINGW32__": "MinGW",
+        "__HAIKU__": "Haiku",
+        "__CYGWIN__": "Cygwin",
+        "_WIN32": "Windows",
+        "NDEBUG": "!assert",
+
+        "__amigaos4__": "AmigaOS4",
+
+        "NO_ADDRINFO": "NO_ADDRINFO",
+
+        "__LP64__": "D_LP64",
+        "_LP64": "D_LP64",
+
+        "__x86_64__": "X86_64",
+        "__i386__": "X86",
+        "_X86_": "X86",
+        "__arm__": "ARM",
+        "__aarch64__": "AArch64",
+
+        "CPPCONV_OS_MACOS": "OSX",
+        "CPPCONV_OS_IOS": "iOS",
+        "CPPCONV_OS_TVOS": "TVOS",
+        "CPPCONV_OS_WATCHOS": "WatchOS",
+
+        "CPPCONV_BIG_ENDIAN": "BigEndian",
+        "CPPCONV_LITTLE_ENDIAN": "LittleEndian",
+    }
+}
