@@ -1092,7 +1092,7 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
             {
                 if (needsNewline)
                     code.writeln();
-                code.write("version(" ~ data.mergedAliasMap[c.negated] ~ "){}else");
+                code.write("version (" ~ data.mergedAliasMap[c.negated] ~ ") {} else");
                 needsNewline = true;
                 continue;
             }
@@ -1111,7 +1111,7 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
             {
                 if (needsNewline)
                     code.writeln();
-                code.write("version(" ~ replaced ~ "){}else");
+                code.write("version (" ~ replaced ~ ") {} else");
                 needsNewline = true;
             }
         }
@@ -1121,7 +1121,7 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
             {
                 if (needsNewline)
                     code.writeln();
-                code.write("version(" ~ data.mergedAliasMap[c] ~ ")");
+                code.write("version (" ~ data.mergedAliasMap[c] ~ ")");
                 needsNewline = true;
                 continue;
             }
@@ -1144,7 +1144,7 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
             {
                 if (needsNewline)
                     code.writeln();
-                code.write("version(" ~ replaced ~ ")");
+                code.write("version (" ~ replaced ~ ")");
                 needsNewline = true;
             }
         }
@@ -1154,21 +1154,21 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
     }
     else if (condition.type == FormulaType.or)
     {
-        code.write("version(", versionReplacementsOr[condition], ")");
+        code.write("version (", versionReplacementsOr[condition], ")");
         if (addNewline)
             code.writeln();
         return;
     }
     else if (condition in data.mergedAliasMap)
     {
-        code.write("version(" ~ data.mergedAliasMap[condition] ~ ")");
+        code.write("version (" ~ data.mergedAliasMap[condition] ~ ")");
         if (addNewline)
             code.writeln();
         return;
     }
     else if (condition.negated in data.mergedAliasMap)
     {
-        code.write("version(" ~ data.mergedAliasMap[condition.negated] ~ "){}else");
+        code.write("version (" ~ data.mergedAliasMap[condition.negated] ~ ") {} else");
         if (addNewline)
             code.writeln();
         return;
@@ -1187,9 +1187,9 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
     }
     assert(isVersionOnlyCondition(condition, data));
     if (!negated)
-        code.write("version(" ~ replaced ~ ")");
+        code.write("version (" ~ replaced ~ ")");
     else
-        code.write("version(" ~ replaced ~ "){}else");
+        code.write("version (" ~ replaced ~ ") {} else");
     if (addNewline)
         code.writeln();
 }
@@ -10315,13 +10315,13 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
         {
             if (c in data.mergedAliasMap)
             {
-                code.writeln("version(", data.mergedAliasMap[c], ")");
+                code.writeln("version (", data.mergedAliasMap[c], ")");
                 code.writeln(code.indentStr, "version = ", name, ";");
                 continue;
             }
             else if (c.negated in data.mergedAliasMap)
             {
-                code.writeln("version(", data.mergedAliasMap[c.negated], ") {} else");
+                code.writeln("version (", data.mergedAliasMap[c.negated], ") {} else");
                 code.writeln(code.indentStr, "version = ", name, ";");
                 continue;
             }
@@ -10336,9 +10336,9 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
                 positive = !positive;
             }
             if (positive)
-                code.writeln("version(", replaced, ")");
+                code.writeln("version (", replaced, ")");
             else
-                code.writeln("version(", replaced, ") {} else");
+                code.writeln("version (", replaced, ") {} else");
             code.writeln(code.indentStr, "version = ", name, ";");
         }
         code.writeln();
