@@ -164,6 +164,7 @@ template<int> struct QIntegerForSize
 #define Q_DECL_CONST_FUNCTION __attribute__((const))
 #lockdefine Q_DECL_CONST_FUNCTION
 
+#undef Q_NO_TEMPLATE_FRIENDS
 #lockdefine Q_NO_TEMPLATE_FRIENDS
 
 #define Q_ATTRIBUTE_FORMAT_PRINTF(A, B)
@@ -230,3 +231,5 @@ template<int> struct QIntegerForSize
 #define QT_HAS_BUILTIN_CTZ
 #define QT_HAS_BUILTIN_CTZS
 #define QT_HAS_BUILTIN_CTZLL
+
+#undef QT_NO_SSL
