@@ -162,8 +162,9 @@ dependencies for other projects.
 
 Running build.d will download the source code for all required projects
 and extract it in subdirectory orig of the project directory. 
-It is only created, when it does not yet exist, so it has to be manually
-deleted if changes have been made.
+It is only created, when it does not yet exist or changes are detected,
+like a new version of the project. Some changes may not be detected,
+so sometimes it has to be manually deleted.
 
 For projects with main source files, build.d will then call cppconv with
 the correct parameters, so the D output files are created. They will

@@ -129,10 +129,29 @@ abstract class Project
     string[] dependencies;
     bool selected;
 
-    this(string name)
+    string delegate() getMemberDescription;
+
+    this(this T)(string name)
     {
         this.name = name;
         projectDir = "projects/" ~ name;
+
+        getMemberDescription = () {
+            string r;
+            T this_ = cast(T) this;
+            static foreach (member; this.tupleof)
+            {{
+                enum memberName = __traits(identifier, member);
+                if (!is(typeof(member) == delegate))
+                    r ~= text(memberName, ": ", member, "\n");
+            }}
+            static foreach (member; T.init.tupleof)
+            {{
+                enum memberName = __traits(identifier, member);
+                r ~= text(memberName, ": ", __traits(getMember, this_, memberName), "\n");
+            }}
+            return r;
+        };
     }
 
     void download() {}
@@ -472,19 +491,29 @@ int main(string[] args)
 
     foreach (project; projects)
     {
+        const projectDir = project.projectDir;
         if (!project.selected)
             continue;
         if ((&project.download).funcptr is &Project.download
                 && (&project.prepare).funcptr is &Project.prepare)
             continue;
-        const projectDir = project.projectDir;
-        if (!exists(projectDir ~ "/orig"))
+
+        string currentMemberDescription = project.getMemberDescription();
+        string cacheKeyPath = buildPath(projectDir, "orig-cache-key.txt");
+        string previousMemberDescription;
+        if (exists(cacheKeyPath))
+            previousMemberDescription = readText(cacheKeyPath);
+
+        if (!exists(projectDir ~ "/orig") || currentMemberDescription != previousMemberDescription)
         {
             writeln("===== ", project.name, " =====");
 
             foreach (d; project.tmpDirs)
                 rmdirRecurseIfExists(buildPath(projectDir, d));
+            rmdirRecurseIfExists(buildPath(projectDir, "orig"));
             rmdirRecurseIfExists(buildPath(projectDir, "tmp-orig"));
+            if (exists(cacheKeyPath))
+                remove(cacheKeyPath);
             mkdirRecurse(buildPath(projectDir, "tmp-orig"));
 
             mkdirRecurse(projectDir);
@@ -495,6 +524,8 @@ int main(string[] args)
 
             foreach (d; project.tmpDirs)
                 rmdirRecurseIfExists(buildPath(projectDir, d));
+
+            std.file.write(cacheKeyPath, currentMemberDescription);
         }
     }
 
