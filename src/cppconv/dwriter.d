@@ -6904,6 +6904,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             if (commentWholeDecl && forwardDecl is null)
                 code.write("+/");
 
+        string addedAttributes;
+
         string changeMangleFuncs;
         bool changeMangleWin, changeMangleItanium;
         if (hasTailConstClass)
@@ -6925,6 +6927,41 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             {
                 changeMangleFuncs ~= ".mangleChangeFunctionType(\"virtual\")";
                 changeMangleWin = true;
+            }
+        }
+
+        if (parentClassTree.isValid && (forwardDecl2.flags & DeclarationFlags.static_) == 0
+                && isClass(parentClassTree, data) && !isConstructor && !isDestructor && !hasFunctionBody && !commentWholeDecl)
+        {
+            if ((forwardDecl2.flags & DeclarationFlags.override_) || forwardDecl2.flags & DeclarationFlags.virtual)
+            {
+                bool isPrivate;
+                foreach (e; semantic.extraInfo2(forwardDecl2.tree).accessSpecifier.entries)
+                {
+                    if ((e.data & AccessSpecifier.private_) == 0)
+                        continue;
+                    if (!logicSystem.and(e.condition, condition2).isFalse)
+                    {
+                        auto econdition2 = removeLocationInstanceConditions(e.condition,
+                                logicSystem, data.mergedFileByName);
+                        enforce(logicSystem.and(econdition2.negated, condition2).isFalse,
+                                text(locationStr(d.location), "\n", e.condition.toString, "\n",
+                                    condition2.toString, "\n",
+                                    logicSystem.and(e.condition.negated, condition2).toString));
+                        isPrivate = true;
+                    }
+                }
+
+                if (isPrivate)
+                {
+                    /*
+                    Virtual functions can not be private in D, but they need to be mangled
+                    as private on Windows.
+                    */
+                    addedAttributes ~= "protected ";
+                    changeMangleFuncs ~= ".mangleChangeAccess(\"private\")";
+                    changeMangleWin = true;
+                }
             }
         }
 
@@ -7056,6 +7093,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                     codeTmp.write("@QScriptable ");
             }
         }
+
+        codeTmp.write(addedAttributes);
 
         if (parentClassTree.isValid && (forwardDecl2.flags & DeclarationFlags.static_) != 0)
         {
