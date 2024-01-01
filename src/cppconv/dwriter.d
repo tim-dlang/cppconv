@@ -724,12 +724,12 @@ string replaceModuleKeywords(string s)
     return components.join(".");
 }
 
-string replaceTypeName(DWriterData data, Declaration d)
+string replaceTypeName(DWriterData data, Declaration d, Semantic semantic)
 {
     foreach_reverse (ref rename; data.options.typeRenames)
     {
         DeclarationMatch match;
-        if (!isDeclarationMatch(rename.match, match, d))
+        if (!isDeclarationMatch(rename.match, match, d, semantic))
             continue;
 
         return translateResult(rename.match, match, rename.rename).replace("-", "_");
@@ -1232,7 +1232,7 @@ Declaration getSameRecordForTypedef(Declaration d, DWriterData data)
         return null;
     if (type2.name == "")
         return null;
-    string replacedName = replaceTypeName(data, d);
+    string replacedName = replaceTypeName(data, d, semantic);
     auto recordType = cast(RecordType) type2.type;
     foreach (e; recordType.declarationSet.entries)
     {
@@ -1241,7 +1241,7 @@ Declaration getSameRecordForTypedef(Declaration d, DWriterData data)
             continue;
         if (e.condition !is d.condition)
             continue;
-        if (replacedName != replaceTypeName(data, d2))
+        if (replacedName != replaceTypeName(data, d2, semantic))
             continue;
         if (d2.realDeclaration.entries.length)
         {
@@ -1371,7 +1371,7 @@ string chooseDeclarationName(Declaration d, DWriterData data)
     string name = d.name;
 
     if (d.type == DeclarationType.type)
-        name = replaceTypeName(data, d);
+        name = replaceTypeName(data, d, semantic);
 
     if (name.length == 0 && d.tree.isValid
             && (d.tree.nonterminalID == nonterminalIDFor!"EnumSpecifier"
@@ -5057,7 +5057,7 @@ DTypeKind getDTypeKind(Tree tree, DWriterData data)
             {
                 DeclarationMatch match;
                 bool prevUsed = pattern.match.used;
-                if (isDeclarationMatch(pattern.match, match, d))
+                if (isDeclarationMatch(pattern.match, match, d, semantic))
                 {
                     if (!prevUsed)
                         pattern.match.redundant = true;
@@ -6294,13 +6294,16 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             code.writeln("}");
         }
 
-    if (d.scope_ !is null && d.scope_.parentScope is null
-            && (d.flags & DeclarationFlags.forward) == 0 && d.name in data.options.docComments)
+    if (d.scope_ !is null && (d.flags & DeclarationFlags.forward) == 0)
     {
-        string lastLineIndentUnused;
-        if (getLastLineIndent(code, lastLineIndentUnused))
-            code.writeln();
-        code.writeln("/// ", data.options.docComments[d.name]);
+        string fname = fullyQualifiedName(semantic, d);
+        if (fname in data.options.docComments)
+        {
+            string lastLineIndentUnused;
+            if (getLastLineIndent(code, lastLineIndentUnused))
+                code.writeln();
+            code.writeln("/// ", data.options.docComments[fname]);
+        }
     }
 
     Tree[] templateDeclarations = findParentTemplateDeclarations(d.tree, semantic);
@@ -7418,7 +7421,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         foreach_reverse (ref pattern; data.options.abstractClasses)
         {
             DeclarationMatch match;
-            if (isDeclarationMatch(pattern, match, d))
+            if (isDeclarationMatch(pattern, match, d, semantic))
             {
                 hasAbstractMethod = true;
                 break;
@@ -7501,7 +7504,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             foreach_reverse (ref pattern; data.options.classSuffixCode)
             {
                 DeclarationMatch match;
-                if (isDeclarationMatch(pattern.match, match, d))
+                if (isDeclarationMatch(pattern.match, match, d, semantic))
                 {
                     classSuffixCode = pattern.code;
                     break;
@@ -8724,7 +8727,7 @@ bool isDeclarationBlacklistedImpl(DWriterData data, Declaration d)
     foreach_reverse (ref pattern; data.options.blacklist)
     {
         DeclarationMatch match;
-        if (isDeclarationMatch(pattern, match, d))
+        if (isDeclarationMatch(pattern, match, d, data.semantic))
             return true;
     }
     return false;

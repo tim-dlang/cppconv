@@ -2466,3 +2466,59 @@ template iterateTreeConditions(alias F)
             }
         }
 }
+
+string fullyQualifiedName(Semantic semantic, Declaration d)
+{
+    Appender!string app;
+    void visitScope(Scope s)
+    {
+        if (s is null)
+            return;
+        if (s.parentScope !is null)
+            visitScope(s.parentScope);
+
+        if (s.tree.isValid)
+        {
+            string name2;
+            auto declarations = semantic.extraInfo(findWrappingDeclaration(s.tree,
+                semantic)).declarations;
+            foreach (d2; declarations)
+            {
+                if (name2 != "" && d2.name != name2)
+                    name2 = "??";
+                else
+                    name2 = d2.name;
+            }
+            if (name2 != "")
+                app.put(name2 ~ "::");
+            else if(s.tree.nonterminalID == nonterminalIDFor!"TemplateDeclaration")
+                app.put("template param::");
+            else if(s.tree.nonterminalID == nonterminalIDFor!"ParametersAndQualifiers")
+                app.put("function param::");
+        }
+        else if (s.parentScope is null)
+        {
+        }
+        else
+            app.put(s.className.entries[0].data ~ "::");
+    }
+
+    Scope s = d.scope_;
+    if (d.tree.isValid && d.tree.nodeType != NodeType.token
+        && (d.tree.name.startsWith("FunctionDefinition")
+            || d.tree.nonterminalID == nonterminalIDFor!"ClassSpecifier")
+        && d.tree in d.scope_.childScopeByTree)
+    {
+        Scope s2 = d.scope_.childScopeByTree[d.tree];
+        foreach (e; s2.extraParentScopes.entries)
+        {
+            if (e.data.type == ExtraScopeType.namespace)
+                s = e.data.scope_;
+        }
+    }
+    visitScope(s);
+    if (app.data.length == 0)
+        return d.name;
+    app.put(d.name);
+    return app.data;
+}

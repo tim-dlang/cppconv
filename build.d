@@ -1,6 +1,7 @@
 import std.algorithm;
 import std.array;
 import std.conv;
+import std.exception;
 import std.file;
 import std.path;
 import std.process;
@@ -123,6 +124,7 @@ void downloadFile(string url, string filename, bool verbose)
 void createDocCommentsFile(string projectDir, string baseUrl)
 {
     auto titleRegex = regex(r"<title>([a-zA-Z0-9_]*) Class \| [^<>]*</title>");
+    auto subTitleRegex = regex("<span class=\"small-subtitle\">class <a[^<>]*>([a-zA-Z0-9_]*)</a>::([a-zA-Z0-9_]*)</span>");
     string[2][] docComments;
     foreach (entry; dirEntries(buildPath(projectDir, "Docs"), "*.html", SpanMode.depth))
     {
@@ -134,6 +136,13 @@ void createDocCommentsFile(string projectDir, string baseUrl)
         if (capture.empty)
             continue;
         auto className = capture[1];
+
+        capture = matchFirst(content, subTitleRegex);
+        if (!capture.empty)
+        {
+            enforce(capture[2] == className);
+            className = capture[1] ~ "::" ~ capture[2];
+        }
 
         docComments ~= [className, entry.name.baseName];
     }

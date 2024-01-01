@@ -7,6 +7,7 @@
 module cppconv.declarationpattern;
 import cppconv.configreader;
 import cppconv.cppdeclaration;
+import cppconv.cppsemantic;
 import cppconv.locationstack;
 import dparsergen.core.utils;
 import std.algorithm;
@@ -83,14 +84,17 @@ bool isDeclarationMatch(ref DeclarationPattern pattern, ref DeclarationMatch mat
     return true;
 }
 
-bool isDeclarationMatch(ref DeclarationPattern pattern, ref DeclarationMatch match, Declaration d)
+bool isDeclarationMatch(ref DeclarationPattern pattern, ref DeclarationMatch match, Declaration d, Semantic semantic)
 {
     bool inMacro;
     LocationRangeX location = d.location;
     if (location.context is null || location.context.contextDepth < 1)
         return false;
-    return isDeclarationMatch(pattern, match, location.context.filename,
-            location.start.line, inMacro, d.name, d.flags);
+
+    string fname = fullyQualifiedName(semantic, d);
+    bool r = isDeclarationMatch(pattern, match, location.context.filename,
+            location.start.line, inMacro, fname, d.flags);
+    return r;
 }
 
 string translateResult(ref DeclarationPattern pattern, ref DeclarationMatch match, string s)
