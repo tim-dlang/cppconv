@@ -4,6 +4,7 @@ import std.conv;
 import std.file;
 import std.path;
 import std.process;
+import std.regex;
 import std.stdio;
 import std.string;
 
@@ -117,6 +118,35 @@ void downloadFile(string url, string filename, bool verbose)
         runCommand(["wget", url, "-O", filename ~ ".part"], verbose);
         rename(filename ~ ".part", filename);
     }
+}
+
+void createDocCommentsFile(string projectDir, string baseUrl)
+{
+    auto titleRegex = regex(r"<title>([a-zA-Z0-9_]*) Class \| [^<>]*</title>");
+    string[2][] docComments;
+    foreach (entry; dirEntries(buildPath(projectDir, "Docs"), "*.html", SpanMode.depth))
+    {
+        if (entry.isDir)
+            continue;
+
+        auto content = readText(entry.name);
+        auto capture = matchFirst(content, titleRegex);
+        if (capture.empty)
+            continue;
+        auto className = capture[1];
+
+        docComments ~= [className, entry.name.baseName];
+    }
+    docComments.sort();
+    File docCommentsFile = File(buildPath(projectDir, "doccomments.json"), "w");
+    docCommentsFile.writeln("{");
+    docCommentsFile.writeln("    \"docComments\": {");
+    foreach (i, docComment; docComments)
+    {
+        docCommentsFile.writeln("        \"", docComment[0], "\": \"Binding for C++ class [", docComment[0], "](", baseUrl, docComment[1], ").\"", (i + 1 < docComments.length) ? "," : "");
+    }
+    docCommentsFile.writeln("    }");
+    docCommentsFile.writeln("}");
 }
 
 abstract class Project
@@ -385,12 +415,20 @@ int main(string[] args)
     projects ~= new class Project
     {
         string archive, archive2, archiveExtracted;
+        string[] docArchives;
         this()
         {
             super("qt5");
             dependencies = ["common"];
             archive = "5.15.2-0-202011130601qtbase-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z";
             archive2 = "5.15.2-0-202011130601qtwebengine-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z";
+            docArchives = [
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtcore-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtgui-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtwidgets-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtnetwork-documentation.7z",
+                "qt.qt5.5152.doc.qtwebengine/5.15.2-0-202011130614qtwebengine-documentation.7z",
+                ];
             archiveExtracted = "5.15.2";
             sourceFiles = ["qt5/allincludes.cpp"];
             converterArgs = [
@@ -409,12 +447,16 @@ int main(string[] args)
                 "-include", "qt5/prefixinclude.h"
                 ];
             tmpDirs ~= archiveExtracted;
+            tmpDirs ~= "Docs";
         }
 
         override void download()
         {
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.gcc_64/" ~ archive, projectDir ~ "/" ~ archive, verbose);
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.qtwebengine.gcc_64/" ~ archive2, projectDir ~ "/" ~ archive2, verbose);
+
+            foreach (a; docArchives)
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
         }
 
         override void prepare()
@@ -424,17 +466,30 @@ int main(string[] args)
 
             runCommand(["7z", "x", archive2, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtwebengine"));
+
+            foreach (a; docArchives)
+                runCommand(["7z", "x", baseName(a), "Docs/"], verbose, projectDir);
+
+            createDocCommentsFile(projectDir, "https://doc.qt.io/qt-5/");
         }
     };
     projects ~= new class Project
     {
         string archive, archive2, archiveExtracted;
+        string[] docArchives;
         this()
         {
             super("qt6");
             dependencies = ["common"];
             archive = "6.2.3-0-202201260729qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             archive2 = "6.2.3-0-202201260729qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
+            docArchives = [
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtcore-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtgui-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtwidgets-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtnetwork-documentation.7z",
+                "qt.qt6.623.doc.qtwebengine/6.2.3-0-202201260755qtwebengine-documentation.7z",
+                ];
             archiveExtracted = "6.2.3";
             sourceFiles = ["qt6/allincludes.cpp"];
             converterArgs = [
@@ -453,12 +508,16 @@ int main(string[] args)
                 "-include", "qt6/prefixinclude.h"
                 ];
             tmpDirs ~= archiveExtracted;
+            tmpDirs ~= "Docs";
         }
 
         override void download()
         {
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.gcc_64/" ~ archive, projectDir ~ "/" ~ archive, verbose);
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.addons.qtwebengine.gcc_64/" ~ archive2, projectDir ~ "/" ~ archive2, verbose);
+
+            foreach (a; docArchives)
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
         }
 
         override void prepare()
@@ -468,6 +527,11 @@ int main(string[] args)
 
             runCommand(["7z", "x", archive2, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtwebengine"));
+
+            foreach (a; docArchives)
+                runCommand(["7z", "x", baseName(a), "Docs/"], verbose, projectDir);
+
+            createDocCommentsFile(projectDir, "https://doc.qt.io/qt-6/");
         }
     };
 
