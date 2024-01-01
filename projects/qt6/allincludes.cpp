@@ -416,7 +416,7 @@
 //#include <QtWidgets/qsplashscreen.h>
 #include <QtWidgets/qsplitter.h>
 //#include <QtWidgets/qstackedlayout.h>
-//#include <QtWidgets/qstackedwidget.h>
+#include <QtWidgets/qstackedwidget.h>
 #include <QtWidgets/qstatusbar.h>
 #include <QtWidgets/qstyle.h>
 //#include <QtWidgets/qstyleditemdelegate.h>
