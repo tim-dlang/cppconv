@@ -1,0 +1,41 @@
+name: cppconv tests
+
+on:
+  push:
+    branches: [ "master", "test" ]
+  pull_request:
+    branches: [ "master", "test" ]
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    strategy:
+      fail-fast: false
+
+      matrix:
+        platform: [ linux64 ]
+        dc: [ dmd-latest, dmd-2.108.0, dmd-master ]
+
+        include:
+          - platform: linux64
+            os: ubuntu-22.04
+            model: 64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Install D compiler
+      uses: dlang-community/setup-dlang@v1
+      with:
+        compiler: ${{ matrix.dc }}
+
+    - name: 'Build & Test'
+      run: |
+        ${{ env.DC }} -run runtests.d --github
+        ${{ env.DC }} -run build.d sample

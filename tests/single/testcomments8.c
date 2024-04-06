@@ -1,0 +1,14 @@
+/*commenta1*/const/*commenta2*/char/*commenta3*/*/*commenta4*/
+/*commentb1*/f1/*commentb2*/(/*commentb3*/void/*commentb4*/)/*commentb5*/
+/*commentc1*/{/*commentc2*/
+	/*commentd1*/return/*commentd2*/""/*commentd3*/;/*commentd4*/
+/*commente1*/}/*commente2*/
+/*commentf1*/
+/*commentg1*/const/*commentg2*/char/*commentg3*/*/*commentg4*/
+/*commenth1*/f2/*commenth2*/(/*commenth3*/void/*commenth4*/)/*commenth5*/;/*commenth6*/
+/*commenti1*/
+/*commentj1*/const/*commentj2*/char/*commentj3*/*/*commentj4*/
+/*commentk1*/s/*commentk2*/;/*commentk3*/
+/*commentl1*/
+/*commentm1*/typedef/*commentm2*/const/*commentm3*/char/*commentm4*/*/*commentm5*/
+/*commentn1*/f3/*commentn2*/(/*commentn3*/void/*commentn*/)/*commentn5*/;/*commentn6*/
