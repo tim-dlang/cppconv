@@ -9292,7 +9292,7 @@ DFilename getDeclarationFilename(string filename, size_t startLine, bool inMacro
 
     if (moduleName == "")
     {
-        string packageName = "nopackage";
+        string packageName = "";
         foreach (i; 0 .. filename.length)
         {
             if (filename[i] == '/')
@@ -9301,24 +9301,26 @@ DFilename getDeclarationFilename(string filename, size_t startLine, bool inMacro
                 break;
             }
         }
-        moduleName = replaceModuleKeywords(packageName.replace("-", "_").replace("/", ".")) ~ "." ~ replaceModuleKeywords(
-                filename.baseName.stripExtension.replace("-", "_").replace("/", "."));
+        moduleName = replaceModuleKeywords(filename.baseName.stripExtension.replace("-", "_").replace("/", "."));
+        if (packageName.length)
+            moduleName = replaceModuleKeywords(packageName.replace("-", "_").replace("/", ".")) ~ "." ~ moduleName;
     }
 
     if (moduleName in data.usedPackages)
         moduleName ~= "_";
 
-    string fullPackageName = moduleName;
-    foreach_reverse (i; 0 .. fullPackageName.length)
+    string fullPackageName;
+    foreach_reverse (i; 0 .. moduleName.length)
     {
-        if (fullPackageName[i] == '.')
+        if (moduleName[i] == '.')
         {
-            fullPackageName = fullPackageName[0 .. i];
+            fullPackageName = moduleName[0 .. i];
             break;
         }
     }
 
-    data.usedPackages[fullPackageName] = true;
+    if (fullPackageName.length)
+        data.usedPackages[fullPackageName] = true;
 
     return DFilename(moduleName, extraPrefix);
 }
