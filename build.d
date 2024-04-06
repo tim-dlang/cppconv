@@ -204,7 +204,7 @@ int main(string[] args)
     bool verbose;
     string[] explicitProjects;
     string[] extraConverterArgs;
-    
+
     for (size_t i = 1; i < args.length; i++)
     {
         string arg = args[i];
