@@ -10485,6 +10485,13 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
     data.sourceTokenManager.logicSystem = mergedSemantic.logicSystem;
     data.sourceTokenManager.locationContextMap = mergedSemantic.locationContextMap;
 
+    foreach (inputFile; inputFiles)
+    {
+        auto dfilename = getDeclarationFilename(inputFile.name, 0, false,
+            data, "", DeclarationFlags.none);
+        data.declsByFile[dfilename] = [];
+    }
+
     foreach (ref mergedFile; mergedFiles)
     {
         getDeclarationFilename(mergedFile.filename.name, 0, false, data, "",
