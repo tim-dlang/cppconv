@@ -27,6 +27,7 @@ import cppconv.codewriter;
 import std.algorithm;
 import std.conv;
 import std.exception;
+import std.path;
 import std.stdio;
 import std.typecons;
 
@@ -66,6 +67,7 @@ class Context(ParserWrapper)
     size_t[RealFilename] fileIncludeDepth;
 
     string extraOutputStr;
+    string extraOutputDir;
     bool isCPlusPlus;
     bool addLocationInstances;
     bool ignoreMissingIncludePath;
@@ -2063,4 +2065,13 @@ do
                         condition, macrosDone, isNextParen, parentParser);
         }
     }
+}
+
+string generateExtraOutputPath(ParserWrapper)(
+        Context!ParserWrapper context, RealFilename filename, string extension)
+{
+    string r = filename.name ~ "." ~ context.extraOutputStr ~ extension;
+    if (context.extraOutputDir)
+        r = buildNormalizedPath(context.extraOutputDir, r);
+    return r;
 }

@@ -539,6 +539,7 @@ void processMainFile(Context rootContext, RealFilename inputFile, ref Context co
     context2 = new Context(rootContext.logicSystem, rootContext.defineSets.dup);
     context2.fileCache = rootContext.fileCache;
     context2.extraOutputStr = rootContext.extraOutputStr;
+    context2.extraOutputDir = rootContext.extraOutputDir;
     context2.locationContextMap = rootContext.locationContextMap;
     context2.isCPlusPlus = inputFile.name.endsWith(".cpp");
     context2.addLocationInstances = true;
@@ -635,7 +636,7 @@ void processMainFile(RealFilename inputFile, Context context,
     assert(context.existingTopParsers[0].refCount == 1);
 
     {
-        File outfile = File(inputFile.name ~ "." ~ context.extraOutputStr ~ "errors", "w");
+        File outfile = File(generateExtraOutputPath(context, inputFile, "errors"), "w");
         foreach (reportedError; context.reportedErrors)
         {
             outfile.writeln(reportedError.condition.toString);

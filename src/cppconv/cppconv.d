@@ -139,6 +139,11 @@ int main(string[] args)
                 i++;
                 context.extraOutputStr = args[i];
             }
+            else if (arg == "--extra-output-dir")
+            {
+                i++;
+                context.extraOutputDir = absolutePath(args[i]);
+            }
             else if (arg == "--spaces")
             {
                 i++;
@@ -255,6 +260,9 @@ int main(string[] args)
             inputFiles ~= RealFilename(movePath(arg));
         }
     }
+
+    if (context.extraOutputDir)
+        mkdirRecurse(context.extraOutputDir);
 
     context.fileCache.origIncludeDirsSize = context.fileCache.includeDirs.length;
 
