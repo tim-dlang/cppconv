@@ -8373,9 +8373,10 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
 
         CodeWriter code;
         code.indentStr = data.options.indent;
-        if (getDefaultMangling(data, data.currentFilename) == "C++")
+        auto mangling = getDefaultMangling(data, data.currentFilename);
+        if (mangling == "C++")
             code.write("ExternCPPFunc!(");
-        else
+        else if (mangling == "C")
             code.write("ExternCFunc!(");
         code.write(typeToCode(ftype.resultType, data, condition, currentScope,
                 currentLoc, nextDeclList, codeType, TypeToCodeFlags.none));
@@ -8396,7 +8397,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         code.write(")");
         if (ftype.isConst)
             code.write(" const");
-        code.write(")");
+        if (mangling.among("C++", "C"))
+            code.write(")");
         code.write(suffix);
         return code.data.idup;
     }
