@@ -2524,22 +2524,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         string name = instance.usedName;
 
-        immutable(Formula)* conditionInOneModule = semantic.logicSystem.false_;
-        immutable(Formula)* conditionInMultipleModules = semantic.logicSystem.false_;
-        if (instance.usedName in data.modulesBySymbol)
-            foreach (filename, fcondition; data.modulesBySymbol[instance.usedName])
-                if (filename in data.importGraphHere || filename == data.currentFilename.moduleName)
-                {
-                    conditionInMultipleModules = semantic.logicSystem.or(conditionInMultipleModules,
-                            semantic.logicSystem.and(conditionInOneModule, fcondition));
-                    conditionInOneModule = semantic.logicSystem.or(conditionInOneModule,
-                            fcondition);
-                }
-
-        if (instance.macroDeclaration in data.fileByDecl
-                && data.fileByDecl[instance.macroDeclaration] != data.currentFilename
-                && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
-            name = data.fileByDecl[instance.macroDeclaration].moduleName ~ "." ~ name;
+        name = qualifyName(name, instance.macroDeclaration, data, currentScope, condition);
 
         bool possibleStringLiteral = instance.macroTranslation == MacroTranslation.enumValue || instance.hasParamExpansion;
         if (data.afterStringLiteral && possibleStringLiteral)
@@ -8099,6 +8084,73 @@ immutable(Formula)* typeIsClass(QualType type, DWriterData data)
     return r;
 }
 
+string qualifyName(string name, Declaration d, DWriterData data, Scope currentScope,
+        immutable(Formula)* condition)
+{
+    auto semantic = data.semantic;
+    immutable(Formula)* conditionInOneModule = semantic.logicSystem.false_;
+    immutable(Formula)* conditionInMultipleModules = semantic.logicSystem.false_;
+    if (name in data.modulesBySymbol)
+        foreach (filename, fcondition; data.modulesBySymbol[name])
+            if (filename in data.importGraphHere || filename == data.currentFilename.moduleName)
+            {
+                immutable(Formula)* condition2 = fcondition;
+                if (filename in data.importGraphHere)
+                    condition2 = semantic.logicSystem.and(fcondition,
+                            data.importGraphHere[filename].condition);
+                conditionInMultipleModules = semantic.logicSystem.or(conditionInMultipleModules,
+                        semantic.logicSystem.and(conditionInOneModule, condition2));
+                conditionInOneModule = semantic.logicSystem.or(conditionInOneModule, condition2);
+            }
+
+    Scope realScope = d.scope_;
+    if (realScope !is null && d.tree in d.scope_.childScopeByTree)
+    {
+        foreach (e; d.scope_.childScopeByTree[d.tree].extraParentScopes.entries)
+        {
+            if (e.data.type != ExtraScopeType.namespace)
+                continue;
+            if (semantic.logicSystem.and(e.condition, condition).isFalse)
+                continue;
+            enforce(semantic.logicSystem.and(e.condition.negated, condition).isFalse);
+            realScope = e.data.scope_;
+            break;
+        }
+    }
+
+    bool hasConflictingName = false;
+    if (realScope !is null && realScope.parentScope is null && d.type == DeclarationType.type)
+    {
+        for (Scope s = currentScope; s !is null && s.parentScope !is null; s = s.parentScope)
+        {
+            auto x = name in s.symbols;
+            if (x)
+            {
+                foreach (e2; (*x).entries)
+                {
+                    if (e2.data.type != DeclarationType.forwardScope && e2.data !is d
+                            && (s !is realScope || e2.data.type != DeclarationType.type))
+                    {
+                        hasConflictingName = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
+            && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
+        name = data.fileByDecl[d].moduleName ~ "." ~ name;
+    else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
+            && realScope !is null && !realScope.tree.isValid
+            && d.declarationSet.scope_.parentScope !is null)
+        name = data.fileByDecl[d].moduleName ~ "." ~ name; // Namespace
+    else if (hasConflictingName)
+        name = "." ~ name;
+
+    return name;
+}
+
 string declarationNameToCode(Declaration d, DWriterData data, Scope currentScope,
         immutable(Formula)* condition)
 {
@@ -8144,50 +8196,8 @@ string declarationNameToCode(Declaration d, DWriterData data, Scope currentScope
         }
     }
 
-    immutable(Formula)* conditionInOneModule = semantic.logicSystem.false_;
-    immutable(Formula)* conditionInMultipleModules = semantic.logicSystem.false_;
-    if (name in data.modulesBySymbol)
-        foreach (filename, fcondition; data.modulesBySymbol[name])
-            if (filename in data.importGraphHere || filename == data.currentFilename.moduleName)
-            {
-                immutable(Formula)* condition2 = fcondition;
-                if (filename in data.importGraphHere)
-                    condition2 = semantic.logicSystem.and(fcondition,
-                            data.importGraphHere[filename].condition);
-                conditionInMultipleModules = semantic.logicSystem.or(conditionInMultipleModules,
-                        semantic.logicSystem.and(conditionInOneModule, condition2));
-                conditionInOneModule = semantic.logicSystem.or(conditionInOneModule, condition2);
-            }
+    name = qualifyName(name, d, data, currentScope, condition);
 
-    bool hasConflictingName = false;
-    if (realScope !is null && realScope.parentScope is null && d.type == DeclarationType.type)
-    {
-        for (Scope s = currentScope; s !is null && s.parentScope !is null; s = s.parentScope)
-        {
-            auto x = name in s.symbols;
-            if (x)
-            {
-                foreach (e2; (*x).entries)
-                {
-                    if (e2.data.type != DeclarationType.forwardScope && e2.data !is d
-                            && (s !is realScope || e2.data.type != DeclarationType.type))
-                    {
-                        hasConflictingName = true;
-                    }
-                }
-            }
-        }
-    }
-
-    if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
-            && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
-        name = data.fileByDecl[d].moduleName ~ "." ~ name;
-    else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
-            && realScope !is null && !realScope.tree.isValid
-            && d.declarationSet.scope_.parentScope !is null)
-        name = data.fileByDecl[d].moduleName ~ "." ~ name; // Namespace
-    else if (hasConflictingName)
-        name = "." ~ name;
     return name;
 }
 

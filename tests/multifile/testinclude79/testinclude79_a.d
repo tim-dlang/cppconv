@@ -16,7 +16,7 @@ void f()
         import testinclude79_gzlib;
 
 	mixin((defined!"Z_WANT64") ? q{
-        	testinclude79_zlib.gzopen
+        	gzopen
     	} : q{
         gzopen
     	})();
