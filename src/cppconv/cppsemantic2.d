@@ -146,19 +146,26 @@ void distributeAccessSpecifiers(ref ConditionMap!(AccessSpecifier) accessSpecifi
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"AccessSpecifierWithColon")
     {
         AccessSpecifier s;
-        enforce(tree.childs[0].nonterminalID == nonterminalIDFor!"AccessSpecifier");
-        if (tree.childs[0].childs[0].content == "public")
+        Tree tree1 = tree.childs[0];
+        Tree annotations;
+        if (tree1.nonterminalID == nonterminalIDFor!"AccessSpecifierWithAnnotations")
+        {
+            annotations = tree1.childs[1];
+            tree1 = tree1.childs[0];
+        }
+        enforce(tree1.nonterminalID == nonterminalIDFor!"AccessSpecifier");
+        if (tree1.childs[0].content == "public")
             s = AccessSpecifier.public_;
-        else if (tree.childs[0].childs[0].content == "private")
+        else if (tree1.childs[0].content == "private")
             s = AccessSpecifier.private_;
-        else if (tree.childs[0].childs[0].content == "protected")
+        else if (tree1.childs[0].content == "protected")
             s = AccessSpecifier.protected_;
         else
             enforce(false);
-        if (tree.childs.length == 3 && tree.childs[1].isValid)
+        if (annotations.isValid)
         {
-            enforce(tree.childs[1].nodeType == NodeType.array);
-            foreach (c; tree.childs[1].childs)
+            enforce(annotations.nodeType == NodeType.array);
+            foreach (c; annotations.childs)
             {
                 enforce(c.nonterminalID == nonterminalIDFor!"AccessSpecifierAnnotation");
                 if (c.childs[0].content == "__cppconv_qt_slot")

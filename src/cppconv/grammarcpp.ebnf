@@ -1136,7 +1136,10 @@ MemberSpecification @array
     ;
 AccessSpecifierWithColon
     = AccessSpecifier ":"
-    | AccessSpecifier AccessSpecifierAnnotation+ ":"
+    | AccessSpecifierWithAnnotations ":"
+    ;
+AccessSpecifierWithAnnotations
+    = AccessSpecifier AccessSpecifierAnnotation+
     ;
 AccessSpecifierAnnotation
     = "__cppconv_qt_slot"
