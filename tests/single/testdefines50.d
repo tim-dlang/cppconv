@@ -19,12 +19,18 @@ extern(D) alias write3 = function string(string s)
 {
     return mixin(interpolateMixin(q{write_impl_debug($(s), __FILE__, __LINE__)}));
 };
+/+ #define write4(s) write_impl(s); +/
+extern(D) alias write4 = function string(string s)
+{
+    return mixin(interpolateMixin(q{write_impl($(s));}));
+};
 }
 static if (!defined!"DEF")
 {
 void write(const(char)* s);
 void write2(const(char)* s);
 void write3(const(char)* s);
+void write4(const(char)* s);
 }
 
 void f()
@@ -44,6 +50,17 @@ void f()
     	} : q{
         write3("test")
     	}));
+	static if (!defined!"DEF")
+	{
+    	write4("test");
+	}
+	else
+	{
+    mixin(write4(q{"test"}));
+	}
+static if (defined!"DEF")
+{
+}
 }
 void g(const(char)* str)
 {
@@ -68,5 +85,16 @@ void g(const(char)* str)
 	{
     write3(str);
 	}
+	static if (!defined!"DEF")
+	{
+    	write4(str);
+	}
+	else
+	{
+    mixin(write4(q{str}));
+	}
+static if (defined!"DEF")
+{
+}
 }
 

@@ -864,6 +864,28 @@ bool isTreePossibleMixin(Tree tree, Semantic semantic)
         return true;
     if (tree.nodeType == NodeType.token)
         return false;
+    if (tree.name.startsWith("Merged:TemplateArgument2"))
+        return true;
+    if (tree.nodeType == NodeType.merged)
+    {
+        auto mdata = &semantic.mergedTreeData(tree);
+        size_t numPossible;
+        foreach (i, c; tree.childs)
+            if (!mdata.conditions[i].isFalse)
+            {
+                numPossible++;
+                if (!isTreePossibleMixin(c, semantic))
+                    return false;
+            }
+        return numPossible == 1;
+    }
+    if (tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+    {
+        foreach (c; tree.childs)
+            if (!isTreePossibleMixin(c, semantic))
+                return false;
+        return true;
+    }
     if (tree.name.endsWith("Statement"))
         return true;
     if (tree.nonterminalID == nonterminalIDFor!"TypeId")
@@ -872,8 +894,6 @@ bool isTreePossibleMixin(Tree tree, Semantic semantic)
         return true;
     if (tree.nonterminalID.nonterminalIDAmong!("StaticAssertDeclarationX",
             "StaticAssertDeclaration"))
-        return true;
-    if (tree.name.startsWith("Merged:TemplateArgument2"))
         return true;
     Tree parent = getRealParent(tree, semantic);
     if (parent.isValid && parent.nonterminalID == nonterminalIDFor!"ClassBody")
@@ -2730,7 +2750,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
                 data.sourceTokenManager.collectTokens(tree.location.end);
             if (instance.macroTranslation == MacroTranslation.mixin_
-                    && (tree.name.endsWith("Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
+                    && (tree.name.endsWith("Statement") || tree.name.startsWith("Merged:Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
                 parseTreeToCodeTerminal!T(code, ";");
             else
                 data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
@@ -9058,6 +9078,7 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                             continue;
                         immutable(Formula)* newCondition = semantic.logicSystem.and(condition,
                                 x.condition);
+
                         newCondition = semantic.logicSystem.and(newCondition,
                                 compatibleReferencedType(semantic.extraInfo(tree)
                                     .type, e.data.type2, semantic));
