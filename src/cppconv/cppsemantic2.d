@@ -842,7 +842,7 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
         }
         distributeExpectedType(semantic, tree.childs[1], combinedType, condition);
     }, (MatchProductions!((p, nonterminalName,
-            symbolNames) => nonterminalName == "SelectionStatement" && symbolNames[0] == q{"switch"})) {
+            symbolNames) => nonterminalName == "SelectionStatement" && symbolNames[0] == q{SwitchStatementHead})) {
         foreach (ref c; tree.childs)
         {
             runSemantic2(semantic, c, tree, condition);

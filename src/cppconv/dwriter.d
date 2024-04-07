@@ -1852,7 +1852,7 @@ void hasBreakStatementImpl(Tree tree, immutable(Formula)* condition, Semantic se
     else if (tree.nonterminalID == nonterminalIDFor!"IterationStatement")
     {
     }
-    else if (tree.nameOrContent == "SelectionStatement" && tree.childs[0].nameOrContent == "switch")
+    else if (tree.nameOrContent == "SelectionStatement" && tree.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead")
     {
         outConditionHasSwitch = semantic.logicSystem.or(outConditionHasSwitch, condition);
     }
@@ -1903,7 +1903,7 @@ bool isCompoundStatementInSwitch(Tree tree, Semantic semantic)
     auto p2 = semantic.extraInfo(p1).parent;
     if (!p2.isValid)
         return false;
-    return p2.nameOrContent == "SelectionStatement" && p2.childs[0].nameOrContent == "switch"
+    return p2.nameOrContent == "SelectionStatement" && p2.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead"
         && p1.nameOrContent == "Statement" && tree.nameOrContent == "CompoundStatement";
 }
 
@@ -3111,7 +3111,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         skipToken(code, data, tree.childs[1]);
     }
     else if ((tree.nonterminalID == nonterminalIDFor!"SelectionStatement"
-            && tree.childs[0].nameOrContent == "switch"
+            && tree.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead"
             && !(tree.childs[$ - 1].nameOrContent == "Statement"
             && tree.childs[$ - 1].childs[1].nameOrContent == "CompoundStatement"))
             || isCompoundStatementInSwitch(tree, semantic))
@@ -3231,7 +3231,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
     }
     else if (auto match = tree.matchTreePattern!q{
-            SelectionStatement("if", "constexpr", ...)
+            IfStatementHead("if", "constexpr", ...)
         })
     {
         code.write("static ");

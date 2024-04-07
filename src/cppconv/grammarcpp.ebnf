@@ -407,11 +407,16 @@ StatementSeq @array
 
 // Section stmt.select
 SelectionStatement
-    = "if" "(" Condition ")" Statement !"else"
-    | "if" "(" Condition ")" Statement "else" Statement
-    | "if" "constexpr" "(" Condition ")" Statement !"else"
-    | "if" "constexpr" "(" Condition ")" Statement "else" Statement
-    | "switch" "(" Condition ")" Statement
+    = IfStatementHead Statement !"else"
+    | IfStatementHead Statement "else" Statement
+    | SwitchStatementHead Statement
+    ;
+IfStatementHead
+    = "if" "(" Condition ")"
+    | "if" "constexpr" "(" Condition ")"
+    ;
+SwitchStatementHead
+    = "switch" "(" Condition ")"
     ;
 Condition
     = <Expression
