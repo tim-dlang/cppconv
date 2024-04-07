@@ -1636,10 +1636,12 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
                     code.write("},q{");
                 parseTreeToDCode(code, data, c, condition, currentScope);
             }
-            if (code.inLine)
-                code.write("})");
-            else
-                code.writeln("})");
+            bool inLine = code.inLine;
+            code.write("})");
+            if (tree.name.startsWith("Merged:Statement"))
+                code.write(";");
+            if (!inLine)
+                code.writeln();
         }
         else
             parseTreeToDCode(code, data, childs[lastPossibleChild],
