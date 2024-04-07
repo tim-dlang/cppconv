@@ -1155,24 +1155,6 @@ class LogicSystemX(T)
     {
         foreach (x2; aSubs)
         {
-            if (!x2.isAnyLiteralFormula)
-                continue;
-            bool found;
-            foreach (y2; bSubs)
-            {
-                if (x2 is y2)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-                return false;
-        }
-        foreach (x2; aSubs)
-        {
-            if (x2.isAnyLiteralFormula)
-                continue;
             bool found;
             foreach (y2; bSubs)
             {
@@ -1193,24 +1175,6 @@ class LogicSystemX(T)
     {
         foreach (x2; bSubs)
         {
-            if (!x2.isAnyLiteralFormula)
-                continue;
-            bool found;
-            foreach (y2; aSubs)
-            {
-                if (y2 is x2)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-                return false;
-        }
-        foreach (x2; bSubs)
-        {
-            if (x2.isAnyLiteralFormula)
-                continue;
             bool found;
             foreach (y2; aSubs)
             {
@@ -2695,5 +2659,16 @@ unittest
         auto x = and(f9, f13);
         assert(x.toString
                 == "((Inc ≥ 2 ∨ __USE_POSIX199506) ∧ ((Inc == 1 ∧ ¬__USE_MISC) ∨ (Inc < 1 ∧ __USE_MISC)))");
+    }
+}
+
+unittest
+{
+    BoundLogicSystem s = new BoundLogicSystem();
+    with (s)
+    {
+        auto f1 = and(literal("d"), or(boundLiteral("a", "==", 2), and(boundLiteral("a", "==", 1), boundLiteral("b", ">=", 1))));
+        auto f2 = and(boundLiteral("a", "<", 3), or(boundLiteral("a", "<", 1), notLiteral("d"), and(boundLiteral("a", "==", 1), boundLiteral("b", "<", 1))));
+        assert(and(f1, f2).isFalse);
     }
 }
