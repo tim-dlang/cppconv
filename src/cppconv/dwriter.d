@@ -9819,10 +9819,40 @@ ImportInfo[string] getNeededImportsLocal(Declaration d, DWriterData data)
     return neededImportsLocal;
 }
 
-bool isConstExpression(Tree t, Semantic semantic)
+bool isConstExpression(Tree t, Semantic semantic, ref bool isType)
 {
-    if (t.nameOrContent == "TypeId")
+    Tree parent = getRealParent(t, semantic);
+    if (t.nodeType == NodeType.nonterminal
+            && t.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+    {
+        foreach (c; t.childs)
+            if (!isConstExpression(c, semantic, isType))
+                return false;
         return true;
+    }
+    if (t.nodeType == NodeType.merged)
+    {
+        auto mdata = &semantic.mergedTreeData(t);
+
+        if (!mdata.mergedCondition.isFalse)
+            return false;
+
+        foreach (i, condition; mdata.conditions)
+        {
+            if (!condition.isFalse)
+            {
+                if (!isConstExpression(t.childs[i], semantic, isType))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+    if (t.nodeType == NodeType.nonterminal && t.nonterminalID == nonterminalIDFor!"TypeId")
+    {
+        isType = true;
+        return true;
+    }
     if (!isTreeExpression(t, semantic))
         return false;
     if (t.name.endsWith("Literal"))
@@ -9830,16 +9860,16 @@ bool isConstExpression(Tree t, Semantic semantic)
     if (t.nonterminalID.nonterminalIDAmong!("StringLiteral2", "LiteralS", "LiteralSP"))
         return true;
     if (t.nonterminalID == nonterminalIDFor!"InitializerClause"
-            && isConstExpression(t.childs[0], semantic))
+            && isConstExpression(t.childs[0], semantic, isType))
         return true;
     if (t.nameOrContent == "PrimaryExpression" && t.childs[0].nameOrContent == "("
-            && isConstExpression(t.childs[1], semantic))
+            && isConstExpression(t.childs[1], semantic, isType))
         return true;
     if (t.nameOrContent == "UnaryExpression" && t.childs[0].nameOrContent.among("-",
-            "+", "~", "!") && isConstExpression(t.childs[1], semantic))
+            "+", "~", "!") && isConstExpression(t.childs[1], semantic, isType))
         return true;
     if (t.nonterminalID == nonterminalIDFor!"CastExpression"
-            && isConstExpression(t.childs[3], semantic))
+            && isConstExpression(t.childs[3], semantic, isType))
         return true;
     if (t.nameOrContent == "UnaryExpression" && t.childs[0].nameOrContent.among("sizeof",
             "alignof") && t.childs[1].nameOrContent == "(")
@@ -9849,13 +9879,13 @@ bool isConstExpression(Tree t, Semantic semantic)
             "EqualityExpression", "AndExpression",
             "ExclusiveOrExpression", "InclusiveOrExpression",
             "LogicalAndExpression", "LogicalOrExpression")
-            && isConstExpression(t.childs[0], semantic)
-            && isConstExpression(t.childs[2], semantic))
+            && isConstExpression(t.childs[0], semantic, isType)
+            && isConstExpression(t.childs[2], semantic, isType))
         return true;
     if (t.nonterminalID == nonterminalIDFor!"ConditionalExpression"
-            && isConstExpression(t.childs[0], semantic)
-            && isConstExpression(t.childs[2], semantic)
-            && isConstExpression(t.childs[4], semantic))
+            && isConstExpression(t.childs[0], semantic, isType)
+            && isConstExpression(t.childs[2], semantic, isType)
+            && isConstExpression(t.childs[4], semantic, isType))
         return true;
     return false;
 }

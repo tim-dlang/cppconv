@@ -34,11 +34,11 @@ static if (!defined!"_WIN32" || defined!"__CYGWIN__")
 {
 /+ # define UINT64_MAX		(__UINT64_C(18446744073709551615)) +/
 /+ # define INT64_MAX		(__INT64_C(9223372036854775807)) +/
-enum INT64_MAX =		q{( mixin((defined!"__LP64__") ? q{
+enum INT64_MAX =		( mixin((defined!"__LP64__") ? q{
             		/+ __INT64_C(9223372036854775807) +/9223372036854775807L
         		} : q{
             9223372036854775807L
-        		}))};
+        		}));
 }
 
 int main()
@@ -48,7 +48,7 @@ int main()
 	if ( mixin(((defined!"_WIN32" && !defined!"__CYGWIN__")) ? q{
         	remaining < 0 || offset < 0 || offset > INT64_MAX - remaining
     	} : q{
-        remaining<0||offset<0||offset> mixin(INT64_MAX)-remaining
+        remaining<0||offset<0||offset> INT64_MAX-remaining
     	})) {
 		return 1;
 	}

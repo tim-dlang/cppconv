@@ -290,8 +290,9 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                         {
                             allParamsPossibleMixin = false;
                         }
+                        bool isType;
                         if (x.macroTrees.length != 1
-                                || !isConstExpression(x.macroTrees[0], mergedSemantic))
+                                || !isConstExpression(x.macroTrees[0], mergedSemantic, isType))
                         {
                             allParamsLiteral = false;
                         }
@@ -313,6 +314,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             foreach (t; macroTrees)
                 if (t.nonterminalID != nonterminalIDFor!"StringLiteral2")
                     allTreesStringLiteral = false;
+            bool isType;
             if (macroName == "assert" && macroTrees.length == 1
                     && macroTrees[0].nonterminalID == nonterminalIDFor!"CppConvAssertExpression")
             {
@@ -334,17 +336,19 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             }
             else if (allParamsNoConcat && allParamsNoExpansion && allParamsOneInstance && allParamsLiteral
                     && /*macroDeclaration.definition.nonterminalID == nonterminalIDFor!"VarDefine" &&*/ macroTrees.length == 1
-                    && isConstExpression(macroTrees[0], mergedSemantic))
+                    && isConstExpression(macroTrees[0], mergedSemantic, isType))
             {
                 foreach (ps; instance.params)
                     foreach (p; ps.instances)
                     {
-                        if (p.macroTrees[0].nonterminalID == nonterminalIDFor!"TypeId")
+                        bool isType2;
+                        isConstExpression(p.macroTrees[0], mergedSemantic, isType2);
+                        if (isType2)
                             p.macroTranslation = MacroTranslation.alias_;
                         else
                             p.macroTranslation = MacroTranslation.enumValue;
                     }
-                if (instance.macroTrees[0].nonterminalID == nonterminalIDFor!"TypeId")
+                if (isType)
                     instance.macroTranslation = MacroTranslation.alias_;
                 else
                     instance.macroTranslation = MacroTranslation.enumValue;

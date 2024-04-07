@@ -15,19 +15,20 @@ enum A = 2;
 }
 
 /+ #define f(x) (x) +/
-extern(D) alias f = function string(string x)
+template f(params...) if (params.length == 1)
 {
-    return mixin(interpolateMixin(q{($(x))}));
-};
+    enum x = params[0];
+    enum f = (x);
+}
 
-__gshared int x = mixin(f(q{mixin((defined!"DEF") ? q{
+__gshared int x = f!(mixin((defined!"DEF") ? q{
                 A
             } : q{
             A
-            })}));
-__gshared int y = 3* mixin(f(q{4+ mixin((defined!"DEF") ? q{
+            }));
+__gshared int y = 3* f!(4+ mixin((defined!"DEF") ? q{
                 A
             } : q{
             A
-            })+5}));
+            })+5);
 
