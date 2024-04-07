@@ -94,13 +94,8 @@
 #undef QT_NO_EXCEPTIONS
 #lockdefine QT_NO_EXCEPTIONS
 
-#  define __ORDER_BIG_ENDIAN__ 4321
-#  define __ORDER_LITTLE_ENDIAN__ 1234
-#unknown __BYTE_ORDER__
 #    define Q_BYTE_ORDER __BYTE_ORDER__
 #lockdefine Q_BYTE_ORDER
-#alias CPPCONV_BIG_ENDIAN __BYTE_ORDER__ == 4321
-#alias CPPCONV_LITTLE_ENDIAN __BYTE_ORDER__ == 1234
 
 #define Q_DECLARE_TYPEINFO(TYPE, FLAGS) __cppconv_qt_typeinfo(TYPE, FLAGS)
 #lockdefine Q_DECLARE_TYPEINFO

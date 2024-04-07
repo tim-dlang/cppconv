@@ -24,16 +24,74 @@
 #regex_undef "__GLIBCXX.*"
 #regex_undef "Q_CC_.*"
 #regex_undef "Q_OS_.*"
+#regex_undef ".*_H___"
 
 #undef __WINE_INTERNAL_POPPACK
 
 #unknown CPPCONV_OS
 #alias CPPCONV_OS_LINUX CPPCONV_OS == 1
-#alias _WIN32 CPPCONV_OS == 2
+#alias CPPCONV_OS_WIN CPPCONV_OS == 2
 #alias CPPCONV_OS_MACOS CPPCONV_OS == 3
 #alias CPPCONV_OS_IOS CPPCONV_OS == 4
 #alias CPPCONV_OS_TVOS CPPCONV_OS == 5
 #alias CPPCONV_OS_WATCHOS CPPCONV_OS == 6
+
+#unknown CPPCONV_POINTER_SIZE
+#unknown CPPCONV_ARCH
+#alias CPPCONV_ARCH_X86 CPPCONV_ARCH == 1
+#alias CPPCONV_ARCH_POWERPC CPPCONV_ARCH == 2
+
+#undef i386
+#undef __i386
+#undef __i386__
+#undef _X86_
+#ifdef CPPCONV_ARCH_X86
+#if CPPCONV_POINTER_SIZE == 32
+#define i386 1
+#define __i386 1
+#define __i386__ 1
+#define _X86_ 1
+#endif
+#endif
+
+#undef __amd64__
+#undef __amd64
+#undef __x86_64__
+#undef __x86_64
+#undef _M_AMD64
+#ifdef CPPCONV_ARCH_X86
+#if CPPCONV_POINTER_SIZE == 64
+#define __amd64__ 1
+#define __amd64 1
+#define __x86_64__ 1
+#define _M_AMD64 1
+#endif
+#endif
+
+#undef __powerpc
+#undef __powerpc__
+#undef __powerpc64__
+#undef __POWERPC__
+#undef __ppc__
+#undef __ppc64__
+#undef __PPC__
+#undef __PPC64__
+#undef _ARCH_PPC
+#undef _ARCH_PPC64
+#undef _M_PPC
+#ifdef CPPCONV_ARCH_POWERPC
+#define __powerpc 1
+#define __powerpc__ 1
+#define __powerpc64__ 1
+#define __POWERPC__ 1
+#define __ppc__ 1
+#define __ppc64__ 1
+#define __PPC__ 1
+#define __PPC64__ 1
+#define _ARCH_PPC 1
+#define _ARCH_PPC64 1
+#define _M_PPC 1
+#endif
 
 #undef __APPLE__
 #if defined(CPPCONV_OS_MACOS) || defined(CPPCONV_OS_IOS) || defined(CPPCONV_OS_TVOS) || defined(CPPCONV_OS_WATCHOS)
@@ -54,14 +112,29 @@
 #define TARGET_OS_WATCH 1
 #endif
 
-#ifndef _WIN32
-#undef __CYGWIN__
 #undef WIN64
 #undef _WIN64
 #undef __WIN64__
 #undef WIN32
 #undef _WIN32
 #undef __WIN32__
+#ifdef CPPCONV_OS_WIN
+/*#if CPPCONV_POINTER_SIZE == 16
+#define _WIN16
+#endif
+#if CPPCONV_POINTER_SIZE >= 32*/
+#define WIN32
+#define _WIN32
+#define __WIN32__
+//#endif
+#if CPPCONV_POINTER_SIZE == 64
+#define WIN64
+#define _WIN64
+#define __WIN64__
+#endif
+#endif
+#ifndef CPPCONV_OS_WIN
+#undef __CYGWIN__
 #undef __NT__
 #endif
 
@@ -331,3 +404,16 @@ typedef __builtin_char32_t char32_t;
 #lockdefine __int64
 
 #define __has_include(f) 1
+
+#unknown __BYTE_ORDER__
+#define __ORDER_BIG_ENDIAN__ 4321
+#define __ORDER_LITTLE_ENDIAN__ 1234
+#define __ORDER_PDP_ENDIAN__ 3412
+#alias __BIG_ENDIAN__ __BYTE_ORDER__ == 4321
+#alias __LITTLE_ENDIAN__ __BYTE_ORDER__ == 1234
+
+#undef WORDS_BIGENDIAN
+#ifdef __BIG_ENDIAN__
+#define WORDS_BIGENDIAN
+#endif
+#lockdefine WORDS_BIGENDIAN

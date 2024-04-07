@@ -67,7 +67,7 @@
         "__MINGW32__": "MinGW",
         "__HAIKU__": "Haiku",
         "__CYGWIN__": "Cygwin",
-        "_WIN32": "Windows",
+        "CPPCONV_OS_WIN": "Windows",
         "NDEBUG": "!assert",
 
         "__amigaos4__": "AmigaOS4",
@@ -88,7 +88,7 @@
         "CPPCONV_OS_TVOS": "TVOS",
         "CPPCONV_OS_WATCHOS": "WatchOS",
 
-        "CPPCONV_BIG_ENDIAN": "BigEndian",
-        "CPPCONV_LITTLE_ENDIAN": "LittleEndian",
+        "__BIG_ENDIAN__": "BigEndian",
+        "__LITTLE_ENDIAN__": "LittleEndian",
     }
 }
