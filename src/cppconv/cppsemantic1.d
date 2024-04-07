@@ -2235,7 +2235,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             runSemantic(semantic, c, tree, condition);
         }
     }, (MatchProductions!((p, nonterminalName,
-            symbolNames) => nonterminalName == "SelectionStatement")) {
+            symbolNames) => nonterminalName.among("IfStatement", "ElseIfStatement", "ElseStatement", "SwitchStatement"))) {
         SemanticRunInfo semanticRun = semantic;
         if (tree !in semantic.currentScope.childScopeByTree)
         {

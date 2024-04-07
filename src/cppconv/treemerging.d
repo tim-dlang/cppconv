@@ -553,6 +553,8 @@ Tree createArrayTree(Tree[] arrA)
     Location end = Location.invalid;
     foreach (i, arr; arrA)
     {
+        if (!arr.isValid)
+            continue;
         start = minLoc(start, arr.start);
         end = maxLoc(end, arr.end);
     }

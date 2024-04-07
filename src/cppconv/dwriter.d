@@ -1893,7 +1893,7 @@ void hasBreakStatementImpl(Tree tree, immutable(Formula)* condition, Semantic se
     else if (tree.nonterminalID == nonterminalIDFor!"IterationStatement")
     {
     }
-    else if (tree.nameOrContent == "SelectionStatement" && tree.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead")
+    else if (tree.nameOrContent == "SwitchStatement")
     {
         outConditionHasSwitch = semantic.logicSystem.or(outConditionHasSwitch, condition);
     }
@@ -1944,7 +1944,7 @@ bool isCompoundStatementInSwitch(Tree tree, Semantic semantic)
     auto p2 = semantic.extraInfo(p1).parent;
     if (!p2.isValid)
         return false;
-    return p2.nameOrContent == "SelectionStatement" && p2.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead"
+    return p2.nameOrContent == "SwitchStatement"
         && p1.nameOrContent == "Statement" && tree.nameOrContent == "CompoundStatement";
 }
 
@@ -2839,7 +2839,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
         else if (parent.nonterminalID == nonterminalIDFor!"Statement"
                 && parent2.nonterminalID.nonterminalIDAmong!("IterationStatement",
-                    "SelectionStatement", "DoWhileStatement"))
+                    "IfStatement", "ElseIfStatement", "ElseStatement", "SwitchStatement",
+                    "DoWhileStatement"))
         {
             parseTreeToCodeTerminal!T(code, "{");
             parseTreeToCodeTerminal!T(code, "}");
@@ -3178,8 +3179,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
         skipToken(code, data, tree.childs[1]);
     }
-    else if ((tree.nonterminalID == nonterminalIDFor!"SelectionStatement"
-            && tree.childs[0].nonterminalID == nonterminalIDFor!"SwitchStatementHead"
+    else if ((tree.nonterminalID == nonterminalIDFor!"SwitchStatement"
             && !(tree.childs[$ - 1].nameOrContent == "Statement"
             && tree.childs[$ - 1].childs[1].nameOrContent == "CompoundStatement"))
             || isCompoundStatementInSwitch(tree, semantic))
@@ -3308,6 +3308,38 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         foreach (c; tree.childs[2 .. $])
         {
             parseTreeToDCode(code, data, c, condition, currentScope);
+        }
+    }
+    else if (tree.nonterminalID.nonterminalIDAmong!("IfStatement"))
+    {
+        auto codeWrapper = ConditionalCodeWrapper(condition, data);
+
+        codeWrapper.checkTree(tree.childs, false);
+
+        if (codeWrapper.alwaysUseMixin)
+        {
+            codeWrapper.begin(code, condition);
+
+            void onTree(Tree t, immutable(Formula)* condition2)
+            {
+                parseTreeToDCode(code, data, t, condition2, currentScope);
+                writeComments(code, data, data.sourceTokenManager.collectTokens(t.location.end));
+                writeComments(code, data,
+                        data.sourceTokenManager.collectTokensUntilLineEnd(t.location.end,
+                            condition));
+            }
+
+            code.incIndent;
+            codeWrapper.writeTree(code, &onTree, tree.childs);
+            code.decIndent;
+
+            codeWrapper.end(code, condition);
+            code.write(";");
+        }
+        else
+        {
+            foreach (c; tree.childs)
+                parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
     else if (tree.nonterminalID.nonterminalIDAmong!("ClassHead", "EnumHead"))

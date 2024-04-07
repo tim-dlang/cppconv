@@ -410,13 +410,27 @@ StatementSeq @array
 
 // Section stmt.select
 SelectionStatement
-    = IfStatementHead Statement !"else"
-    | IfStatementHead Statement "else" Statement
-    | SwitchStatementHead Statement
+    = <IfStatement
+    | <SwitchStatement
+    ;
+IfStatement
+    = IfStatementHead Statement ElseIfStatements !"else"
     ;
 IfStatementHead
     = "if" "(" Condition ")"
     | "if" "constexpr" "(" Condition ")"
+    ;
+ElseIfStatement
+    = "else" IfStatementHead !IfStatement Statement
+    ;
+ElseStatement
+    = "else" !IfStatement Statement
+    ;
+ElseIfStatements @array
+    = ElseIfStatement* ElseStatement?
+    ;
+SwitchStatement
+    = SwitchStatementHead Statement
     ;
 SwitchStatementHead
     = "switch" "(" Condition ")"

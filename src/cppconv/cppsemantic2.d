@@ -503,7 +503,8 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
             "BraceOrEqualInitializer", "BracedInitList", "DeclSpecifierSeq",
             "EnumeratorInitializer",
             "ArrayDeclarator", "JumpStatement2", "LabelStatement",
-            "SelectionStatement", "IterationStatement", "DoWhileStatement")) {
+            "IfStatement", "ElseIfStatement", "ElseStatement", "SwitchStatement",
+            "IterationStatement", "DoWhileStatement")) {
         assert(tree.childs.length == 1);
         assert(tree.childs[0].isToken == 1);
         foreach (ref c; tree.childs)
@@ -842,7 +843,7 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
         }
         distributeExpectedType(semantic, tree.childs[1], combinedType, condition);
     }, (MatchProductions!((p, nonterminalName,
-            symbolNames) => nonterminalName == "SelectionStatement" && symbolNames[0] == q{SwitchStatementHead})) {
+            symbolNames) => nonterminalName == "SwitchStatement")) {
         foreach (ref c; tree.childs)
         {
             runSemantic2(semantic, c, tree, condition);
