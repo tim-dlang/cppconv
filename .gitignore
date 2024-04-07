@@ -2,6 +2,8 @@
 /src/cppconv/grammarcpp_lexer.d
 /src/cppconv/grammarcpreproc.d
 /src/cppconv/grammarcpreproc_lexer.d
+/src/cppconv/grammartreematching.d
+/src/cppconv/grammartreematching_lexer.d
 *.lst
 /cppconv
 /dub.selections.json

@@ -1,0 +1,159 @@
+TreePattern
+    = TreePattern2
+    | Identifier "=" TreePattern2
+    ;
+TreePattern2
+    = <PatternNonterminal
+    | <PatternWildcard
+    | <PatternArray
+    | <PatternString
+    | <PatternNull
+    ;
+
+PatternNonterminal
+    = Identifier
+    | Identifier "(" PatternArguments? ")"
+    ;
+
+PatternArguments @array
+    = PatternArgument
+    | PatternArguments "," PatternArgument
+    ;
+
+PatternOr @start
+    = <TreePattern
+    | PatternOr "|" TreePattern
+    ;
+
+PatternArgument
+    = <PatternOr
+    | PatternWildcard2
+    ;
+
+PatternWildcard
+    = "*"
+    ;
+
+PatternWildcard2
+    = "..."
+    ;
+
+PatternNull
+    = "null"
+    ;
+
+PatternString
+    = StringLiteral
+    ;
+
+PatternArray
+    = "[" PatternArguments? "]"
+    ;
+
+/**
+
+*/
+token Identifier @lowPrio
+    = [a-zA-Z_] [a-zA-Z0-9_]*
+    ;
+
+/**
+`StringLiteral` specifies a sequence of characters, which can be
+ directly used as a token or for defining other tokens.
+*/
+token StringLiteral
+    = "\"" StringPart* "\""
+    ;
+
+/// ditto
+fragment StringPart
+    = [^\"\\\r\n]
+    | EscapeSequence
+    ;
+
+/**
+Used in `StringLiteral` and `CharacterSetLiteral`.
+
+The escape sequences \0, \a, \b, \f, \n, \r, \t and \v represent
+special characters like in D.
+
+The escape sequences \x, \u and \U are followed by a hexadecimal
+number, which is turned into a Unicode character. The number needs
+to be a valid Unicode character of the used size. For \x only ACSII
+characters are valid, because other characters need more UTF-8 bytes.
+For \u and \U Unicode surrogates are not allowed.
+
+All other escape sequences represent the character following the slash.
+*/
+fragment EscapeSequence
+    = "\\\\"
+    | "\\\""
+    | "\\\'"
+    | "\\0"
+    | "\\a"
+    | "\\b"
+    | "\\f"
+    | "\\n"
+    | "\\r"
+    | "\\t"
+    | "\\v"
+    | "\\["
+    | "\\]"
+    | "\\-"
+    | "\\x" Hex Hex
+    | "\\u" Hex Hex Hex Hex
+    | "\\U" Hex Hex Hex Hex Hex Hex Hex Hex
+    ;
+
+/// ditto
+fragment Hex
+    = [0-9A-Fa-f]
+    ;
+
+/**
+Whitespace is ignored. Sometimes it is necessary to separate tokens.
+*/
+token Space @ignoreToken
+    = [ \n\r\t]+
+    ;
+
+/**
+A line comment starts with "//" and includes all characters of the
+current line. Line comments starting with "///" can be used as
+documentation comments for symbols.
+*/
+token LineComment @ignoreToken
+    = "//" [^\n\r]*
+    ;
+
+/++
+A block comment starts with "/\*" and ends with next occurrence of "\*/".
+It can not be nested. Block comments starting with "/\*\*" can be used
+as documentation comments for symbols.
++/
+token BlockComment @ignoreToken
+    = "/*" BlockCommentPart* "*"* "*/"
+    ;
+
+/// ditto
+fragment BlockCommentPart
+    = [^*]
+    | "*"+ [^*/]
+    ;
+
+/**
+A nested block comment starts with "/+" and can be nested. It ends with
+the next not nested occurrence of "+/". Nested block comments starting
+with "/++" can be used as documentation comments for symbols.
+*/
+token NestingBlockComment @ignoreToken
+    = "/+" NestingBlockCommentPart* "+"* "+/" @recursiveLexer
+    ;
+
+/// ditto
+fragment NestingBlockCommentPart
+    = [^+/]
+    | "+"+ [^+/]
+    | "/"+ [^+/]
+    | "/"* NestingBlockComment
+    ;

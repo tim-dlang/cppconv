@@ -16,9 +16,12 @@
         "src/cppconv/grammarcpp_lexer.d",
         "src/cppconv/grammarcpreproc.d",
         "src/cppconv/grammarcpreproc_lexer.d",
+        "src/cppconv/grammartreematching.d",
+        "src/cppconv/grammartreematching_lexer.d",
     ],
     "preBuildCommands": [
         "\"$DUB\" run dparsergen:generator -- src/cppconv/grammarcpreproc.ebnf --package cppconv -o src/cppconv/grammarcpreproc.d --lexer src/cppconv/grammarcpreproc_lexer.d",
-        "\"$DUB\" run dparsergen:generator -- src/cppconv/grammarcpp.ebnf --package cppconv --glr --mergesimilarstates --optempty --glr-global-cache -o src/cppconv/grammarcpp.d --lexer src/cppconv/grammarcpp_lexer.d"
+        "\"$DUB\" run dparsergen:generator -- src/cppconv/grammarcpp.ebnf --package cppconv --glr --mergesimilarstates --optempty --glr-global-cache -o src/cppconv/grammarcpp.d --lexer src/cppconv/grammarcpp_lexer.d",
+        "\"$DUB\" run dparsergen:generator -- src/cppconv/grammartreematching.ebnf --package cppconv -o src/cppconv/grammartreematching.d --lexer src/cppconv/grammartreematching_lexer.d"
     ]
 }

@@ -7,6 +7,7 @@
 module cppconv.treematching;
 import cppconv.cppparserwrapper;
 import dparsergen.core.grammarinfo;
+import dparsergen.core.nodetype;
 import dparsergen.core.utils;
 import cppconv.codewriter;
 import std.algorithm;
@@ -325,4 +326,309 @@ void matchTree(Funcs...)(Tree tree, Tree realParent)
 {
     mixin(generateMatchTreeCode!Funcs());
     assert(false);
+}
+
+const(char)[] matchTreePatternGenCode(string pattern, immutable GrammarInfo* grammarInfo, bool debugWrite)
+{
+    import P = cppconv.grammartreematching;
+    static import cppconv.grammartreematching_lexer;
+    import dparsergen.core.dynamictree;
+    import dparsergen.core.location;
+
+    alias Location = LocationAll;
+    alias L = cppconv.grammartreematching_lexer.Lexer!Location;
+    alias Creator = DynamicParseTreeCreator!(P, Location, LocationRangeStartLength);
+    alias Tree = DynamicParseTree!(Location, LocationRangeStartLength);
+    alias nonterminalIDFor = P.nonterminalIDFor;
+
+    SymbolID[string] nonterminalByName;
+    foreach (i, info; grammarInfo.allNonterminals)
+    {
+        nonterminalByName[info.name] = cast(SymbolID) (i + grammarInfo.startNonterminalID);
+    }
+
+    auto creator = new Creator;
+    auto tree = P.parse!(Creator, L, "PatternOr")(pattern, creator);
+
+    CodeWriter code;
+    int id;
+
+    bool isProductionPossible(Tree[] childPatterns, size_t wildcard2Pos, immutable Production* production)
+    {
+        if (wildcard2Pos == size_t.max && production.symbols.length != childPatterns.length)
+            return false;
+        if (wildcard2Pos != size_t.max && production.symbols.length < childPatterns.length)
+            return false;
+        code.writeln("    // Check production ", production.nonterminalID, " ", production.symbols.length);
+        foreach (i; 0 .. childPatterns.length)
+        {
+            auto c = childPatterns[i].childs[$ - 1];
+            size_t k = i;
+            if (i >= wildcard2Pos)
+            {
+                k = i + production.symbols.length - childPatterns.length;
+            }
+            if (c.nonterminalID == nonterminalIDFor!"PatternString")
+            {
+                if (production.symbols[i].isToken)
+                {
+                    auto tokenInfo = &grammarInfo.allTokens[production.symbols[k].toTokenID.id];
+                    code.writeln("    // Symbol ", i, " token ", tokenInfo.name, " ", c.childs[0].content);
+                    if (tokenInfo.name.startsWith("\"") && tokenInfo.name != c.childs[0].content)
+                        return false;
+                }
+                else
+                {
+                    auto nonterminalInfo = &grammarInfo.allNonterminals[production.symbols[k].toNonterminalID.id];
+                    code.writeln("    // Symbol ", i, " nonterminal as string ", nonterminalInfo.name, " ", c.childs[0].content);
+                    if ((nonterminalInfo.flags & NonterminalFlags.string) == 0)
+                        return false;
+                }
+            }
+            else if (c.nonterminalID == nonterminalIDFor!"PatternNonterminal")
+            {
+                if (production.symbols[i].isToken)
+                {
+                    return false;
+                }
+                auto nonterminalInfo = &grammarInfo.allNonterminals[production.symbols[k].toNonterminalID.id];
+                code.writeln("    // Symbol ", i, " nonterminal ", nonterminalInfo.name, " ", c.childs[0].content);
+                if ((nonterminalInfo.flags & NonterminalFlags.nonterminal) == 0)
+                    return false;
+                if (!nonterminalInfo.buildNonterminals.canFind(nonterminalByName[c.childs[0].content]))
+                    return false;
+            }
+            else if (c.nonterminalID == nonterminalIDFor!"PatternArray")
+            {
+                if (production.symbols[i].isToken)
+                {
+                    return false;
+                }
+                auto nonterminalInfo = &grammarInfo.allNonterminals[production.symbols[k].toNonterminalID.id];
+                code.writeln("    // Symbol ", i, " array ", nonterminalInfo.name);
+                if ((nonterminalInfo.flags & NonterminalFlags.array) == 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    string visitPattern(Tree tree, string paramCode)
+    {
+        if (tree.nonterminalID == nonterminalIDFor!"PatternOr")
+            return "(" ~ visitPattern(tree.childs[0], paramCode) ~ " || " ~ visitPattern(tree.childs[2], paramCode) ~ ")";
+
+        int idHere = id;
+        id++;
+
+        string savedName;
+        if (tree.childs.length == 3)
+            savedName = tree.childs[0].content;
+
+        string funcName;
+        if (savedName)
+            funcName = "match" ~ savedName;
+        else
+            funcName = text("match", idHere);
+
+        tree = tree.childs[$ - 1];
+
+        Tree[] childPatterns;
+        size_t wildcard2Pos = size_t.max;
+        void addChildPatterns(Tree[] childs)
+        {
+                foreach (c; childs)
+                {
+                    if (c !is null && !c.isToken)
+                    {
+                        if (c.childs[$ - 1].nonterminalID == nonterminalIDFor!"PatternWildcard2")
+                        {
+                            if (wildcard2Pos != size_t.max)
+                                throw new Exception("Multiple \"...\" not supported.");
+                            wildcard2Pos = childPatterns.length;
+                        }
+                        else
+                            childPatterns ~= c;
+                    }
+                }
+        }
+        if (tree.nonterminalID == nonterminalIDFor!"PatternNonterminal")
+        {
+            if (tree.childs.length > 1)
+            {
+                addChildPatterns(tree.childs[2].childs);
+            }
+        }
+        else if (tree.nonterminalID == nonterminalIDFor!"PatternArray")
+        {
+            addChildPatterns(tree.childs[1].childs);
+        }
+        else if (!savedName && tree.nonterminalID == nonterminalIDFor!"PatternString")
+        {
+            return text("(", paramCode, ".isToken && ", paramCode, ".content == ", tree.childs[0].content, ")");
+        }
+        else if (!savedName && tree.nonterminalID == nonterminalIDFor!"PatternWildcard")
+        {
+            return text("true");
+        }
+
+        string[] childCodes;
+        foreach (i, c; childPatterns)
+            childCodes ~= visitPattern(c,
+                i >= wildcard2Pos
+                    ? text("tree.childs[$ - ", childPatterns.length - i, "]")
+                    : text("tree.childs[", i, "]"));
+
+        if (savedName)
+            code.writeln("Tree saved", savedName, ";");
+        code.writeln("// ", tree.toString());
+        code.writeln("bool ", funcName, "(Tree tree)");
+        code.writeln("{");
+        if (debugWrite)
+        {
+            code.writeln("    import std.stdio: writeln;");
+            code.writeln("    if (tree.isValid)");
+            code.writeln("    {");
+            code.writeln("        writeln(\"start ", funcName, " \", tree.nodeType, \" \", tree.nameOrContent, \" \", tree.nonterminalID, \" childs.length=\", tree.childs.length, \" \", tree);");
+            code.writeln("        foreach (i, child; tree.childs)");
+            code.writeln("        {");
+            code.writeln("            if (child.isValid)");
+            code.writeln("                writeln(\"  childs[\", i, \"]: \", child.nodeType, \" \", child.nameOrContent, \" \", child.nonterminalID, \" \", child);");
+            code.writeln("            else");
+            code.writeln("                writeln(\"  childs[\", i, \"]: null\");");
+            code.writeln("        }");
+            code.writeln("    }");
+            code.writeln("    else");
+            code.writeln("        writeln(\"start ", funcName, " null\");");
+        }
+        if (tree.nonterminalID == nonterminalIDFor!"PatternString")
+        {
+            code.writeln("    if (!tree.isValid || !tree.isToken || tree.content != ", tree.childs[0].content, ")");
+            code.writeln("        return false;");
+        }
+        else if (tree.nonterminalID == nonterminalIDFor!"PatternNonterminal")
+        {
+            SymbolID nonterminalID = SymbolID.max;
+            if (tree.childs[0].content in nonterminalByName)
+                nonterminalID = nonterminalByName[tree.childs[0].content];
+            else
+                throw new Exception("Unknown nonterminal " ~ tree.childs[0].content);
+            immutable Nonterminal *nonterminalInfo = &grammarInfo.allNonterminals[nonterminalID - grammarInfo.startNonterminalID];
+            code.writeln("    if (!tree.isValid || tree.nodeType != NodeType.nonterminal || tree.nonterminalID != ", nonterminalID, " /* ", tree.childs[0].content, " */)");
+            code.writeln("        return false;");
+            if (tree.childs.length > 1)
+            {
+                bool possible;
+                foreach (productionID; nonterminalInfo.firstProduction .. nonterminalInfo.firstProduction + nonterminalInfo.numProductions)
+                {
+                    immutable production = &grammarInfo.allProductions[productionID - grammarInfo.startProductionID];
+                    assert(production.nonterminalID.id == nonterminalID);
+                    if (isProductionPossible(childPatterns, wildcard2Pos, production))
+                        possible = true;
+                }
+                if (!possible)
+                    throw new Exception("No possible production found for pattern with nonterminal " ~ tree.childs[0].content);
+                code.writeln("    if (tree.childs.length ", wildcard2Pos != size_t.max ? "<" : "!=", " ", childCodes.length, ")");
+                code.writeln("        return false;");
+                foreach (i, childCode; childCodes)
+                {
+                    if (childCode != "true")
+                    {
+                        code.writeln("    // ", childPatterns[i].toString());
+                        code.writeln("    if (!", childCode, ")");
+                        code.writeln("        return false;");
+                    }
+                }
+            }
+        }
+        else if (tree.nonterminalID == nonterminalIDFor!"PatternArray")
+        {
+            if (childCodes.length == 0)
+            {
+                code.writeln("    if (tree.isValid)");
+                code.writeln("    {").incIndent;
+            }
+            code.writeln("    if (!tree.isValid || tree.nodeType != NodeType.array)");
+            code.writeln("        return false;");
+            code.writeln("    if (tree.childs.length ", wildcard2Pos != size_t.max ? "<" : "!=", " ", childCodes.length, ")");
+            code.writeln("        return false;");
+            foreach (i, childCode; childCodes)
+            {
+                if (childCode != "true")
+                {
+                    code.writeln("    // ", childPatterns[i].toString());
+                    code.writeln("    if (!", childCode, ")");
+                    code.writeln("        return false;");
+                }
+            }
+            if (childCodes.length == 0)
+            {
+                code.decIndent.writeln("    }");
+            }
+        }
+        else if (tree.nonterminalID == nonterminalIDFor!"PatternNull")
+        {
+            code.writeln("    if (tree.isValid)");
+            code.writeln("        return false;");
+        }
+        else if (tree.nonterminalID == nonterminalIDFor!"PatternWildcard")
+        {
+        }
+        else
+            assert(false, tree.name);
+        if (savedName)
+            code.writeln("    this.saved", savedName, " = tree;");
+        if (debugWrite)
+            code.writeln("    writeln(\"end ", funcName, " \");");
+        code.writeln("    return true;");
+        code.writeln("}\n");
+        return text(funcName, "(", paramCode, ")");
+    }
+    string firstCode = visitPattern(tree, "tree");
+    code.writeln("bool doMatch(Tree tree)");
+    code.writeln("{");
+    code.writeln("    return ", firstCode, ";");
+    code.writeln("}");
+
+    return code.data;
+}
+
+template TreePattern(alias GrammarModule, Tree)
+{
+    struct PatternMatcher(string pattern, bool debugWrite = false)
+    {
+        mixin(matchTreePatternGenCode(pattern, &GrammarModule.grammarInfo, debugWrite));
+
+        bool hasMatch;
+
+        @safe bool opCast(T:bool)() const nothrow
+        {
+            return hasMatch;
+        }
+
+        PatternMatcher opBinary(string op)(bool rhs) if (op == "&")
+        {
+            if (!hasMatch)
+                return this;
+            if (rhs)
+                return this;
+            return PatternMatcher.init;
+        }
+    }
+
+    PatternMatcher!pattern matchTreePattern(string pattern)(Tree tree)
+    {
+        PatternMatcher!pattern matcher;
+        matcher.hasMatch = matcher.doMatch(tree);
+        return matcher;
+    }
+
+    PatternMatcher!(pattern, true) matchTreePatternDebug(string pattern)(Tree tree)
+    {
+        pragma(msg, matchTreePatternGenCode(pattern, &GrammarModule.grammarInfo, true));
+
+        PatternMatcher!(pattern, true) matcher;
+        matcher.hasMatch = matcher.doMatch(tree);
+        return matcher;
+    }
 }

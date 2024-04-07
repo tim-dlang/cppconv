@@ -13,6 +13,7 @@ import cppconv.cppsemantic;
 import cppconv.cpptype;
 import cppconv.declarationpattern;
 import cppconv.filecache;
+import cppconv.grammarcpp;
 import cppconv.logic;
 import cppconv.macrodeclaration;
 import cppconv.mergedfile;
@@ -20,6 +21,7 @@ import cppconv.preproc;
 import cppconv.preprocparserwrapper;
 import cppconv.runcppcommon;
 import cppconv.sourcetokens;
+import cppconv.treematching;
 import cppconv.treemerging;
 import cppconv.utils;
 import dparsergen.core.nodetype;
@@ -37,6 +39,9 @@ import std.typecons;
 
 alias nonterminalIDFor = ParserWrapper.nonterminalIDFor;
 alias nonterminalIDAmong = ParserWrapper.nonterminalIDAmong;
+
+alias matchTreePattern = TreePattern!(cppconv.grammarcpp, Tree).matchTreePattern;
+alias matchTreePatternDebug = TreePattern!(cppconv.grammarcpp, Tree).matchTreePatternDebug;
 
 alias TypedefType = cppconv.cppsemantic.TypedefType;
 
@@ -1872,11 +1877,10 @@ void isStatementEndUnreachableImpl(Tree tree, immutable(Formula)* condition,
     }
     else if (tree.nonterminalID == nonterminalIDFor!"IterationStatement")
     {
-        if ((tree.childs.length == 8 && tree.childs[0].content == "for" && !tree.childs[3].isValid)
-                || (tree.childs.length == 5
-                    && tree.childs[0].nameOrContent == "while"
-                    && tree.childs[2].nameOrContent == "Literal"
-                    && tree.childs[2].childs[0].nameOrContent == "1"))
+        if (auto match = tree.matchTreePattern!q{
+                IterationStatement("for", "(", *, null, ";", *, ")", *)
+                | IterationStatement("while", "(", Literal("1"), ")", *)
+            })
         {
             immutable(Formula)* hasBreak = semantic.logicSystem.false_;
             immutable(Formula)* hasSwitch = semantic.logicSystem.false_;
@@ -3099,8 +3103,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         parseTreeToCodeTerminal!T(code, ";");
         //code.writeln();
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"IterationStatement"
-            && tree.childs.length == 2 && tree.childs[1].nameOrContent == ";")
+    else if (auto match = tree.matchTreePattern!q{
+            IterationStatement(*, ";")
+        })
     {
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
         skipToken(code, data, tree.childs[1]);
@@ -3225,8 +3230,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             }
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"SelectionStatement"
-            && tree.childs[0].nameOrContent == "if" && tree.childs[1].nameOrContent == "constexpr")
+    else if (auto match = tree.matchTreePattern!q{
+            SelectionStatement("if", "constexpr", ...)
+        })
     {
         code.write("static ");
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
@@ -3236,8 +3242,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"ClassHead"
-            || tree.nonterminalID == nonterminalIDFor!"EnumHead")
+    else if (tree.nonterminalID.nonterminalIDAmong!("ClassHead", "EnumHead"))
     {
         string name = chooseDeclarationName(data.currentDeclaration, data);
 
@@ -3371,8 +3376,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
         code.write(suffix);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression" && tree.childs[0].nameOrContent.among("sizeof",
-            "alignof", "__alignof__") && tree.childs.length == 4)
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("sizeof" | "alignof" | "__alignof__", "(", *, ")")
+        })
     {
         // "sizeof" "(" TypeId ")"
         assert(tree.childs[1].content == "(");
@@ -3394,8 +3400,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         else
             parseTreeToCodeTerminal!T(code, ".alignof");
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
-            && tree.childs[0].nameOrContent == "sizeof" && tree.childs.length == 2)
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("sizeof", *)
+        })
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
 
@@ -3453,13 +3460,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         codeWrapper.end(code, condition);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
-            && tree.childs[0].nameOrContent == "__builtin_offsetof")
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("__builtin_offsetof", "(", *, ",", *, ")")
+        })
     {
-        // "__builtin_offsetof" "(" TypeId "," Identifier ")"
-        assert(tree.childs[1].content == "(");
-        assert(tree.childs[5].content == ")");
-
         auto type = semantic.extraInfo(tree.childs[2]).type;
         skipToken(code, data, tree.childs[0]);
         skipToken(code, data, tree.childs[1]);
@@ -3483,10 +3487,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         parseTreeToCodeTerminal!T(code, ".offsetof");
         skipToken(code, data, tree.childs[5]);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
-            && tree.childs[0].nameOrContent == "__builtin_va_arg")
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("__builtin_va_arg", "(", *, ",", *, ")")
+        })
     {
-        // "__builtin_va_arg" "(" Expression "," TypeId ")"
         assert(tree.childs[1].content == "(");
         assert(tree.childs[5].content == ")");
 
@@ -3510,7 +3514,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"Literal" || tree.nonterminalID == nonterminalIDFor!"FloatLiteral"
+    else if (tree.nonterminalID.nonterminalIDAmong!("Literal", "FloatLiteral")
             || (tree.nonterminalID == nonterminalIDFor!"UserDefinedLiteral"
                 && tree.childs[0].nameOrContent.endsWith("i64")))
     {
@@ -3940,8 +3944,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             }
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PostfixExpression"
-            && tree.childs.length == 2 && tree.childs[1].nameOrContent.among("++", "--"))
+    else if (auto match = tree.matchTreePattern!q{
+            PostfixExpression(*, "++" | "--")
+        })
     {
         Tree next = tree.childs[0];
         while (next.nonterminalID == nonterminalIDFor!"PrimaryExpression" && next.childs.length == 3)
@@ -3973,8 +3978,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
-            && tree.childs.length == 2 && tree.childs[0].nameOrContent.among("++", "--"))
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("++" | "--", *)
+        })
     {
         if (semantic.extraInfo2(tree.childs[1]).acessingBitField)
         {
@@ -3997,11 +4003,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PostfixExpression"
-            && tree.childs[1].nameOrContent == "(" && (!tree.childs[2].isValid
-                || tree.childs[2].childs.length == 0) && tree.childs[0].nameOrContent == "PostfixExpression"
-            && tree.childs[0].childs[1].nameOrContent.among(".", "->")
-            && tree.childs[0].childs[2].nameOrContent == "PseudoDestructorName")
+    else if (auto match = tree.matchTreePattern!q{
+            PostfixExpression(PostfixExpression(*, "." | "->", PseudoDestructorName), "(", [], ")")
+        })
     {
         code.write("destroy!false");
         if (tree.childs[0].childs[0].nameOrContent != "PrimaryExpression"
@@ -4014,8 +4018,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         skipToken(code, data, tree.childs[0].childs[1], false, true);
         writeComments(code, data, tree.end, true);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PostfixExpression"
-            && tree.childs[1].nameOrContent.among(".", "->"))
+    else if (auto match = tree.matchTreePattern!q{
+            PostfixExpression(*, "." | "->", ...)
+        })
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
 
@@ -4062,15 +4067,17 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         if (data.sourceTokenManager.tokensLeft.data.length > 0)
             writeComments(code, data, tree.end, true);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"Designator"
-            && tree.childs[0].nameOrContent.among("."))
+    else if (auto match = tree.matchTreePattern!q{
+            Designator(".", *)
+        })
     {
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
         skipToken(code, data, tree.childs[1]);
         code.write(replaceKeywords(tree.childs[1].content));
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PostfixExpression"
-            && tree.childs[1].nameOrContent.among("["))
+    else if (auto match = tree.matchTreePattern!q{
+            PostfixExpression(*, "[", *, "]")
+        })
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
         foreach (combination; iterateCombinations())
@@ -4213,15 +4220,17 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"JumpStatement2"
-            && tree.childs[0].nameOrContent == "goto")
+    else if (auto match = tree.matchTreePattern!q{
+            JumpStatement2("goto", *)
+        })
     {
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
         skipToken(code, data, tree.childs[1]);
         parseTreeToCodeTerminal!T(code, replaceKeywords(tree.childs[1].content));
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PrimaryExpression"
-            && tree.childs[0].nameOrContent == "(")
+    else if (auto match = tree.matchTreePattern!q{
+            PrimaryExpression("(", *, ")")
+        })
     {
         bool needWrapper = parent.nonterminalID == nonterminalIDFor!"ExpressionStatement"
             && !tree.childs[1].nonterminalID.nonterminalIDAmong!("CastExpression",
@@ -4534,8 +4543,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     else if (tree.nonterminalID == nonterminalIDFor!"AccessSpecifierAnnotation")
     {
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PostfixExpression"
-            && tree.childs.length == 7 && tree.childs[1].nameOrContent == "<")
+    else if (auto match = tree.matchTreePattern!q{
+            PostfixExpression(*, "<", *, ">", "(", *, ")")
+        })
     {
         foreach (i, c; tree.childs)
         {
@@ -4553,8 +4563,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"PrimaryExpression"
-            && tree.childs[0].nameOrContent == "this")
+    else if (auto match = tree.matchTreePattern!q{
+            PrimaryExpression("this")
+        })
     {
         skipToken(code, data, tree.childs[0]);
         if (parent.isValid && parent.nameOrContent == "PostfixExpression"
@@ -4566,8 +4577,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         else
             code.write("this");
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
-            && tree.childs.length == 2 && tree.childs[0].nameOrContent == "*")
+    else if (auto match = tree.matchTreePattern!q{
+            UnaryExpression("*", *)
+        })
     {
         if (tree.childs[1].nameOrContent == "PrimaryExpression"
                 && tree.childs[1].childs[0].nameOrContent == "this" && data.currentClassDeclaration !is null
@@ -4583,9 +4595,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"ExpressionStatement"
-            && tree.childs[0].nameOrContent == "PostfixExpression"
-            && tree.childs[0].childs.length == 4 && tree.childs[0].childs[1].nameOrContent == "(")
+    else if (auto match = tree.matchTreePattern!q{
+            ExpressionStatement(PostfixExpression(*, "(", *, ")"), ";")
+        })
     {
         Tree lhs = tree.childs[0].childs[0];
         while (lhs.nameOrContent == "PostfixExpression"
@@ -4626,13 +4638,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             }
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"JumpStatement"
-            && tree.childs[0].nameOrContent == "JumpStatement2"
-            && tree.childs[0].childs[0].nameOrContent == "return"
-            && tree.childs[0].childs[1].isValid
-            && tree.childs[0].childs[1].nameOrContent == "PostfixExpression"
-            && tree.childs[0].childs[1].childs.length == 4
-            && tree.childs[0].childs[1].childs[1].nameOrContent == "(")
+    else if (auto match = tree.matchTreePattern!q{
+            JumpStatement(JumpStatement2("return", PostfixExpression(*, "(", *, ")")), ";")
+        })
     {
         if (isPostfixExpressionWithRValueRefs(tree.childs[0].childs[1], data))
         {
@@ -4663,23 +4671,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             }
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"TryBlock"
-            && tree.childs[1].nonterminalID == nonterminalIDFor!"CompoundStatement"
-            && tree.childs[2].nodeType == NodeType.array
-            && tree.childs[2].childs.length == 1
-            && tree.childs[2].childs[0].nameOrContent == "Handler"
-            && tree.childs[2].childs[0].childs[2].nameOrContent == "ExceptionDeclaration"
-            && tree.childs[2].childs[0].childs[2].childs[0].nameOrContent == "..."
-            && tree.childs[2].childs[0].childs[$ - 1].nonterminalID == nonterminalIDFor!"CompoundStatement"
-            && tree.childs[2].childs[0].childs[$ - 1].childs[1].nodeType == NodeType.array
-            && tree.childs[2].childs[0].childs[$ - 1].childs[1].childs.length
-            && tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[$ - 1].nonterminalID == nonterminalIDFor!"Statement"
-            && tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[$ - 1]
-                .childs[1].nonterminalID == nonterminalIDFor!"ExpressionStatement"
-            && tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[$ - 1]
-                .childs[1].childs[0].nonterminalID == nonterminalIDFor!"ThrowExpression"
-            && !tree.childs[2].childs[0].childs[$ - 1].childs[1]
-                .childs[$ - 1].childs[1].childs[0].childs[1].isValid)
+    else if (auto match = tree.matchTreePattern!q{
+        TryBlock("try", CompoundStatement, [
+                h = Handler("catch", "(", ExceptionDeclaration("..."), ")",
+                    c = CompoundStatement("{", [..., s = Statement(*, ExpressionStatement(ThrowExpression("throw", null), ";"))], "}")
+                )
+            ]
+        )
+        })
     {
         skipToken(code, data, tree.childs[0], false, true);
 
@@ -4688,8 +4687,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             currentScope2 = currentScope2.childScopeByTree[tree.childs[1]];
         Scope currentScope3 = currentScope;
         if (currentScope3 !is null
-                && tree.childs[2].childs[0].childs[$ - 1] in currentScope3.childScopeByTree)
-            currentScope3 = currentScope3.childScopeByTree[tree.childs[2].childs[0].childs[$ - 1]];
+                && match.savedc in currentScope3.childScopeByTree)
+            currentScope3 = currentScope3.childScopeByTree[match.savedc];
 
         parseTreeToDCode(code, data, tree.childs[1].childs[0], condition, currentScope2); // {
         writeComments(code, data,
@@ -4713,14 +4712,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             getLastLineIndent(code2, indent);
             code3.write(indent);
         }
-        skipToken(code3, data, tree.childs[2].childs[0].childs[0], false, true); // catch
+        skipToken(code3, data, match.savedh.childs[0], false, true); // catch
         code3.write("scope(failure)");
-        skipToken(code3, data, tree.childs[2].childs[0].childs[1], false, true); // (
-        skipToken(code3, data, tree.childs[2].childs[0].childs[2].childs[0], false, true); // ...
-        skipToken(code3, data, tree.childs[2].childs[0].childs[3], false, true); // )
+        skipToken(code3, data, match.savedh.childs[1], false, true); // (
+        skipToken(code3, data, match.savedh.childs[2].childs[0], false, true); // ...
+        skipToken(code3, data, match.savedh.childs[3], false, true); // )
         parseTreeToDCode(code3, data,
-                tree.childs[2].childs[0].childs[$ - 1].childs[0], condition, currentScope3); // {
-        foreach (c; tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[0 .. $ - 1])
+                match.savedc.childs[0], condition, currentScope3); // {
+        foreach (c; match.savedc.childs[1].childs[0 .. $ - 1])
         {
             parseTreeToDCode(code3, data, c, condition, currentScope3);
             writeComments(code3, data,
@@ -4728,18 +4727,20 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
 
         data.sourceTokenManager.collectTokens(
-                tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[$ - 1].end);
+                match.saveds.end);
         data.sourceTokenManager.collectTokensUntilLineEnd(
-                tree.childs[2].childs[0].childs[$ - 1].childs[1].childs[$ - 1].end, condition);
+                match.saveds.end, condition);
 
         parseTreeToDCode(code3, data,
-                tree.childs[2].childs[0].childs[$ - 1].childs[2], condition, currentScope3); // }
+                match.savedc.childs[2], condition, currentScope3); // }
         code3.decIndent;
 
         code.writeln(code3.data);
         code.write(code2.data);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"DeleteExpression" && tree.childs.length == 3)
+    else if (auto match = tree.matchTreePattern!q{
+            DeleteExpression(*, "delete", *)
+        })
     {
         skipToken(code, data, tree.childs[1], false, true);
         code.write("cpp_delete(");
@@ -4845,13 +4846,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
         parseTreeToDCode(code, data, tree.childs[2], condition, currentScope);
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"OperatorFunctionId" && tree.childs.length == 2
-            && tree.childs[1].nonterminalID == nonterminalIDFor!"OverloadableOperator")
+    else if (auto match = tree.matchTreePattern!q{
+            OperatorFunctionId(*, OverloadableOperator)
+        })
     {
         string opName;
         if (tree.childs[1].childs.length == 2
-                && tree.childs[1].childs[0].content == "[" && tree.childs[1].childs[1].content
-                == "]")
+                && tree.childs[1].childs[0].content == "["
+                && tree.childs[1].childs[1].content == "]")
             opName = "opIndex";
         if (opName.length)
         {
@@ -5669,25 +5671,22 @@ void writeParam(ref CodeWriter code, ref ParamData p, ref bool needsComma,
                 if (skipInitializer)
                     code.write("+/");
             }
-            else if (d2.tree.nonterminalID == nonterminalIDFor!"ParameterDeclaration"
-                    && d2.tree.childs.length == 4 && isReference
-                    && d2.tree.childs[3].nonterminalID == nonterminalIDFor!"InitializerClause"
-                    && d2.tree.childs[3].childs[0].nonterminalID == nonterminalIDFor!"PostfixExpression"
-                    && (!d2.tree.childs[3].childs[0].childs[2].isValid
-                        || d2.tree.childs[3].childs[0].childs[2].childs.length == 0))
+            else if (auto match = d2.tree.matchTreePattern!q{
+                    ParameterDeclaration(*, *, *, InitializerClause(e = PostfixExpression(c = *, "(", [], ")")))
+                } & isReference)
             {
                 parseTreeToDCode(code, data, d2.tree.childs[2],
                         semantic.logicSystem.and(condition2, condition4), currentScope);
                 if (data.sourceTokenManager.tokensLeft.data.length > 0)
-                    writeComments(code, data, d2.tree.childs[3].childs[0].childs[0].start);
+                    writeComments(code, data, match.savedc.start);
                 code.write("globalInitVar!");
-                bool needsParens = d2.tree.childs[3].childs[0].childs[0].name != "NameIdentifier";
+                bool needsParens = match.savedc.name != "NameIdentifier";
                 if (needsParens)
                     code.write("(");
-                parseTreeToDCode(code, data, d2.tree.childs[3].childs[0].childs[0],
+                parseTreeToDCode(code, data, match.savedc,
                         semantic.logicSystem.and(condition2, condition4), currentScope);
-                skipToken(code, data, d2.tree.childs[3].childs[0].childs[1]);
-                skipToken(code, data, d2.tree.childs[3].childs[0].childs[3]);
+                skipToken(code, data, match.savede.childs[1]);
+                skipToken(code, data, match.savede.childs[3]);
                 if (needsParens)
                     code.write(")");
             }
