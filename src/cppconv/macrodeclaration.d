@@ -219,6 +219,10 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
 
             instance.macroTrees = macroTrees;
 
+            foreach (t; instance.macroTrees)
+                if (t in data.macroReplacement && data.macroReplacement[t] !is null)
+                    instance.extraDeps ~= data.macroReplacement[t];
+
             if (paramName.length)
             {
                 continue;
@@ -314,8 +318,6 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     {
                         p.macroTranslation = MacroTranslation.builtin;
                     }
-                if (instance.macroTrees[0] in data.macroReplacement)
-                    instance.extraDeps ~= data.macroReplacement[instance.macroTrees[0]];
                 data.macroReplacement[instance.macroTrees[0]] = instance;
                 instance.macroTranslation = MacroTranslation.builtin;
             }
@@ -342,8 +344,6 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                         else
                             p.macroTranslation = MacroTranslation.enumValue;
                     }
-                if (instance.macroTrees[0] in data.macroReplacement)
-                    instance.extraDeps ~= data.macroReplacement[instance.macroTrees[0]];
                 data.macroReplacement[instance.macroTrees[0]] = instance;
                 if (instance.macroTrees[0].nonterminalID == nonterminalIDFor!"TypeId")
                     instance.macroTranslation = MacroTranslation.alias_;
@@ -355,8 +355,6 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     && macroTrees.length == 1
                     && isTreeGlobalReference(macroTrees[0], mergedSemantic))
             {
-                if (instance.macroTrees[0] in data.macroReplacement)
-                    instance.extraDeps ~= data.macroReplacement[instance.macroTrees[0]];
                 data.macroReplacement[instance.macroTrees[0]] = instance;
                 instance.macroTranslation = MacroTranslation.alias_;
             }
@@ -366,9 +364,6 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                 foreach (ps; instance.params)
                     foreach (p; ps.instances)
                         p.macroTranslation = MacroTranslation.mixin_;
-                foreach (t; instance.macroTrees)
-                    if (t in data.macroReplacement && data.macroReplacement[t]!is null)
-                        instance.extraDeps ~= data.macroReplacement[t];
                 foreach (t; instance.macroTrees)
                     data.macroReplacement[t] = instance;
                 instance.macroTranslation = MacroTranslation.mixin_;
