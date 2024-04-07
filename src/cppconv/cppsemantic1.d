@@ -1695,7 +1695,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         runSemantic(semantic, tree.childs[2], tree, condition);
 
         Tree parentX = realParent;
-        while (parentX.isValid && parentX.nonterminalID.nonterminalIDAmong!("NestedNameSpecifier"))
+        while (parentX.isValid && parentX.nonterminalID.nonterminalIDAmong!("NestedNameSpecifier", "NestedNameSpecifierHead"))
             parentX = getRealParent(parentX, semantic);
         bool inDeclarator = parentX.isValid && parentX.nonterminalID == nonterminalIDFor!"DeclaratorId";
 
@@ -1791,20 +1791,22 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             symbolNames) => nonterminalName == "NestedNameSpecifier")) {
         foreach (i, ref c; tree.childs)
         {
-            if (tree.childs.length >= 3 && i == tree.childs.length - 2)
-            {
-                if (tree.childs[0].nonterminalID == nonterminalIDFor!"NestedNameSpecifier"
-                    && tree.childs[0].childs.length == 1)
-                    semantic.extraInfo(tree.childs[i])
-                        .contextType = QualType(semantic.getNamespaceType(null));
-                else
-                    semantic.extraInfo(tree.childs[i])
-                        .contextType = semantic.extraInfo(tree.childs[0]).type;
-            }
             runSemantic(semantic, c, tree, condition);
         }
         if (tree.childs.length >= 2)
             updateType(extraInfoHere.type, semantic.extraInfo(tree.childs[$ - 2]).type);
+    }, (MatchProductions!((p, nonterminalName,
+            symbolNames) => nonterminalName == "NestedNameSpecifierHead")) {
+        runSemantic(semantic, tree.childs[0], tree, condition);
+        if (tree.childs[0].nonterminalID == nonterminalIDFor!"NestedNameSpecifier"
+            && tree.childs[0].childs.length == 1)
+            semantic.extraInfo(tree.childs[$ - 1])
+                .contextType = QualType(semantic.getNamespaceType(null));
+        else
+            semantic.extraInfo(tree.childs[$ - 1])
+                .contextType = semantic.extraInfo(tree.childs[0]).type;
+        runSemantic(semantic, tree.childs[$ - 1], tree, condition);
+        updateType(extraInfoHere.type, semantic.extraInfo(tree.childs[$ - 1]).type);
     }, (MatchProductions!((p, nonterminalName,
             symbolNames) => nonterminalName == "QualifiedId" && symbolNames.length == 3)) {
         // NestedNameSpecifier "template"? UnqualifiedId

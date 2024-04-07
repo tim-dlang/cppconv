@@ -4523,21 +4523,15 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             return;
         }
 
-        if (tree.childs.length >= 3)
-            parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
-
         if (tree.childs.length >= 2)
         {
             if (semantic.extraInfo(tree.childs[$ - 2]).type.kind == TypeKind.namespace)
                 return;
-
-            foreach (i, c; tree.childs[$ - 2 .. $])
-            {
-                parseTreeToDCode(code, data, c, condition, currentScope);
-            }
         }
-        else
-            parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
+        foreach (i, c; tree.childs)
+        {
+            parseTreeToDCode(code, data, c, condition, currentScope);
+        }
     }
     else if (tree.nonterminalID == nonterminalIDFor!"AccessSpecifierAnnotation")
     {
@@ -5747,8 +5741,8 @@ Scope getContextScope(Tree tree, ref IteratePPVersions ppVersion,
         if (nsType.kind.among(TypeKind.namespace, TypeKind.record))
             contextScope = scopeForRecord(nsType.type, ppVersion, semantic);
     }
-    if (parentX.isValid && parentX.nonterminalID == nonterminalIDFor!"NestedNameSpecifier"
-            && parentX.childs.length >= 3 && indexInParentX == parentX.childs.length - 2)
+    if (parentX.isValid && parentX.nonterminalID == nonterminalIDFor!"NestedNameSpecifierHead"
+            && indexInParentX == parentX.childs.length - 1)
     {
         Tree nsTree = ppVersion.chooseTree(parentX.childs[0]);
         QualType nsType = chooseType(semantic.extraInfo(nsTree).type, ppVersion, true);
@@ -5824,6 +5818,12 @@ void collectDeclSeqTokensImpl(ref CodeWriter code, Tree tree, ref IteratePPVersi
             code.write(".");
             writeComments(code, data, data.sourceTokenManager.collectTokens(tree.end), true);
         }
+    }
+    else if (tree.nonterminalID.nonterminalIDAmong!("NestedNameSpecifierHead"))
+    {
+        foreach (c; tree.childs)
+            collectDeclSeqTokensImpl(code, c, ppVersion, data,
+                    currentScope, true, needsValueClass);
     }
     else if (tree.nonterminalID.nonterminalIDAmong!("TypeKeyword", "ElaboratedTypeSpecifier",
             "ClassSpecifier", "EnumSpecifier", "NameIdentifier", "SimpleTemplateId"))

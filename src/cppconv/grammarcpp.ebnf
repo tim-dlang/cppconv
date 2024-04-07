@@ -57,8 +57,11 @@ NestedNameSpecifier
     | TypeName "::"
     //| NamespaceName "::"
     | DecltypeSpecifier "::"
-    | @inheritTag(NestedNameSpecifierStart) NestedNameSpecifier NameIdentifier "::"
-    | @inheritTag(NestedNameSpecifierStart) NestedNameSpecifier "template"? SimpleTemplateId "::"
+    | @inheritTag(NestedNameSpecifierStart) NestedNameSpecifierHead "::"
+    ;
+NestedNameSpecifierHead
+    = @inheritTag(NestedNameSpecifierStart) NestedNameSpecifier NameIdentifier
+    | @inheritTag(NestedNameSpecifierStart) NestedNameSpecifier "template"? SimpleTemplateId
     ;
 
 // Section expr.prim.lambda

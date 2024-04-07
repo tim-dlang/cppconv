@@ -2111,9 +2111,13 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     {
         handleConflictExpression(tree.childs[0], goodConditionStrict,
                 goodCondition, semantic, ConflictExpressionFlags.inType, contextType);
-        if (tree.childs.length >= 3)
-            handleConflictExpression(tree.childs[$ - 2], goodConditionStrict,
-                    goodCondition, semantic, ConflictExpressionFlags.inType, contextType);
+    }
+    else if (tree.nonterminalID == nonterminalIDFor!"NestedNameSpecifierHead")
+    {
+        handleConflictExpression(tree.childs[0], goodConditionStrict,
+                goodCondition, semantic, ConflictExpressionFlags.inType, contextType);
+        handleConflictExpression(tree.childs[$ - 1], goodConditionStrict,
+                goodCondition, semantic, ConflictExpressionFlags.inType, contextType);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"SimpleTemplateId")
     {
