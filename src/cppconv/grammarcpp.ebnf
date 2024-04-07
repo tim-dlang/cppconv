@@ -364,7 +364,7 @@ CommaExpression
     ;
 
 // Section expr.const
-ConstantExpression @directUnwrap
+ConstantExpression
     = <ConditionalExpression
     ;
 
