@@ -8,6 +8,9 @@
         "dparsergen:core": "~>0.1.2",
         "dparsergen:generator": "~>0.1.2"
     },
+    "toolchainRequirements": {
+        "frontend": ">=2.108"
+    },
     "sourceFiles": [
         "src/cppconv/grammarcpp.d",
         "src/cppconv/grammarcpp_lexer.d",
