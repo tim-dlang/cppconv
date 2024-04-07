@@ -2730,7 +2730,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
                 data.sourceTokenManager.collectTokens(tree.location.end);
             if (instance.macroTranslation == MacroTranslation.mixin_
-                    && (tree.name.endsWith("Statement") || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
+                    && (tree.name.endsWith("Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
                 parseTreeToCodeTerminal!T(code, ";");
             else
                 data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
