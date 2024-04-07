@@ -1378,7 +1378,10 @@ HandlerSeq @array
     | Handler HandlerSeq
     ;
 Handler
-    = "catch" "(" ExceptionDeclaration ")" CompoundStatement
+    = CatchHead CompoundStatement
+    ;
+CatchHead
+    = "catch" "(" ExceptionDeclaration ")"
     ;
 ExceptionDeclaration
     = AttributeSpecifierSeq TypeSpecifierSeq Declarator

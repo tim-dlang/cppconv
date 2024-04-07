@@ -4672,7 +4672,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     }
     else if (auto match = tree.matchTreePattern!q{
         TryBlock("try", CompoundStatement, [
-                h = Handler("catch", "(", ExceptionDeclaration("..."), ")",
+                h = Handler(CatchHead("catch", "(", ExceptionDeclaration("..."), ")"),
                     c = CompoundStatement("{", [..., s = Statement(*, ExpressionStatement(ThrowExpression("throw", null), ";"))], "}")
                 )
             ]
@@ -4711,11 +4711,11 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             getLastLineIndent(code2, indent);
             code3.write(indent);
         }
-        skipToken(code3, data, match.savedh.childs[0], false, true); // catch
+        skipToken(code3, data, match.savedh.childs[0].childs[0], false, true); // catch
         code3.write("scope(failure)");
-        skipToken(code3, data, match.savedh.childs[1], false, true); // (
-        skipToken(code3, data, match.savedh.childs[2].childs[0], false, true); // ...
-        skipToken(code3, data, match.savedh.childs[3], false, true); // )
+        skipToken(code3, data, match.savedh.childs[0].childs[1], false, true); // (
+        skipToken(code3, data, match.savedh.childs[0].childs[2].childs[0], false, true); // ...
+        skipToken(code3, data, match.savedh.childs[0].childs[3], false, true); // )
         parseTreeToDCode(code3, data,
                 match.savedc.childs[0], condition, currentScope3); // {
         foreach (c; match.savedc.childs[1].childs[0 .. $ - 1])
