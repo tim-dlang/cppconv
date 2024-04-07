@@ -419,6 +419,14 @@ struct LocationRangeX
         return context_;
     }
 
+    size_t contextDepth() const
+    {
+        if (context is null)
+            return 0;
+        else
+            return context.contextDepth;
+    }
+
     void setStartEnd(LocationX start, LocationX end)
     {
         findCommonLocationContext2(start, end);
@@ -619,6 +627,10 @@ void validateLocationContext(immutable(LocationContext)* locationContext)
         {
             assert(lc.prev.name.length && lc.prev.name != "^",
                     text(locationStr(LocationX(LocationN(), locationContext))));
+            lc = lc.prev;
+        }
+        else if (lc.name == "@semicolon")
+        {
             lc = lc.prev;
         }
         else if (lc.name.canFind("."))

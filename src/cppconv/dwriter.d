@@ -1382,6 +1382,8 @@ string chooseDeclarationName(Declaration d, DWriterData data)
                 continue;
             if (e.data.flags & DeclarationFlags.templateSpecialization)
                 continue;
+            if (e.data.flags & DeclarationFlags.forward)
+                continue;
             declarationData.chosenName = chooseDeclarationName(e.data, data);
             return declarationData.chosenName;
         }
@@ -4329,7 +4331,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         findRealDecl(tree, realDecl, condition, data, true /*allowType*/ , currentScope);
         foreach (e; realDecl.entries)
         {
-            if ((e.data.flags & DeclarationFlags.templateSpecialization) != 0)
+            if (e.data.flags & DeclarationFlags.templateSpecialization)
                 continue;
             foreach (combination; iterateCombinations())
             {
@@ -5263,6 +5265,19 @@ void writeComments(ref CodeWriter code, DWriterData data, SourceToken[] tokens,
         }
         return false;
     }
+
+    size_t posSemicolon = size_t.max;
+    size_t numNonWhitespace;
+    foreach (i, t; tokens)
+    {
+        if (t.isWhitespace)
+            continue;
+        if (t.token.nodeType == NodeType.token && t.token.content == ";")
+            posSemicolon = i;
+        numNonWhitespace++;
+    }
+    if (numNonWhitespace == 1 && posSemicolon != size_t.max)
+        tokens = tokens[0 .. posSemicolon] ~ tokens[posSemicolon + 1 .. $];
 
     if (!onlyComments)
     {

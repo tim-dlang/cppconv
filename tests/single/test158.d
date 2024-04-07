@@ -7,7 +7,7 @@ int process_head_file()
 {
 	enum COMP_INFO_FLAGS {
 		SOLID = 0x0040,
-	}/+ ; +/
+	}
 	return COMP_INFO_FLAGS.SOLID;
 }
 
@@ -20,7 +20,7 @@ int process_head_main()
 		SOLID = 0x0004,          /* solid archive */
 		PROTECT = 0x0008,        /* contains Recovery info */
 		LOCK = 0x0010,           /* readonly flag, not used */
-	}/+ ; +/
+	}
 	return MAIN_FLAGS.SOLID;
 }
 

@@ -461,7 +461,7 @@ int main(string[] args)
                 if (arr.length)
                 {
                     Tree tmp = createArrayTree(arr);
-                    normalizeLocations(tmp);
+                    normalizeLocations(tmp, context.locationContextMap);
                     buildLocations(context, m.locationContextInfoMap, tmp,
                             context.logicSystem.true_, mergedSemantic);
                 }

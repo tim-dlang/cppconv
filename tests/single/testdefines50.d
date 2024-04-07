@@ -14,6 +14,10 @@ extern(D) alias write2 = function string(string s)
 {
     return mixin(interpolateMixin(q{write_impl($(s))}));
 };
+extern(D) alias write2__1 = function string(string s)
+{
+    return mixin(interpolateMixin(q{write_impl($(s));}));
+};
 /+ #define write3(s) write_impl_debug(s, __FILE__, __LINE__) +/
 extern(D) alias write3 = function string(string s)
 {
@@ -71,7 +75,7 @@ void g(const(char)* str)
     	})(str);
 	static if (defined!"DEF")
 	{
-    	(mixin(write2(q{str})));
+    	mixin(write2__1(q{str}));
 	}
 	else
 	{

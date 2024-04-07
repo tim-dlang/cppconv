@@ -31,21 +31,16 @@ import cppconvhelpers;
   extern type __MATH_PRECNAME(function,suffix) args __THROW
 #define __MATHDECL_1(type, function, suffix, args) \
   __MATHDECL_1_IMPL(type, function, suffix, args) +/
-
 static if (defined!"DEF")
 {
 double cos(double __x);
-}
-static if (!defined!"DEF")
-{
-double cos(double __x);
-}
-static if (defined!"DEF")
-{
-/+ __MATHCALL_VEC (cos,, (_Mdouble_ __x)) +/double __cos(double __x);
+double __cos(double __x);
 }
 static if (!defined!"DEF")
 {
 double __cos(double __x);
+double cos(double __x);
 }
+
+/+ __MATHCALL_VEC (cos,, (_Mdouble_ __x)); +/
 

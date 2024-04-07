@@ -15,7 +15,7 @@ enum F2 = q{f()};
 /+ #define F4(i) f3(i) +/
 extern(D) alias F4 = function string(string i)
 {
-    return mixin(interpolateMixin(q{f3($(i))}));
+    return mixin(interpolateMixin(q{f3($(i));}));
 };
 }
 static if (!defined!"DEF")
@@ -88,10 +88,11 @@ void g4a(int i)
 {
 	static if (defined!"DEF")
 	{
-    	(mixin(F4(q{i})));
+    	mixin(F4(q{i}));
 	}
 	else
 	{
+
 	}
 }
 int g4b()
@@ -99,10 +100,11 @@ int g4b()
 	int i;
 	static if (defined!"DEF")
 	{
-    	(mixin(F4(q{i})));
+    	mixin(F4(q{i}));
 	}
 	else
 	{
+
 	}
 	return i;
 }

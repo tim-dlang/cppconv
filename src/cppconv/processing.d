@@ -667,7 +667,7 @@ void processMainFile(RealFilename inputFile, Context context,
 
         auto sw = StopWatch(AutoStart.no);
         sw.start();
-        normalizeLocations(pt);
+        normalizeLocations(pt, context.locationContextMap);
         buildLocations(context, context.locationContextInfoMap, pt, initialCondition);
         sw.stop();
         writeln("buildLocations ", sw.peek.total!"msecs", " ms");
@@ -676,14 +676,20 @@ void processMainFile(RealFilename inputFile, Context context,
     context.parsedTree = pt;
 }
 
-void normalizeLocations(Tree pt)
+void normalizeLocations(Tree pt, LocationContextMap locationContextMap)
 {
+    LocationRangeX lastLocation;
     LocationRangeX visitTree(Tree tree)
     {
         if (!tree.isValid)
             return LocationRangeX(LocationX.invalid);
 
+        LocationRangeX lastLocationBak = lastLocation;
+
+        bool endsWithSemicolon = tree.childs.length && tree.childs[$ - 1].isValid && tree.childs[$ - 1].isToken && tree.childs[$ - 1].content == ";";
+
         LocationRangeX commonLocation;
+        size_t numLocations;
         foreach (i, c; tree.childs)
         {
             if (!c.isValid)
@@ -704,10 +710,30 @@ void normalizeLocations(Tree pt)
             if (location.context is null)
                 continue;
 
+            numLocations++;
+
             if (commonLocation.context is null)
             {
                 commonLocation = location;
                 continue;
+            }
+
+            if (endsWithSemicolon && i == tree.childs.length - 1)
+            {
+                LocationRangeX a = commonLocation;
+                findCommonLocationContext(a, location);
+                a = commonLocation;
+                findCommonLocationContext(a, lastLocationBak);
+                if (location.context is c.location.context && location.context !is commonLocation.context
+                    && (numLocations > 2 || lastLocationBak.contextDepth > location.contextDepth))
+                {
+                    auto newContext = locationContextMap.getLocationContext(
+                        immutable(LocationContext)(commonLocation.context, commonLocation.start_ + commonLocation.inputLength_, LocationN.LocationDiff.init, "@semicolon",
+                        c.location.context.filename, c.location.context.isPreprocLocation));
+
+                    c.setStartEnd(LocationX(c.start.loc, newContext), LocationX(c.end.loc, newContext));
+                    continue;
+                }
             }
 
             findCommonLocationContext(commonLocation, location);
@@ -720,6 +746,7 @@ void normalizeLocations(Tree pt)
             return LocationRangeX(LocationX.invalid);
 
         tree.setStartEnd(commonLocation.start, commonLocation.end);
+        lastLocation = commonLocation;
         return commonLocation;
     }
 
@@ -746,8 +773,8 @@ void buildLocations(Context context, ref LocationContextInfoMap locationContextI
 
         LocationRangeX contextAbove(immutable(LocationContext)* lower, LocationRangeX upper)
         {
-            assert(upper.context.contextDepth >= lower.contextDepth);
-            while (upper.context.contextDepth > lower.contextDepth + 1)
+            assert(upper.contextDepth >= lower.contextDepth);
+            while (upper.contextDepth > lower.contextDepth + 1)
                 upper = upper.context.parentLocation;
             return upper;
         }
@@ -869,6 +896,7 @@ void buildLocations(Context context, ref LocationContextInfoMap locationContextI
             {
                 if (!c.isValid || c.start.context is null)
                     continue;
+
                 auto nextContext = contextAbove(locationContext, c.location);
                 if (nextContext.context is locationContext)
                 {

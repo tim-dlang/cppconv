@@ -12,7 +12,7 @@ struct S
 		void f()
 		{
 			void* g(.x);
-		}/+ ; +/
+		}
 	}
 extern static __gshared Inner	d1;
 static if (defined!"DEF")
