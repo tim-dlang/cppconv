@@ -49,7 +49,7 @@ to this sequence of directives:
 ```
 #undef NAME
 #if EXPR
-#define NAME EXPR
+#define NAME 1
 #endif
 ```
 Additionally the converter remembers the connection between NAME and EXPR.

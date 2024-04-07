@@ -1051,7 +1051,7 @@ void updateDefineSet(ParserWrapper)(DefineSets defineSets, immutable(Formula)* c
          * Equivalent to:
          * #undef NAME
          * #if EXPR
-         * #define NAME EXPR
+         * #define NAME 1
          * #endif
          */
         string def = l.childs[5].content;
