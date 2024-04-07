@@ -12,9 +12,9 @@ static if (!defined!"DEF")
 alias i = int;
 }
 
-__gshared const(int) s = mixin((!defined!"DEF") ? q{
-        cast(const(int)) (i.sizeof)
-    } : q{
+__gshared const(int) s = mixin((defined!"DEF") ? q{
         cast(const(int)) ((i). sizeof)
+    } : q{
+        cast(const(int)) (i.sizeof)
     });
 
