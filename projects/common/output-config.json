@@ -2,6 +2,8 @@
     "modulePatterns": [
     {"match": {"filename": "(?P<P>wine|glibc)/.*"}, "moduleName": "libc.%B", "extraPrefix": "%P"},
 
+    {"match": {"filename": "(?P<P>wine|glibc)/.*stdint.*"}, "moduleName": "libc.stdint", "extraPrefix": "%P"},
+
     {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
                 "memchr", "memcmp", "memcpy", "memicmp", "memmove", "memset",
                 "strcat", "strchr", "strcmp", "strcoll", "strcpy", "strcspn",
