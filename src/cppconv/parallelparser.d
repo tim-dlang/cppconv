@@ -32,26 +32,32 @@ void dumpStates(alias P)(ref P.PushParser!(CppParseTreeCreator!(P), string) push
 {
     foreach (n; pushParser.stackTops)
     {
-        if (n.state == 2 && n.previous.length > 0)
+        foreach (e; n.previous)
         {
-            auto arr = n.previous[0].data.nonterminal.get!(P.nonterminalIDFor!"DeclarationSeq");
-            foreach (i, x; arr.trees)
+            if (e.node.state == 0)
             {
-                writeln(indent, "  arr[", i, "]: ");
-                CodeWriter code;
-                code.incIndent(indent.length / 2);
-                parseTreeToCode(code, x, logicSystem, logicSystem.true_);
-                writeln(code.data);
+                if (e.data.nonterminal.nonterminalID == P.nonterminalIDFor!"DeclarationSeq")
+                {
+                    auto arr = n.previous[0].data.nonterminal.get!(P.nonterminalIDFor!"DeclarationSeq");
+                    foreach (i, x; arr.trees)
+                    {
+                        writeln(indent, "  arr[", i, "]: ");
+                        CodeWriter code;
+                        code.incIndent(indent.length / 2);
+                        parseTreeToCode(code, x, logicSystem, logicSystem.true_);
+                        writeln(code.data);
+                    }
+                }
+                else if (e.data.nonterminal.nonterminalID == P.nonterminalIDFor!"TranslationUnit")
+                {
+                    writeln(indent, "  tu:");
+                    CodeWriter code;
+                    code.incIndent(indent.length / 2);
+                    parseTreeToCode(code, n.previous[0].data.nonterminal.get!(
+                            P.nonterminalIDFor!"TranslationUnit"), logicSystem, logicSystem.true_);
+                    writeln(code.data);
+                }
             }
-        }
-        if (n.state == 1 && n.previous.length > 0)
-        {
-            writeln(indent, "  tu:");
-            CodeWriter code;
-            code.incIndent(indent.length / 2);
-            parseTreeToCode(code, n.previous[0].data.nonterminal.get!(
-                    P.nonterminalIDFor!"TranslationUnit"), logicSystem, logicSystem.true_);
-            writeln(code.data);
         }
     }
 }
