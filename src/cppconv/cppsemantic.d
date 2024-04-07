@@ -1517,6 +1517,78 @@ Tree getRealParent(Tree tree, Semantic semantic, size_t* indexInParent = null)
     return realParent;
 }
 
+string normalizeBuiltinTypeParts(string[] parts)
+{
+    bool isUnsigned;
+    bool isSigned;
+    string baseType;
+    size_t numShort, numLong;
+    foreach (part; parts)
+    {
+        if (part == "unsigned")
+        {
+            isUnsigned = true;
+            assert(!isSigned);
+            //isSigned = false;
+        }
+        else if (part == "signed")
+        {
+            //isUnsigned = false;
+            assert(!isUnsigned);
+            isSigned = true;
+        }
+        else if (part == "short")
+            numShort++;
+        else if (part == "long")
+            numLong++;
+        else
+        {
+            if (part == "_Bool")
+                part = "bool";
+            if (part.startsWith("__builtin_"))
+                part = part["__builtin_".length .. $];
+            if (part.startsWith("__"))
+                part = part["__".length .. $];
+            if (part.startsWith("uint"))
+                part = "unsigned_int" ~ part["uint".length .. $];
+            if (part.endsWith("_t"))
+                part = part[0 .. $ - 2];
+            if (baseType.length && baseType == part)
+                continue;
+            assert(baseType.length == 0, text(parts));
+            baseType = part;
+        }
+    }
+
+    string t;
+    if (isUnsigned)
+        t ~= "unsigned_";
+    if (isSigned && baseType == "char")
+        t ~= "signed_";
+    assert(numShort == 0 || numLong == 0);
+    foreach (k; 0 .. numShort)
+        t ~= "short_";
+    foreach (k; 0 .. numLong)
+        t ~= "long_";
+    if (baseType.length == 0 || baseType == "int")
+    {
+        if (baseType.length == 0)
+            assert(numShort > 0 || numLong > 0 || isSigned || isUnsigned);
+        if (t.length == 0)
+            t = "int";
+        else
+            t = t[0 .. $ - 1];
+    }
+    else
+    {
+        assert(numShort == 0);
+        assert(numLong == 0 || baseType == "double",
+                text(parts));
+        t ~= baseType;
+    }
+    return t;
+}
+
 QualType getDeclSpecType(Semantic semantic, ref SimpleDeclarationInfo info)
 {
     QualType type;
@@ -1527,74 +1599,7 @@ QualType getDeclSpecType(Semantic semantic, ref SimpleDeclarationInfo info)
     }
     else if (info.builtinTypeParts.length)
     {
-        bool isUnsigned;
-        bool isSigned;
-        string baseType;
-        size_t numShort, numLong;
-        foreach (part; info.builtinTypeParts)
-        {
-            if (part == "unsigned")
-            {
-                isUnsigned = true;
-                assert(!isSigned);
-                //isSigned = false;
-            }
-            else if (part == "signed")
-            {
-                //isUnsigned = false;
-                assert(!isUnsigned);
-                isSigned = true;
-            }
-            else if (part == "short")
-                numShort++;
-            else if (part == "long")
-                numLong++;
-            else
-            {
-                if (part == "_Bool")
-                    part = "bool";
-                if (part.startsWith("__builtin_"))
-                    part = part["__builtin_".length .. $];
-                if (part.startsWith("__"))
-                    part = part["__".length .. $];
-                if (part.startsWith("uint"))
-                    part = "unsigned_int" ~ part["uint".length .. $];
-                if (part.endsWith("_t"))
-                    part = part[0 .. $ - 2];
-                if (baseType.length && baseType == part)
-                    continue;
-                assert(baseType.length == 0, text(info.builtinTypeParts));
-                baseType = part;
-            }
-        }
-
-        string t;
-        if (isUnsigned)
-            t ~= "unsigned_";
-        if (isSigned && baseType == "char")
-            t ~= "signed_";
-        assert(numShort == 0 || numLong == 0);
-        foreach (k; 0 .. numShort)
-            t ~= "short_";
-        foreach (k; 0 .. numLong)
-            t ~= "long_";
-        if (baseType.length == 0 || baseType == "int")
-        {
-            if (baseType.length == 0)
-                assert(numShort > 0 || numLong > 0 || isSigned || isUnsigned);
-            if (t.length == 0)
-                t = "int";
-            else
-                t = t[0 .. $ - 1];
-        }
-        else
-        {
-            assert(numShort == 0);
-            assert(numLong == 0 || baseType == "double",
-                    text(info.builtinTypeParts, " ", locationStr(info.start)));
-            t ~= baseType;
-        }
-
+        string t = normalizeBuiltinTypeParts(info.builtinTypeParts);
         type = QualType(semantic.getBuiltinType(t), info.qualifiers);
     }
     return type;

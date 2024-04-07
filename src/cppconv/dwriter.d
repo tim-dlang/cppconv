@@ -5962,6 +5962,8 @@ void collectDeclSeqTokensImpl(ref CodeWriter code, Tree tree, ref IteratePPVersi
             }
             else if (tree.nonterminalID == nonterminalIDFor!"NameIdentifier")
                 code.write(tree.childs[0].content);
+            else if (tree.nonterminalID == nonterminalIDFor!"TypeKeyword")
+                code.write("$builtin_", tree.childs[0].content);
             else
                 parseTreeToDCode(code, data, tree, ppVersion.condition, currentScope);
 
@@ -8218,6 +8220,67 @@ enum TypeToCodeFlags
     insideSkippedPointer = 1
 }
 
+string translateBuiltin(string name, bool builtinCppTypes)
+{
+    switch (name)
+    {
+    case "char":
+        return "char";
+    case "wchar":
+        return "wchar_t";
+    case "signed_char":
+        return "byte";
+    case "unsigned_char":
+        return "ubyte";
+    case "int":
+        return "int";
+    case "unsigned":
+        return "uint";
+    case "long":
+        return builtinCppTypes ? "cpp_long" : "long";
+    case "unsigned_long":
+        return builtinCppTypes ? "cpp_ulong" : "ulong";
+    case "long_long":
+        return builtinCppTypes ? "cpp_longlong" : "long";
+    case "unsigned_long_long":
+        return builtinCppTypes ? "cpp_ulonglong" : "ulong";
+    case "short":
+        return "short";
+    case "unsigned_short":
+        return "ushort";
+    case "_Bool":
+        return "bool";
+    case "va_list":
+        return "cppconvhelpers.va_list";
+    case "long_double":
+        return "real";
+    case "char8":
+        return "char";
+    case "char16":
+        return "wchar";
+    case "char32":
+        return "dchar";
+    case "int8":
+        return "byte";
+    case "int16":
+        return "short";
+    case "int32":
+        return "int";
+    case "int64":
+        return "long";
+    case "unsigned_int8":
+        return "ubyte";
+    case "unsigned_int16":
+        return "ushort";
+    case "unsigned_int32":
+        return "uint";
+    case "unsigned_int64":
+        return "ulong";
+    default:
+        return name;
+    }
+}
+
 string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition, Scope currentScope,
         LocationRangeX currentLoc, DeclaratorData[] declList,
         ref ConditionMap!string codeType, TypeToCodeFlags flags = TypeToCodeFlags.none)
@@ -8232,7 +8295,12 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             if (i)
                 code.write(" ");
-            code.write(e.data);
+            string name = e.data;
+            if (name.startsWith("$builtin_"))
+            {
+                name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
+            }
+            code.write(name);
         }
 
         string codeBeforeDeclarator;
@@ -8347,6 +8415,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             suffix = declList[0].codeAfter ~ suffix;
             nextDeclList = declList[1 .. $];
         }
+        else
+            codeType = ConditionMap!string.init;
 
         ConditionMap!string typeCode;
         typeCode.conditionAll = semantic.logicSystem.false_;
@@ -8538,95 +8608,56 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
     assert(declList.length == 0, locationStr(declList[0].tree.location));
     if (type.kind == TypeKind.builtin)
     {
-        string translation;
-        switch (type.name)
-        {
-        case "char":
-            translation = "char";
-            break;
-        case "wchar":
-            translation = "wchar_t";
-            break;
-        case "signed_char":
-            translation = "byte";
-            break;
-        case "unsigned_char":
-            translation = "ubyte";
-            break;
-        case "int":
-            translation = "int";
-            break;
-        case "unsigned":
-            translation = "uint";
-            break;
-        case "long":
-            translation = data.options.builtinCppTypes ? "cpp_long" : "long";
-            break;
-        case "unsigned_long":
-            translation = data.options.builtinCppTypes ? "cpp_ulong" : "ulong";
-            break;
-        case "long_long":
-            translation = data.options.builtinCppTypes ? "cpp_longlong" : "long";
-            break;
-        case "unsigned_long_long":
-            translation = data.options.builtinCppTypes ? "cpp_ulonglong" : "ulong";
-            break;
-        case "short":
-            translation = "short";
-            break;
-        case "unsigned_short":
-            translation = "ushort";
-            break;
-        case "_Bool":
-            translation = "bool";
-            break;
-        case "va_list":
-            translation = "cppconvhelpers.va_list";
-            break;
-        case "long_double":
-            translation = "real";
-            break;
-        case "char8":
-            translation = "char";
-            break;
-        case "char16":
-            translation = "wchar";
-            break;
-        case "char32":
-            translation = "dchar";
-            break;
-        case "int8":
-            translation = "byte";
-            break;
-        case "int16":
-            translation = "short";
-            break;
-        case "int32":
-            translation = "int";
-            break;
-        case "int64":
-            translation = "long";
-            break;
-        case "unsigned_int8":
-            translation = "ubyte";
-            break;
-        case "unsigned_int16":
-            translation = "ushort";
-            break;
-        case "unsigned_int32":
-            translation = "uint";
-            break;
-        case "unsigned_int64":
-            translation = "ulong";
-            break;
-        default:
-        }
+        string translation = translateBuiltin(type.name, data.options.builtinCppTypes);
+        ConditionMap!string realId;
         if (type.qualifiers & Qualifiers.const_ && type.name == "auto")
-            r ~= ""; // const is enough
+            realId.add(condition, "", semantic.logicSystem); // const is enough
         else if (translation.length)
-            r ~= translation;
+            realId.add(condition, translation, semantic.logicSystem);
         else
-            r ~= type.name;
+            realId.add(condition, type.name, semantic.logicSystem);
+        foreach (e; codeType.entries)
+        {
+            if (!semantic.logicSystem.and(e.condition, condition).isFalse)
+            {
+                string name = e.data;
+                if (name.startsWith("$builtin_"))
+                {
+                    name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
+                }
+                if (type.qualifiers & Qualifiers.const_ && name == "auto")
+                    name = ""; // const is enough
+                realId.addReplace(e.condition, name, semantic.logicSystem);
+            }
+        }
+        realId.removeFalseEntries();
+
+        if (realId.entries.length == 0)
+            r ~= translation.length ? translation : type.name;
+        else if (realId.entries.length == 1)
+            r ~= realId.entries[0].data;
+        else
+        {
+            r ~= "Identity!(mixin(";
+            foreach (i, e; realId.entries)
+            {
+                if (i + 1 < realId.entries.length)
+                {
+                    r ~= "(";
+                    auto simplified = semantic.logicSystem.removeRedundant(e.condition, condition);
+                    simplified = removeLocationInstanceConditions(simplified,
+                            semantic.logicSystem, data.mergedFileByName);
+                    r ~= conditionToDCode(simplified, data);
+                    r ~= ")?";
+                }
+                r ~= "q{";
+                r ~= e.data;
+                r ~= "}";
+                if (i + 1 < realId.entries.length)
+                    r ~= ":";
+            }
+            r ~= "))";
+        }
     }
     else if (type.kind.among(TypeKind.record, TypeKind.typedef_))
     {

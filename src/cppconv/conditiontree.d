@@ -354,21 +354,22 @@ void addCombine(alias F, T)(ref ConditionMap!T conditionMap, immutable(Formula)*
         conditionMap.conditionAll = condition;
     else
         conditionMap.conditionAll = logicSystem.or(conditionMap.conditionAll, condition);
-    for (size_t i = 0; i < conditionMap.entries.length; i++)
+    foreach (i; 0 .. conditionMap.entries.length)
     {
-        if (logicSystem.and(conditionMap.entries[i].condition, condition).isFalse)
+        const oldCondition = conditionMap.entries[i].condition;
+        if (logicSystem.and(oldCondition, condition).isFalse)
             continue;
-        if (logicSystem.and(conditionMap.entries[i].condition, condition.negated).isFalse)
+        if (logicSystem.and(oldCondition, condition.negated).isFalse)
         {
             conditionMap.entries[i].data = F(conditionMap.entries[i].data, data);
         }
         else
         {
-            conditionMap.entries ~= conditionMap.Entry(logicSystem.and(conditionMap.entries[i].condition,
+            conditionMap.entries ~= conditionMap.Entry(logicSystem.and(oldCondition,
                     condition), F(conditionMap.entries[i].data, data));
-            conditionMap.entries[i].condition = logicSystem.and(conditionMap.entries[i].condition, condition.negated);
+            conditionMap.entries[i].condition = logicSystem.and(oldCondition, condition.negated);
         }
-        condition = logicSystem.and(condition, conditionMap.entries[i].condition.negated);
+        condition = logicSystem.and(condition, oldCondition.negated);
     }
     if (!condition.isFalse)
     {
