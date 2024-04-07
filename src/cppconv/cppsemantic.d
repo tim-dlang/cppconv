@@ -411,8 +411,12 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
     }
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers")
     {
+        iteratePPVersions!collectParameters(tree.childs[0], ppVersion, semantic, info, hasDefault);
         iteratePPVersions!collectParameters(tree.childs[1], ppVersion, semantic, info, hasDefault);
-        iteratePPVersions!collectParameters(tree.childs[3], ppVersion, semantic, info, hasDefault);
+    }
+    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"Parameters")
+    {
+        iteratePPVersions!collectParameters(tree.childs[1], ppVersion, semantic, info, hasDefault);
     }
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationClause")
     {
@@ -1389,6 +1393,7 @@ void checkValidParam(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.name.startsWith("NoptrDeclarator") || tree.name.startsWith("PtrDeclarator")
             || tree.name.startsWith("FunctionDeclarator")
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers"
+            || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"Parameters"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationClause"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclaration"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationAbstract"

@@ -5664,7 +5664,7 @@ void findParams(Tree t, immutable(Formula)* condition3,
         if (currentScope !is null && t in currentScope.childScopeByTree)
             currentScope = currentScope.childScopeByTree[t];
 
-        findParams(t.childs[1], condition3, info, data, currentScope);
+        findParams(t.childs[0], condition3, info, data, currentScope);
 
         if (t.childs[$ - 1].isValid)
         {
@@ -5673,6 +5673,10 @@ void findParams(Tree t, immutable(Formula)* condition3,
             else
                 info.attributeTrees ~= t;
         }
+    }
+    else if (t.nonterminalID == nonterminalIDFor!"Parameters")
+    {
+        findParams(t.childs[1], condition3, info, data, currentScope);
     }
     else if (t.nonterminalID == nonterminalIDFor!"VirtSpecifier")
     {
@@ -8003,7 +8007,8 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                             data.sourceTokenManager.collectTokens(c.start));
                 visitDeclarator(c);
             }
-            if (declarator.childs[1].nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+            if (declarator.childs[1].nonterminalID == CONDITION_TREE_NONTERMINAL_ID
+                || declarator.childs[1].childs[0].nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
             {
                 codeAfter.write("/+TODO: ParametersAndQualifiers ConditionTree+/");
             }
@@ -8011,10 +8016,12 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
             {
                 assert(declarator.childs[1].nonterminalID == nonterminalIDFor!"ParametersAndQualifiers",
                         locationStr(declarator.location));
-                assert(!declarator.childs[1].childs[1].isValid
-                        || declarator.childs[1].childs[1].nonterminalID
+                assert(declarator.childs[1].childs[0].nonterminalID == nonterminalIDFor!"Parameters",
+                        locationStr(declarator.location));
+                assert(!declarator.childs[1].childs[0].childs[1].isValid
+                        || declarator.childs[1].childs[0].childs[1].nonterminalID
                         == nonterminalIDFor!"ParameterDeclarationClause");
-                skipToken(codeBefore, data, declarator.childs[1].childs[0]); // (
+                skipToken(codeBefore, data, declarator.childs[1].childs[0].childs[0]); // (
 
                 FunctionDeclaratorInfo functionDeclaratorInfo;
                 findParams(declarator, condition, functionDeclaratorInfo, data, currentScope);
@@ -8027,22 +8034,22 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                 }
                 if (functionDeclaratorInfo.isVariadic)
                 {
-                    if (declarator.childs[1].childs[1].childs.length >= 2)
+                    if (declarator.childs[1].childs[0].childs[1].childs.length >= 2)
                     {
-                        if (declarator.childs[1].childs[1].isValid
-                                && declarator.childs[1].childs[1].childs[$ - 2].isValid
-                                && declarator.childs[1].childs[1].childs[$ - 2].content == ",")
+                        if (declarator.childs[1].childs[0].childs[1].isValid
+                                && declarator.childs[1].childs[0].childs[1].childs[$ - 2].isValid
+                                && declarator.childs[1].childs[0].childs[1].childs[$ - 2].content == ",")
                             skipToken(codeMiddle, data,
-                                    declarator.childs[1].childs[1].childs[$ - 2]);
+                                    declarator.childs[1].childs[0].childs[1].childs[$ - 2]);
                         codeMiddle.write(",");
                     }
-                    if (declarator.childs[1].childs[1].isValid
-                            && declarator.childs[1].childs[1].childs[$ - 1].isValid
-                            && declarator.childs[1].childs[1].childs[$ - 1].content == "...")
-                        skipToken(codeMiddle, data, declarator.childs[1].childs[1].childs[$ - 1]);
+                    if (declarator.childs[1].childs[0].childs[1].isValid
+                            && declarator.childs[1].childs[0].childs[1].childs[$ - 1].isValid
+                            && declarator.childs[1].childs[0].childs[1].childs[$ - 1].content == "...")
+                        skipToken(codeMiddle, data, declarator.childs[1].childs[0].childs[1].childs[$ - 1]);
                     codeMiddle.write("...");
                 }
-                skipToken(codeMiddle, data, declarator.childs[1].childs[2]); // )
+                skipToken(codeMiddle, data, declarator.childs[1].childs[0].childs[2]); // )
 
                 if (functionDeclaratorInfo.attributeTrees.length)
                 {

@@ -98,7 +98,7 @@ InitCapture
     | "&" Identifier Initializer
     ;
 LambdaDeclarator
-    = "(" ParameterDeclarationClause ")" "mutable"? ExceptionSpecification? AttributeSpecifierSeq TrailingReturnType?
+    = Parameters "mutable"? ExceptionSpecification? AttributeSpecifierSeq TrailingReturnType?
     ;
 
 // Section expr.prim.fold
@@ -965,7 +965,10 @@ ArrayDeclarator
     = innerDeclarator:NoptrDeclarator "[" ConstantExpression? AttributeSpecifierSeq "]" AttributeSpecifierSeq
     ;
 ParametersAndQualifiers
-    = "(" ParameterDeclarationClause ")" QualifiersSeq
+    = Parameters QualifiersSeq
+    ;
+Parameters
+    = "(" ParameterDeclarationClause ")"
     ;
 QualifiersSeq @array @regArray
     = AttributeSpecifierSeq CvQualifierSeq? RefQualifier? ExceptionSpecification?
