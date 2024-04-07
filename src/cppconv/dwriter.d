@@ -9662,50 +9662,6 @@ void selectDeclarations(DWriterData data)
 
     foreach (name, ref decls2; data.declsByFile)
     {
-        struct FileData
-        {
-            size_t[string] deps;
-        }
-
-        FileData*[string] fileMap;
-        foreach (d; decls2)
-        {
-            auto p = getLocationFilePrefix(d.location.start);
-            if (p is null)
-                continue;
-            FileData* fileData;
-            if (p.filename !in fileMap)
-            {
-                fileData = new FileData;
-                fileMap[p.filename] = fileData;
-            }
-            else
-                fileData = fileMap[p.filename];
-
-            foreach (d2, depInfo; getDeclDependencies(d, data))
-            {
-                if (!depInfo.outsideMixin)
-                    continue;
-                if (d2 !in forwardDecls || d !in forwardDecls)
-                    continue;
-                if (getDeclarationFilename(d2, data) != name)
-                    continue;
-                if (semantic.logicSystem.and(semantic.logicSystem.and(d.condition,
-                        d2.condition), semantic.logicSystem.and(forwardDecls[d].negated,
-                        forwardDecls[d2].negated)).isFalse)
-                    continue;
-                auto p2 = getLocationFilePrefix(d2.location.start);
-                if (p2 is null)
-                    continue;
-                if (p2.filename == p.filename)
-                    continue;
-                if (p2.filename in fileData.deps)
-                    fileData.deps[p2.filename]++;
-                else
-                    fileData.deps[p2.filename] = 1;
-            }
-        }
-
         decls2.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
 
         ImportInfo[string] neededImports;
