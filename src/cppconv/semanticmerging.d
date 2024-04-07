@@ -124,8 +124,12 @@ struct MergeFilesData2
         }
     }
 
+    Scope[Scope] getTargetScopeCache;
     Scope getTargetScope(Scope s)
     {
+        if (s in getTargetScopeCache)
+            return getTargetScopeCache[s];
+
         Tree tree = s.tree;
 
         if (s.parentScope !is null)
@@ -144,6 +148,7 @@ struct MergeFilesData2
                 auto nameInNamespaces = s.className.entries[0].data in parentScope.childNamespaces;
                 if (nameInNamespaces)
                 {
+                    getTargetScopeCache[s] = *nameInNamespaces;
                     (*nameInNamespaces).scopeCondition = mergedSemantic.logicSystem.or((*nameInNamespaces)
                             .scopeCondition, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
                                 s.scopeCondition));
@@ -154,6 +159,7 @@ struct MergeFilesData2
                 {
                     Scope s2 = new Scope(tree, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
                                 s.scopeCondition));
+                    getTargetScopeCache[s] = s2;
                     s2.parentScope = parentScope;
                     s2.parentScope.childNamespaces[s.className.entries[0].data] = s2;
                     foreach (e; s.className.entries)
@@ -170,6 +176,7 @@ struct MergeFilesData2
                     (*treeInChildScopes).scopeCondition = mergedSemantic.logicSystem.or((*treeInChildScopes)
                             .scopeCondition, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
                                 s.scopeCondition));
+                    getTargetScopeCache[s] = *treeInChildScopes;
                     translateScopeExtraParents(s, *treeInChildScopes);
                     return *treeInChildScopes;
                 }
@@ -177,6 +184,7 @@ struct MergeFilesData2
                 {
                     Scope s2 = new Scope(tree, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
                                 s.scopeCondition));
+                    getTargetScopeCache[s] = s2;
                     s2.parentScope = parentScope;
                     s2.parentScope.childScopeByTree[tree] = s2;
                     translateScopeExtraParents(s, s2);
@@ -186,7 +194,6 @@ struct MergeFilesData2
         }
         else
         {
-            assert(s.extraParentScopes.entries.length == 0);
             if (mergedSemantic.rootScope is null)
             {
                 mergedSemantic.rootScope = new Scope(tree, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
@@ -198,6 +205,8 @@ struct MergeFilesData2
                         mergedSemantic.rootScope.scopeCondition, /*mergedSemantic.logicSystem.rebuiltFormula*/ (
                             s.scopeCondition));
             }
+            getTargetScopeCache[s] = mergedSemantic.rootScope;
+            translateScopeExtraParents(s, mergedSemantic.rootScope);
             return mergedSemantic.rootScope;
         }
     }

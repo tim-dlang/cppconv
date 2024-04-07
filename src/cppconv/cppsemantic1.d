@@ -1036,6 +1036,11 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         namespaceScope.className.add(condition, name, semantic.logicSystem);
         assert(namespaceScope.className.entries.length == 1);
 
+        if (tree.childs[0].isValid && tree.childs[0].content == "inline")
+            parentScope.extraParentScopes.add(condition,
+                ExtraScope(ExtraScopeType.inlineNamespace, namespaceScope),
+                semantic.logicSystem);
+
         {
             DeclarationKey dk;
             dk.type = DeclarationType.namespace;

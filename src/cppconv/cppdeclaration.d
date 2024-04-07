@@ -124,6 +124,7 @@ enum ExtraScopeType
     namespace,
     parameter,
     template_,
+    inlineNamespace,
 }
 
 struct ExtraScope
@@ -172,7 +173,8 @@ class Scope
         if (parentScope is null)
             return;
         foreach (s2; extraParentScopes.entries)
-            s2.data.scope_.realizeForwardScope(name, logicSystem);
+            if (s2.data.type != ExtraScopeType.inlineNamespace)
+                s2.data.scope_.realizeForwardScope(name, logicSystem);
         parentScope.realizeForwardScope(name, logicSystem);
         immutable(Formula)* conditionLeft = logicSystem.true_;
         void addScope(Scope s2, immutable(Formula)* condition)
