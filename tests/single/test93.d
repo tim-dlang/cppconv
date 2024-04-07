@@ -15,7 +15,7 @@ void f_(int i /+ DEBUG_PARAMS1 +/, mixin((defined!"DEF") ? q{const(char)*} : q{A
 /+ #define f(i) f_(i DEBUG_PARAMS2) +/
 extern(D) alias f = function string(string i)
 {
-    return mixin(interpolateMixin(q{(mixin(q{f_
+    return mixin(interpolateMixin(q{(mixin(q{imported!q{test93}.f_
             }
             ~ "("
             ~ q{

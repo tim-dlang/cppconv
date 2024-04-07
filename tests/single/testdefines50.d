@@ -12,21 +12,21 @@ alias write = write_impl;
 /+ #define write2(s) write_impl(s) +/
 extern(D) alias write2 = function string(string s)
 {
-    return mixin(interpolateMixin(q{write_impl($(s))}));
+    return mixin(interpolateMixin(q{imported!q{testdefines50}.write_impl($(s))}));
 };
 extern(D) alias write2__1 = function string(string s)
 {
-    return mixin(interpolateMixin(q{write_impl($(s));}));
+    return mixin(interpolateMixin(q{imported!q{testdefines50}.write_impl($(s));}));
 };
 /+ #define write3(s) write_impl_debug(s, __FILE__, __LINE__) +/
 extern(D) alias write3 = function string(string s)
 {
-    return mixin(interpolateMixin(q{write_impl_debug($(s), __FILE__, __LINE__)}));
+    return mixin(interpolateMixin(q{imported!q{testdefines50}.write_impl_debug($(s), __FILE__, __LINE__)}));
 };
 /+ #define write4(s) write_impl(s); +/
 extern(D) alias write4 = function string(string s)
 {
-    return mixin(interpolateMixin(q{write_impl($(s));}));
+    return mixin(interpolateMixin(q{imported!q{testdefines50}.write_impl($(s));}));
 };
 }
 static if (!defined!"DEF")

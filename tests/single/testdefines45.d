@@ -11,7 +11,7 @@ extern(D) static __gshared int counter;
 	} while(0) +/
 enum S = q{do
     	{
-    		counter++;
+    		imported!q{testdefines45}.counter++;
     	} while(0);};
 
 /+ #define F(i) do \

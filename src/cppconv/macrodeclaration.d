@@ -430,6 +430,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
 
         assert(data.sourceTokenManager.tokensLeft.data.length == 0);
         LocationRangeX locRange;
+        MacroDeclarationInstance instance2;
         MacroDeclaration macroDeclaration2;
         if (instance.macroDeclaration.type == DeclarationType.macroParam)
         {
@@ -467,7 +468,6 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
 
                     Tuple!(string, LocationRangeX) key = tuple!(string, LocationRangeX)(macroName, l);
 
-                    MacroDeclarationInstance instance2;
                     if (locationContextMacro in data.macroInstanceByLocation)
                         instance2 = data.macroInstanceByLocation[locationContextMacro]
                             .entries[0].data;
@@ -541,6 +541,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
             && instance.macroTranslation == MacroTranslation.mixin_
             && instance.macroDeclaration.definition.nonterminalID
             == preprocNonterminalIDFor!"FuncDefine";
+        data.currentMacroInstance = instance.macroDeclaration.type == DeclarationType.macroParam ? instance2 : instance;
 
         Tree[] usedTrees = instance.macroTrees;
         while (usedTrees.length == 1
@@ -581,6 +582,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         }
 
         data.sourceTokenManager.inInterpolateMixin = false;
+        data.currentMacroInstance = null;
 
         size_t realCodeEnd = code.data.length;
         if (data.sourceTokenManager.tokensLeft.data.length)

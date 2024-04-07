@@ -58,7 +58,7 @@ extern(D) alias Ppmd8_GetPtr = function string(string p2, string offs)
   /+ #define Ppmd8_GetStats(p2, ctx3) ((CPpmd_State *)Ppmd8_GetPtr((p2), ((ctx3)->Stats))) +/
 extern(D) alias Ppmd8_GetStats = function string(string p2, string ctx3)
 {
-    return mixin(interpolateMixin(q{(cast(CPpmd_State*) mixin(Ppmd8_GetPtr(q{($(p2))}, q{(($(ctx3)).Stats)})))}));
+    return mixin(interpolateMixin(q{(cast(imported!q{test195}.CPpmd_State*) mixin(imported!q{test195}.Ppmd8_GetPtr(q{($(p2))}, q{(($(ctx3)).Stats)})))}));
 };
 }
 
@@ -66,9 +66,9 @@ extern(D) alias Ppmd8_GetStats = function string(string p2, string ctx3)
 extern(D) alias STATS = function string(string ctx2)
 {
     return mixin(interpolateMixin(q{mixin((defined!"PPMD_32BIT") ? q{
-                 mixin(Ppmd8_GetStats(q{p}, q{$(ctx2)}))
+                 mixin(imported!q{test195}.Ppmd8_GetStats(q{p}, q{$(ctx2)}))
              } : q{
-                mixin(Ppmd8_GetStats(q{p}, q{$(ctx2)}))
+                mixin(imported!q{test195}.Ppmd8_GetStats(q{p}, q{$(ctx2)}))
              })}));
 };
 

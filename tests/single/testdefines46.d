@@ -10,12 +10,12 @@ static if (defined!"DEF")
 {
 /+ #define F1 f(); +/
 /+ #define F2 f() +/
-enum F2 = q{f()};
+enum F2 = q{imported!q{testdefines46}.f()};
 /+ #define F3(i) f3(i); +/
 /+ #define F4(i) f3(i) +/
 extern(D) alias F4 = function string(string i)
 {
-    return mixin(interpolateMixin(q{f3($(i));}));
+    return mixin(interpolateMixin(q{imported!q{testdefines46}.f3($(i));}));
 };
 }
 static if (!defined!"DEF")

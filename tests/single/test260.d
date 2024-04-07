@@ -25,7 +25,7 @@ struct S
 extern(D) alias CHECK_TYPE = function string(string t, string relocatable)
 {
     return mixin(interpolateMixin(q{do {
-        		if(QTypeInfo!($(t)).isRelocatable == $(relocatable)){}
+        		if(imported!q{test260}.QTypeInfo!($(t)).isRelocatable == $(relocatable)){}
         		} while(0);}));
 };
 

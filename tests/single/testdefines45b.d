@@ -13,7 +13,7 @@ static if (defined!"DEF")
 	} while(0) +/
 enum S = q{do
     	{
-    		counter++;
+    		imported!q{testdefines45b}.counter++;
     	} while(0);};
 
 /+ #define F(i) do \
@@ -40,7 +40,7 @@ static if (!defined!"DEF")
 	} while(0) +/
 enum S = q{do
     	{
-    		counter--;
+    		imported!q{testdefines45b}.counter--;
     	} while(0);};
 
 /+ #define F(i) do \

@@ -20,7 +20,7 @@ __gshared int i3 = /*commentd1*/ mixin(f(q{/*commentc3*/7/*commentc4*/},q{/*comm
 /+ #define h(b) /*commente1*/g/*commente2*/(/*commente3*/f/*commente4*/(/*commente5*/,/*commente6*/,/*commente7*/)/*commente8*/) +//*commente9*/
 extern(D) alias h = function string(string b)
 {
-    return /*commente1*/ mixin(interpolateMixin(q{ mixin(f(q{/*commentc3*/7/*commentc4*/},q{/*commentc5*/b/*commentc6*/},q{/*commentc7*/9/*commentc8*/}))/+ g/*commente2*/(/*commente3*/f/*commente4*/(/*commente5*/,/*commente6*/,/*commente7*/)/*commente8*/) +/}));/*commente9*/
+    return /*commente1*/ mixin(interpolateMixin(q{ mixin(imported!q{testcomments6}.f(q{/*commentc3*/7/*commentc4*/},q{/*commentc5*/b/*commentc6*/},q{/*commentc7*/9/*commentc8*/}))/+ g/*commente2*/(/*commente3*/f/*commente4*/(/*commente5*/,/*commente6*/,/*commente7*/)/*commente8*/) +/}));/*commente9*/
 };
 __gshared int i4 = /*commentf1*/ mixin(h/*commentf2*/(q{/*commentf3*/10/*commentf4*/}))/*commentf5*/;/*commentf6*/
 

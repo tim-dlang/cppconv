@@ -22,7 +22,7 @@ xmlMallocFunc* __xmlMalloc();
 /+ #define xmlMalloc \
 (*(__xmlMalloc())) +/
 enum xmlMalloc =
-q{    (*(__xmlMalloc()))};
+q{    (*(imported!q{test178}.__xmlMalloc()))};
 }
 static if (!defined!"LIBXML_THREAD_ENABLED")
 {

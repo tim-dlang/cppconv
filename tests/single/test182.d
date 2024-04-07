@@ -10,7 +10,7 @@ int git_mutex_lock2(int);
 /+ #define git_mutex_lock(mtx) git_mutex_lock2(mtx) +/
 extern(D) alias git_mutex_lock = function string(string mtx)
 {
-    return mixin(interpolateMixin(q{git_mutex_lock2($(mtx))}));
+    return mixin(interpolateMixin(q{imported!q{test182}.git_mutex_lock2($(mtx))}));
 };
 }
 static if (!defined!"DEF")

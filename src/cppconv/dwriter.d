@@ -196,6 +196,7 @@ class DWriterData
     bool[string] importedPackagesGraphHere;
     string[immutable(Formula)*] versionReplacementsOr;
     immutable(Formula)*[string][string] modulesBySymbol;
+    MacroDeclarationInstance currentMacroInstance;
 
     Declaration[string[2]] dummyDeclarations;
     Declaration dummyDeclaration(string name, string moduleName)
@@ -8138,7 +8139,14 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
         }
     }
 
-    if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
+    if (d in data.fileByDecl
+        && ((realScope !is null && realScope.parentScope is null) || d.type == DeclarationType.macro_)
+        && data.currentMacroInstance !is null
+        && data.currentMacroInstance.macroDeclaration !is null
+        && data.currentMacroInstance.macroDeclaration.type == DeclarationType.macro_
+        && data.currentMacroInstance.macroTranslation == MacroTranslation.mixin_)
+        name = "imported!q{" ~ data.fileByDecl[d].moduleName ~ "}." ~ name;
+    else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
             && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
         name = data.fileByDecl[d].moduleName ~ "." ~ name;
     else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
