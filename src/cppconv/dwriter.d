@@ -1354,6 +1354,18 @@ string chooseDeclarationName(Declaration d, DWriterData data)
         return name;
     }
 
+    if (d.flags & DeclarationFlags.templateSpecialization)
+    {
+        foreach (e; d.declarationSet.entries)
+        {
+            if (e.data.type != d.type)
+                continue;
+            if (e.data.flags & DeclarationFlags.templateSpecialization)
+                continue;
+            declarationData.chosenName = chooseDeclarationName(e.data, data);
+            return declarationData.chosenName;
+        }
+    }
     if (d.name.length == 0 && d.type == DeclarationType.type
             && (d.flags & DeclarationFlags.typedef_) == 0)
     {
@@ -2102,6 +2114,8 @@ void findRealDecl(DeclarationSet ds, bool isTypedef, ref ConditionMap!Declaratio
             continue;
         if (((e.data.flags & DeclarationFlags.typedef_) != 0) != isTypedef)
             continue;
+        if (e.data.flags & DeclarationFlags.templateSpecialization)
+            continue;
         LocationRangeX loc2 = e.data.location;
         if (e.data.tree.isValid)
             loc2 = e.data.location;
@@ -2144,6 +2158,8 @@ void findRealDecl(Tree tree, ref ConditionMap!Declaration realDecl,
         foreach (e; x.data.entries)
         {
             if (e.data.type == DeclarationType.forwardScope)
+                continue;
+            if (e.data.flags & DeclarationFlags.templateSpecialization)
                 continue;
             LocationRangeX loc2 = e.data.location;
             if (e.data.tree.isValid)
@@ -4291,6 +4307,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         findRealDecl(tree, realDecl, condition, data, true /*allowType*/ , currentScope);
         foreach (e; realDecl.entries)
         {
+            if ((e.data.flags & DeclarationFlags.templateSpecialization) != 0)
+                continue;
             foreach (combination; iterateCombinations())
             {
                 IteratePPVersions ppVersion = IteratePPVersions(combination,
@@ -8579,7 +8597,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         realId.removeFalseEntries();
 
         if (realId.entries.length == 0)
-            r ~= type.name;
+            r ~= type.name ~ templateArgs;
         else if (realId.entries.length == 1)
             r ~= realId.entries[0].data;
         else
@@ -8713,6 +8731,8 @@ bool isDeclarationBlacklistedImpl(DWriterData data, Declaration d)
     if ((d.flags & DeclarationFlags.virtual) || (d.flags & DeclarationFlags.override_))
         return false;
     if (d.flags & DeclarationFlags.friend)
+        return true;
+    if (d.flags & DeclarationFlags.templateSpecialization)
         return true;
 
     if (d.type == DeclarationType.varOrFunc
@@ -9032,6 +9052,8 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                 {
                     foreach (e; x.data.entries)
                     {
+                        if (e.data.flags & DeclarationFlags.templateSpecialization)
+                            continue;
                         immutable(Formula)* newCondition = semantic.logicSystem.and(condition,
                                 x.condition);
                         newCondition = semantic.logicSystem.and(newCondition,

@@ -793,7 +793,6 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             if (iteratePPVersions!isTemplateSpecialization(tree, ppVersion))
             {
                 isTemplateSpecializationHere = true;
-                continue;
             }
 
             classSpecifierInfo.namespaceType = chooseType(classSpecifierInfo.namespaceType,
@@ -937,6 +936,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 dk.flags |= DeclarationFlags.forward;
             if (templateScopes.length)
                 dk.flags |= DeclarationFlags.template_;
+            if (isTemplateSpecializationHere)
+                dk.flags |= DeclarationFlags.templateSpecialization;
             if (wrappperInfo.flags & DeclarationFlags.friend)
                 dk.flags |= DeclarationFlags.friend;
             dk.name = classSpecifierInfo.className;
@@ -1005,9 +1006,6 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
             }
         }
-
-        if (isTemplateSpecializationHere)
-            return;
 
         foreach (ref c; tree.childs[headChilds .. $])
         {

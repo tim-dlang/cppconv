@@ -2345,6 +2345,8 @@ Scope scopeForRecord(Type type, ref IteratePPVersions ppVersion, Semantic semant
             continue;
         if ((e.data.flags & DeclarationFlags.typedef_) != 0)
             continue;
+        if (e.data.flags & DeclarationFlags.templateSpecialization)
+            continue;
         if (type.kind == TypeKind.namespace && e.data.type != DeclarationType.namespace)
             continue;
         if (type.kind != TypeKind.namespace && e.data.type == DeclarationType.namespace)
@@ -2354,6 +2356,8 @@ Scope scopeForRecord(Type type, ref IteratePPVersions ppVersion, Semantic semant
         immutable(Formula)* conditionAnyRealDecl = ppVersion.logicSystem.false_;
         foreach (e2; e.data.realDeclaration.entries)
         {
+            if (e2.data.flags & DeclarationFlags.templateSpecialization)
+                continue;
             if (ppVersion.logicSystem.and(e2.condition,
                     ppVersion.logicSystem.and(e.condition, ppVersion.condition)).isFalse)
                 continue;

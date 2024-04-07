@@ -332,6 +332,7 @@ enum DeclarationFlags
     abstract_ = 0x800,
     inline = 0x1000,
     constExpr = 0x2000,
+    templateSpecialization = 0x4000,
 }
 
 struct DeclarationKey
