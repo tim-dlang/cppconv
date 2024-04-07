@@ -167,7 +167,7 @@ void distributeAccessSpecifiers(ref ConditionMap!(AccessSpecifier) accessSpecifi
             enforce(annotations.nodeType == NodeType.array);
             foreach (c; annotations.childs)
             {
-                enforce(c.nonterminalID == nonterminalIDFor!"AccessSpecifierAnnotation");
+                enforce(c.nonterminalID == nonterminalIDFor!"AccessSpecifierAnnotation", locationStr(c.start));
                 if (c.childs[0].content == "__cppconv_qt_slot")
                     s |= AccessSpecifier.qtSlot;
                 else if (c.childs[0].content == "__cppconv_qt_signal")

@@ -86,6 +86,7 @@ class Context(ParserWrapper)
     }
 
     size_t[immutable(LocationContext)*] locationUniqueNumbers;
+    size_t[string][Location] concatUsedLocationUniqueNumber;
 
     MacroInstanceInfo[immutable(LocationContext)*] macroInstanceInfos;
 
@@ -1918,13 +1919,20 @@ Tuple!(Tree, Location)[] replaceMacroConcat(ParserWrapper)(Location start, Tree 
         assert(t.childs[1].start.context.filename == start.context.filename);
         immutable(LocationContext)* locationContextX;
 
-        if (start.context !in context.locationUniqueNumbers)
-            context.locationUniqueNumbers[start.context] = 0;
-        context.locationUniqueNumbers[start.context]++;
+        if (start !in context.concatUsedLocationUniqueNumber)
+            context.concatUsedLocationUniqueNumber[start] = null;
+        if (newText !in context.concatUsedLocationUniqueNumber[start])
+        {
+            if (start.context !in context.locationUniqueNumbers)
+                context.locationUniqueNumbers[start.context] = 0;
+            context.locationUniqueNumbers[start.context]++;
+
+            context.concatUsedLocationUniqueNumber[start][newText] = context.locationUniqueNumbers[start.context];
+        }
 
         locationContextX = context.getLocationContext(immutable(LocationContext)(start.context,
                 t.childs[1].start.loc, t.childs[1].inputLength, "##",
-                text("@concat", context.locationUniqueNumbers[start.context])));
+                text("@concat", context.concatUsedLocationUniqueNumber[start][newText])));
 
         Location newStart = Location(LocationN.init, locationContextX);
         Tree newToken = Tree(newText, SymbolID.max, ProductionID.max, NodeType.token, []);
