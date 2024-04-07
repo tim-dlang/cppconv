@@ -218,7 +218,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                         || tree.name[0 .. i].endsWith("EnumeratorInitializer")
                         || tree.name[0 .. i].endsWith("FunctionDefinitionHead")
                         || tree.name[0 .. i].endsWith("StaticAssertDeclarationX")
-                        || tree.name[0 .. i].endsWith("Statement");
+                        || tree.name[0 .. i].endsWith("Statement")
+                        || tree.name[0 .. i].endsWith("Merged:TemplateArgumentList");
                 }
             return false;
         }())
