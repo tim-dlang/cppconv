@@ -297,30 +297,6 @@ struct ConditionMap(T)
         entries ~= Entry(condition, data);
     }
 
-    void addBitOr()(immutable(Formula)* condition, T data, LogicSystem logicSystem)
-    {
-        if (conditionAll is null)
-            conditionAll = condition;
-        else
-            conditionAll = logicSystem.or(conditionAll, condition);
-        for (size_t i = 0; i < entries.length; i++)
-        {
-            if (logicSystem.and(entries[i].condition, condition).isFalse)
-                continue;
-            if (logicSystem.and(entries[i].condition, condition.negated).isFalse)
-            {
-                entries[i].data |= data;
-                condition = logicSystem.and(condition, entries[i].condition.negated);
-            }
-            else
-            {
-                entries ~= Entry(logicSystem.and(entries[i].condition,
-                        condition), entries[i].data | data);
-                entries[i].condition = logicSystem.and(entries[i].condition, condition.negated);
-            }
-        }
-    }
-
     T choose(ref IteratePPVersions ppVersion)
     {
         if (conditionAll is null)
@@ -369,6 +345,34 @@ struct ConditionMap(T)
             i++;
         }
         entries.length = i;
+    }
+}
+
+void addCombine(alias F, T)(ref ConditionMap!T conditionMap, immutable(Formula)* condition, T data, LogicSystem logicSystem)
+{
+    if (conditionMap.conditionAll is null)
+        conditionMap.conditionAll = condition;
+    else
+        conditionMap.conditionAll = logicSystem.or(conditionMap.conditionAll, condition);
+    for (size_t i = 0; i < conditionMap.entries.length; i++)
+    {
+        if (logicSystem.and(conditionMap.entries[i].condition, condition).isFalse)
+            continue;
+        if (logicSystem.and(conditionMap.entries[i].condition, condition.negated).isFalse)
+        {
+            conditionMap.entries[i].data = F(conditionMap.entries[i].data, data);
+        }
+        else
+        {
+            conditionMap.entries ~= conditionMap.Entry(logicSystem.and(conditionMap.entries[i].condition,
+                    condition), F(conditionMap.entries[i].data, data));
+            conditionMap.entries[i].condition = logicSystem.and(conditionMap.entries[i].condition, condition.negated);
+        }
+        condition = logicSystem.and(condition, conditionMap.entries[i].condition.negated);
+    }
+    if (!condition.isFalse)
+    {
+        conditionMap.entries ~= conditionMap.Entry(condition, data);
     }
 }
 

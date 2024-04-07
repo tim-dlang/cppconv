@@ -6033,6 +6033,7 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
             "NameIdentifier", "SimpleTemplateId",
             "SimpleTypeSpecifierNoKeyword", "TypenameSpecifier"))
     {
+        ConditionMap!string codeType2;
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
@@ -6050,8 +6051,10 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
                 name = "ValueClass!(" ~ name ~ ")";
             }
 
-            codeType.add(ppVersion.condition, name, logicSystem);
+            codeType2.addReplace(ppVersion.condition, name, logicSystem);
         }
+        foreach (e; codeType2.entries)
+            codeType.addCombine!((a, b) => a ~ b)(e.condition, e.data, logicSystem);
 
         afterTypeInDeclSeq = true;
     }

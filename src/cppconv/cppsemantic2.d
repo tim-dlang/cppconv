@@ -226,13 +226,13 @@ void analyzeDeclSpecifierSeq2(Tree tree, immutable(Formula)* condition,
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"AttributeSpecifier")
     {
         if (tree.childs[0].content == "__cppconv_qt_slot")
-            accessSpecifier.addBitOr(condition, AccessSpecifier.qtSlot, semantic.logicSystem);
+            accessSpecifier.addCombine!((a, b) => a | b)(condition, AccessSpecifier.qtSlot, semantic.logicSystem);
         if (tree.childs[0].content == "__cppconv_qt_signal")
-            accessSpecifier.addBitOr(condition, AccessSpecifier.qtSignal, semantic.logicSystem);
+            accessSpecifier.addCombine!((a, b) => a | b)(condition, AccessSpecifier.qtSignal, semantic.logicSystem);
         if (tree.childs[0].content == "__cppconv_qt_invokable")
-            accessSpecifier.addBitOr(condition, AccessSpecifier.qtInvokable, semantic.logicSystem);
+            accessSpecifier.addCombine!((a, b) => a | b)(condition, AccessSpecifier.qtInvokable, semantic.logicSystem);
         if (tree.childs[0].content == "__cppconv_qt_scriptable")
-            accessSpecifier.addBitOr(condition, AccessSpecifier.qtScriptable,
+            accessSpecifier.addCombine!((a, b) => a | b)(condition, AccessSpecifier.qtScriptable,
                     semantic.logicSystem);
     }
 }
