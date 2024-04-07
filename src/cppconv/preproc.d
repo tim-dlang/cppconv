@@ -1091,11 +1091,7 @@ void updateDefineSet(ParserWrapper)(DefineSets defineSets, immutable(Formula)* c
         defineSets.getDefineSet(def).update(logicSystem,
                 defineSets.logicSystem.and(condition, condition2), false, definition);
 
-        if (condition2 in defineSets.aliasMap)
-        {
-            enforce(defineSets.aliasMap[condition2] == def);
-        }
-        else
+        if (condition2 !in defineSets.aliasMap)
             defineSets.aliasMap[condition2] = def;
     }
     else

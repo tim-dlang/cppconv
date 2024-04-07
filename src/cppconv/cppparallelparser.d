@@ -338,7 +338,7 @@ ParallelParser!(ParserWrapper) expandMacros(ParserWrapper)(
         if (simplifiedCcondition is context.logicSystem.false_)
             continue;
 
-        if (d.definition.nonterminalID == preprocNonterminalIDFor!"VarDefine")
+        if (d.definition.nonterminalID == preprocNonterminalIDFor!"VarDefine" || d.definition.name == "VarDefine")
         {
             cases ~= Case(d.condition, simplifiedCcondition, d, d.definition.childs[7].childs);
         }
