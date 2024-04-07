@@ -27,6 +27,26 @@ enum MergeFlags
     recursiveFlags = nullOnTreeConditionRec
 }
 
+Location innerTreeStart(Tree tree)
+{
+    foreach (c; tree.childs)
+    {
+        if (c.isValid && c.location.context !is null)
+            return innerTreeStart(c);
+    }
+    return tree.start;
+}
+
+Location innerTreeEnd(Tree tree)
+{
+    foreach_reverse (c; tree.childs)
+    {
+        if (c.isValid && c.location.context !is null)
+            return innerTreeEnd(c);
+    }
+    return tree.end;
+}
+
 Tree[] mergeArrays(Tree[] arrA, Tree[] arrB, immutable(Formula)*[2] childConditions,
         LogicSystem logicSystem, immutable(Formula)* anyErrorCondition,
         immutable(Formula)* contextCondition, MergeFlags flags, size_t indentNum = 4)
@@ -75,7 +95,41 @@ Tree[] mergeArrays(Tree[] arrA, Tree[] arrB, immutable(Formula)*[2] childConditi
 
         Tuple!(Tree, immutable(Formula)*, byte)[] treesA = treesApp.data[treesAppStartSize .. $];
 
-        treesA.sort!((a, b) => a[0].start.opCmp2(b[0].start, true) < 0);
+        static bool cmp(Tuple!(Tree, immutable(Formula)*, byte) a, Tuple!(Tree, immutable(Formula)*, byte) b)
+        {
+            if (a[0].end.opCmp2(b[0].start, true) <= 0)
+                return true;
+            if (a[0].start.opCmp2(b[0].end, true) >= 0)
+                return false;
+            auto aStart = innerTreeStart(a[0]);
+            auto aEnd = innerTreeEnd(a[0]);
+            auto bStart = innerTreeStart(b[0]);
+            auto bEnd = innerTreeEnd(b[0]);
+            int r = aStart.opCmp2(bStart, true);
+            if (r)
+                return r < 0;
+            r = aEnd.opCmp2(bEnd, true);
+            if (r)
+                return r < 0;
+            return *a[1] < *b[1];
+        }
+
+        treesA.sort!(cmp);
+
+        size_t[] lastWithSameCondition = new size_t[treesA.length];
+        {
+            size_t lastIndex = treesA.length;
+            immutable(Formula)* lastCondition = null;
+            foreach_reverse (i; 0 .. treesA.length)
+            {
+                if (treesA[i][1] !is lastCondition)
+                {
+                    lastIndex = i;
+                    lastCondition = treesA[i][1];
+                }
+                lastWithSameCondition[i] = lastIndex;
+            }
+        }
 
         foreach (i1; 0 .. treesA.length)
         {
@@ -83,46 +137,74 @@ Tree[] mergeArrays(Tree[] arrA, Tree[] arrB, immutable(Formula)*[2] childConditi
             auto cond1 = treesA[i1][1];
             if (cond1 is null)
                 continue;
-            foreach (i2; i1 + 1 .. treesA.length)
+            bool afterMultipleInCommonCondition;
+            for (size_t i2 = i1 + 1; i2 < treesA.length; i2++)
             {
                 auto t2 = treesA[i2][0];
                 auto cond2 = treesA[i2][1];
                 if (cond2 is null)
                     continue;
-                if (t2.start > t1.end)
+                if (afterMultipleInCommonCondition && innerTreeStart(t2) > innerTreeEnd(t1))
+                    break;
+                if (t2.location.nonMacroLocation.start > t1.location.nonMacroLocation.end)
                     break;
 
                 if (!logicSystem.and(cond1, cond2).isFalse)
-                    continue;
-
-                if (treesOverlapping(t1, t2))
                 {
-                    bool hasConflict;
-                    foreach (i4; i1 + 1 .. treesA.length)
-                    {
-                        auto t4 = treesA[i4][0];
-                        auto cond4 = treesA[i4][1];
-                        if (i4 == i2)
-                            continue;
-                        if (cond4 is null)
-                            continue;
-                        if (t4.start > t1.end)
-                            break;
+                    i2 = lastWithSameCondition[i2];
+                    afterMultipleInCommonCondition = true;
+                    continue;
+                }
 
-                        if (treesOverlapping(t1, t4) && !logicSystem.and(cond4, cond2).isFalse)
+                bool canMergeHere = false;
+                static foreach (bool ignoreMacro; [false, true])
+                {
+                    if (!canMergeHere && treesOverlapping(t1, t2, ignoreMacro))
+                    {
+                        bool hasConflict = false;
+                        for (size_t i4 = i1 + 1; i4 < treesA.length; i4++)
                         {
-                            hasConflict = true;
-                            break;
+                            auto t4 = treesA[i4][0];
+                            auto cond4 = treesA[i4][1];
+                            if (i4 == i2)
+                                continue;
+                            if (cond4 is null)
+                                continue;
+                            if (t4.location.nonMacroLocation.start > t1.location.nonMacroLocation.end
+                                && t4.location.nonMacroLocation.start > t2.location.nonMacroLocation.end)
+                                break;
+
+                            if (logicSystem.and(cond4, cond1).isFalse && logicSystem.and(cond4, cond2).isFalse)
+                            {
+                                i4 = lastWithSameCondition[i4];
+                                continue;
+                            }
+
+                            if (treesOverlapping(t1, t4, ignoreMacro))
+                            {
+                                hasConflict = true;
+                                break;
+                            }
+                            if (treesOverlapping(t2, t4, ignoreMacro))
+                            {
+                                hasConflict = true;
+                                break;
+                            }
+                            /*if (i4 - i1 > 100)
+                            {
+                                hasConflict = true;
+                                break;
+                            }*/
                         }
-                        if (treesOverlapping(t2, t4) && !logicSystem.and(cond4, cond1).isFalse)
+                        if (!hasConflict)
                         {
-                            hasConflict = true;
-                            break;
+                            canMergeHere = true;
                         }
                     }
-                    if (hasConflict)
-                        continue;
+                }
 
+                if (canMergeHere)
+                {
                     auto newContextCondition = logicSystem.and(contextCondition,
                             logicSystem.or(cond1, cond2));
                     auto cond3 = logicSystem.simplify(logicSystem.distributeOrSimple(cond1, cond2));
@@ -500,9 +582,17 @@ Tree mergeTrees(Tree treeA, Tree treeB, immutable(Formula)*[2] childConditions,
     return tree3.toTree;
 }
 
-bool treesOverlapping(Tree t1, Tree t2)
+bool treesOverlapping(Tree t1, Tree t2, bool ignoreMacro)
 {
-    return (t1.end > t2.start && t1.start < t2.end) || (t2.end > t1.start && t2.start < t1.end);
+    LocationRangeX l1 = t1.location;
+    LocationRangeX l2 = t2.location;
+    if (ignoreMacro)
+    {
+        l1 = l1.nonMacroLocation;
+        l2 = l2.nonMacroLocation;
+    }
+
+    return (l1.end > l2.start && l1.start < l2.end) || (l2.end > l1.start && l2.start < l1.end);
 }
 
 bool equalTrees(CppParseTree treeA, CppParseTree treeB)

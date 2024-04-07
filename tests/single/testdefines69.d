@@ -22,7 +22,6 @@ alias T = uint;
 static if (!defined!"DEF" && !defined!"DEF2" && defined!"DEF3")
 {
 /+ #define T unsigned long long +/
-alias T = ulong;
 }
 static if (!defined!"DEF" && !defined!"DEF2" && !defined!"DEF3")
 {
@@ -40,10 +39,8 @@ struct S2(T2)
 {
 }
 
-__gshared S2!( mixin(((defined!"DEF" || defined!"DEF2")) ? q{
-        /+ T +/T
-    } : ((!defined!"DEF" && !defined!"DEF2" && defined!"DEF3")) ? q{
-        T
+__gshared S2!( mixin(((defined!"DEF" || defined!"DEF2" || defined!"DEF3")) ? q{
+        /+ T +/Identity!(mixin(((defined!"DEF" || defined!"DEF2"))?q{T}:q{ulong}))
     } : q{
         T
     })) z;

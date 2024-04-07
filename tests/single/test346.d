@@ -41,11 +41,11 @@ void f(const(char)* arg)
     	    recovery++;
     	}
     }:"")
-    ~ ((defined!"LIBXML_DEBUG_ENABLED" && !defined!"LIBXML_TREE_ENABLED") ? q{
-    else if((!strcmp(arg,"-recover"))||(!strcmp(arg,"--recover"))){recovery++;}
-    }:"")
     ~ ((defined!"LIBXML_DEBUG_ENABLED" && defined!"LIBXML_TREE_ENABLED") ? q{
     else if((!strcmp(arg,"-copy"))||(!strcmp(arg,"--copy")))copy++;
+    }:"")
+    ~ ((defined!"LIBXML_DEBUG_ENABLED" && !defined!"LIBXML_TREE_ENABLED") ? q{
+    else if((!strcmp(arg,"-recover"))||(!strcmp(arg,"--recover"))){recovery++;}
     }:"")
     ~ (defined!"LIBXML_TREE_ENABLED" ? q{
     else if((!strcmp(arg,"-recover"))||(!strcmp(arg,"--recover"))){recovery++;}
@@ -249,27 +249,21 @@ void f(const(char)* arg)
     	         (!strcmp(arg, "--stream"))) {
     	     stream++;
     	}
-    	else if ((!strcmp(arg, "-walker")) ||
-    	         (!strcmp(arg, "--walker"))) 
-    	         static if (defined!"LIBXML_PATTERN_ENABLED")
-    	         {
-        	         {
-        	     walker++;
-                     noout++;
-        /+ #ifdef LIBXML_PATTERN_ENABLED +/
-                }
-    	         }
-    	         else
-    	         {
-        {walker++;noout++; /+ else if ((!strcmp(arg, "-pattern")) ||
-                           (!strcmp(arg, "--pattern"))) {
-        	    pattern = arg;
-        #endif +/
-        	}
-    	         }
     }:"")
     ~ ((defined!"LIBXML_PATTERN_ENABLED" && defined!"LIBXML_READER_ENABLED") ? q{
-    else if((!strcmp(arg,"-pattern"))||(!strcmp(arg,"--pattern"))){pattern=arg;}
+    	else if ((!strcmp(arg, "-walker")) ||
+    	         (!strcmp(arg, "--walker"))) {
+    	     walker++;
+                 noout++;
+    /+ #ifdef LIBXML_PATTERN_ENABLED +/
+            } else if ((!strcmp(arg, "-pattern")) ||
+                       (!strcmp(arg, "--pattern"))) {
+    	    pattern = arg;
+    /+ #endif +/
+    	}
+    }:"")
+    ~ ((!defined!"LIBXML_PATTERN_ENABLED" && defined!"LIBXML_READER_ENABLED") ? q{
+    else if((!strcmp(arg,"-walker"))||(!strcmp(arg,"--walker"))){walker++;noout++;}
     }:"")
     ~ (defined!"LIBXML_SAX1_ENABLED" ? q{
     /+ #endif /* LIBXML_READER_ENABLED */
@@ -286,57 +280,39 @@ void f(const(char)* arg)
     	    sax++;
     	}
     }
-    ~ (defined!"LIBXML_SCHEMATRON_ENABLED" ? q{
-    	else if ((!strcmp(arg, "-chkregister")) ||
-    	         (!strcmp(arg, "--chkregister"))) 
-    	         static if (defined!"LIBXML_SCHEMAS_ENABLED")
-    	         {
-        	         {
-        	    chkregister++;
-        /+ #ifdef LIBXML_SCHEMAS_ENABLED +/
-        	}
-    	         }
-    	         else
-    	         {
-        {chkregister++; /+ else if ((!strcmp(arg, "-relaxng")) ||
-        	         (!strcmp(arg, "--relaxng"))) {
-        	    relaxng = arg;
-        	    noent++;
-        	} else if ((!strcmp(arg, "-schema")) ||
-        	         (!strcmp(arg, "--schema"))) {
-        	    schema = arg;
-        	    noent++;
-        #endif
-        #ifdef LIBXML_SCHEMATRON_ENABLED +/
-        	}
-    	         }
-    }:"")
-    ~ (!defined!"LIBXML_SCHEMATRON_ENABLED" ? q{
-    else if((!strcmp(arg,"-chkregister"))||(!strcmp(arg,"--chkregister")))
-        static if (defined!"LIBXML_SCHEMAS_ENABLED")
-        {
-            {chkregister++;}
-        }
-        else
-        {
-        {chkregister++; /+ else if ((!strcmp(arg, "-schematron")) ||
-        	         (!strcmp(arg, "--schematron"))) {
-        	    schematron = arg;
-        	    noent++;
-        #endif +/
-                }
-        }
-    }:"")
     ~ (defined!"LIBXML_SCHEMAS_ENABLED" ? q{
-    else if((!strcmp(arg,"-relaxng"))||(!strcmp(arg,"--relaxng"))){relaxng=arg;noent++;}else if((!strcmp(arg,"-schema"))||(!strcmp(arg,"--schema")))
-        static if (defined!"LIBXML_SCHEMATRON_ENABLED")
-        {
-            {schema=arg;noent++;}
-        }
-        else
-        {
-        {schema=arg;noent++;}
-        }
+    	else if ((!strcmp(arg, "-chkregister")) ||
+    	         (!strcmp(arg, "--chkregister"))) {
+    	    chkregister++;
+    /+ #ifdef LIBXML_SCHEMAS_ENABLED +/
+    	} else if ((!strcmp(arg, "-relaxng")) ||
+    	         (!strcmp(arg, "--relaxng"))) {
+    	    relaxng = arg;
+    	    noent++;
+    	}
+    }:"")
+    ~ ((!defined!"LIBXML_SCHEMAS_ENABLED" && defined!"LIBXML_SCHEMATRON_ENABLED") ? q{
+    else if((!strcmp(arg,"-chkregister"))||(!strcmp(arg,"--chkregister"))){chkregister++; /+ else if ((!strcmp(arg, "-schema")) ||
+    	         (!strcmp(arg, "--schema"))) {
+    	    schema = arg;
+    	    noent++;
+    #endif
+    #ifdef LIBXML_SCHEMATRON_ENABLED +/
+    	}
+    }:"")
+    ~ ((!defined!"LIBXML_SCHEMAS_ENABLED" && !defined!"LIBXML_SCHEMATRON_ENABLED") ? q{
+    else if((!strcmp(arg,"-chkregister"))||(!strcmp(arg,"--chkregister"))){chkregister++; /+ else if ((!strcmp(arg, "-schematron")) ||
+    	         (!strcmp(arg, "--schematron"))) {
+    	    schematron = arg;
+    	    noent++;
+    #endif +/
+            }
+    }:"")
+    ~ ((defined!"LIBXML_SCHEMAS_ENABLED" && defined!"LIBXML_SCHEMATRON_ENABLED") ? q{
+    else if((!strcmp(arg,"-schema"))||(!strcmp(arg,"--schema"))){schema=arg;noent++;}
+    }:"")
+    ~ ((defined!"LIBXML_SCHEMAS_ENABLED" && !defined!"LIBXML_SCHEMATRON_ENABLED") ? q{
+    else if((!strcmp(arg,"-schema"))||(!strcmp(arg,"--schema"))){schema=arg;noent++;}
     }:"")
     ~ (defined!"LIBXML_SCHEMATRON_ENABLED" ? q{
     else if((!strcmp(arg,"-schematron"))||(!strcmp(arg,"--schematron"))){schematron=arg;noent++;}
@@ -349,26 +325,21 @@ void f(const(char)* arg)
     	} else if ((!strcmp(arg, "-load-trace")) ||
     	           (!strcmp(arg, "--load-trace"))) {
     	    load_trace++;
-            } else if ((!strcmp(arg, "-path")) ||
-                       (!strcmp(arg, "--path"))) 
-                       static if (defined!"LIBXML_XPATH_ENABLED")
-                       {
-                           {
-        /+ #ifdef LIBXML_XPATH_ENABLED +/
-                }
-                       }
-                       else
-                       {
-        { /+ else if ((!strcmp(arg, "-xpath")) ||
-                           (!strcmp(arg, "--xpath"))) {
-        	    noout++;
-        	    xpathquery = arg;
-        #endif +/
-        	}
-                       }
+            }
     }
     ~ (defined!"LIBXML_XPATH_ENABLED" ? q{
-    else if((!strcmp(arg,"-xpath"))||(!strcmp(arg,"--xpath"))){noout++;xpathquery=arg;}
+     else if ((!strcmp(arg, "-path")) ||
+                       (!strcmp(arg, "--path"))) {
+    /+ #ifdef LIBXML_XPATH_ENABLED +/
+            } else if ((!strcmp(arg, "-xpath")) ||
+                       (!strcmp(arg, "--xpath"))) {
+    	    noout++;
+    	    xpathquery = arg;
+    /+ #endif +/
+    	}
+    }:"")
+    ~ (!defined!"LIBXML_XPATH_ENABLED" ? q{
+    else if((!strcmp(arg,"-path"))||(!strcmp(arg,"--path"))){}
     }:"")
     ~ q{
      else {

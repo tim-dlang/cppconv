@@ -73,21 +73,21 @@ void g(const(char)* str)
     	} : q{
         write
     	})(str);
-	static if (defined!"DEF")
+	static if (!defined!"DEF")
 	{
-    	mixin(write2__1(q{str}));
+    	write2(str);
 	}
 	else
 	{
-    write2(str);
+    mixin(write2__1(q{str}));
 	}
-	static if (defined!"DEF")
+	static if (!defined!"DEF")
 	{
-    	(mixin(write3(q{str})));
+    	write3(str);
 	}
 	else
 	{
-    write3(str);
+    (mixin(write3(q{str})));
 	}
 	static if (!defined!"DEF")
 	{
