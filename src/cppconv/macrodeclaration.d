@@ -12,6 +12,7 @@ import cppconv.cppdeclaration;
 import cppconv.cppsemantic;
 import cppconv.cpptype;
 import cppconv.declarationpattern;
+import cppconv.dtypecode;
 import cppconv.dwriter;
 import cppconv.filecache;
 import cppconv.logic;
