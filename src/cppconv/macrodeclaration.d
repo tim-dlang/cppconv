@@ -77,6 +77,50 @@ class MacroDeclarationInstance
     bool hasParamExpansion;
 }
 
+void checkDisconnectedDeclSeq(Tree tree, immutable(Formula)* condition, Semantic semantic,
+    immutable(LocationContext)* locationContext,
+    ref immutable(Formula)* conditionInMacro, ref immutable(Formula)* conditionOutsideMacro)
+{
+    auto logicSystem = semantic.logicSystem;
+    if (tree.nodeType == NodeType.token)
+    {
+    }
+    else if (tree.nodeType == NodeType.array)
+    {
+        foreach (c; tree.childs)
+            checkDisconnectedDeclSeq(c, condition, semantic, locationContext, conditionInMacro, conditionOutsideMacro);
+    }
+    else if (tree.nodeType == NodeType.merged)
+    {
+        auto mdata = &semantic.mergedTreeData(tree);
+
+        foreach (i, c; tree.childs)
+        {
+            auto condition2 = logicSystem.and(condition, logicSystem.or(mdata.conditions[i], mdata.mergedCondition));
+            if (!condition2.isFalse)
+                checkDisconnectedDeclSeq(c, condition2, semantic, locationContext, conditionInMacro, conditionOutsideMacro);
+        }
+    }
+    else if (tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+    {
+        auto ctree = tree.toConditionTree;
+        foreach (i, c; tree.childs)
+            checkDisconnectedDeclSeq(c, logicSystem.and(condition, ctree.conditions[i]), semantic, locationContext, conditionInMacro, conditionOutsideMacro);
+    }
+    else if (tree.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq")
+    {
+        foreach (c; tree.childs)
+            checkDisconnectedDeclSeq(c, condition, semantic, locationContext, conditionInMacro, conditionOutsideMacro);
+    }
+    else if (tree.nonterminalID.nonterminalIDAmong!("TypeKeyword"))
+    {
+        if (isParentOf(locationContext, tree.location.context))
+            conditionInMacro = logicSystem.or(conditionInMacro, condition);
+        else
+            conditionOutsideMacro = logicSystem.or(conditionOutsideMacro, condition);
+    }
+}
+
 void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
         LocationContextInfo locationContextInfo)
 {
@@ -224,7 +268,9 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     instance.extraDeps.addOnce(data.macroReplacement[t]);
 
             foreach (t; instance.macroTrees)
+            {
                 data.macroReplacement[t] = instance;
+            }
 
             if (paramName.length)
             {
@@ -314,6 +360,19 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             foreach (t; macroTrees)
                 if (t.nonterminalID != nonterminalIDFor!"StringLiteral2")
                     allTreesStringLiteral = false;
+
+            bool hasDisconnectedDeclSeq;
+            if (macroTrees.length == 1)
+            {
+                if (parent.isValid && parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq")
+                {
+                    immutable(Formula)* conditionInMacro = mergedSemantic.logicSystem.false_;
+                    immutable(Formula)* conditionOutsideMacro = mergedSemantic.logicSystem.false_;
+                    checkDisconnectedDeclSeq(parent, mergedSemantic.logicSystem.true_, mergedSemantic, locationContextInfo.locationContext, conditionInMacro, conditionOutsideMacro);
+                    if (!mergedSemantic.logicSystem.and(conditionInMacro, conditionOutsideMacro).isFalse)
+                        hasDisconnectedDeclSeq = true;
+                }
+            }
             bool isType;
             if (macroName == "assert" && macroTrees.length == 1
                     && macroTrees[0].nonterminalID == nonterminalIDFor!"CppConvAssertExpression")
@@ -336,7 +395,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             }
             else if (allParamsNoConcat && allParamsNoExpansion && allParamsOneInstance && allParamsLiteral
                     && /*macroDeclaration.definition.nonterminalID == nonterminalIDFor!"VarDefine" &&*/ macroTrees.length == 1
-                    && isConstExpression(macroTrees[0], mergedSemantic, isType))
+                    && isConstExpression(macroTrees[0], mergedSemantic, isType) && !hasDisconnectedDeclSeq)
             {
                 foreach (ps; instance.params)
                     foreach (p; ps.instances)
@@ -553,6 +612,8 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
                     .funcMacroInstance.macroTrees[0])
             treeToCodeFlags |= TreeToCodeFlags.skipCasts;
         size_t realCodeStart;
+        size_t indexInParent;
+        Tree parent = getRealParent(usedTrees[0], mergedSemantic, &indexInParent);
         if (instance.macroDeclaration.type == DeclarationType.macroParam
                 && instance.hasParamExpansion)
         {
@@ -562,6 +623,33 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
 
             foreach (t; info.sourceTokens.childs[1].childs)
                 parseTreeToDCode(code, data, t, instanceCondition, null, treeToCodeFlags);
+        }
+        else if (parent.isValid && (parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
+            || (parent.nonterminalID == nonterminalIDFor!"TypeId" && indexInParent == 0)))
+        {
+            ConditionMap!string codeType;
+            CodeWriter codeAfterDeclSeq;
+            codeAfterDeclSeq.indentStr = data.options.indent;
+            bool afterTypeInDeclSeq;
+            foreach (usedTree; usedTrees)
+            {
+                if (code.data.length == 0 && usedTree.isValid)
+                {
+                    writeComments(code, data, locationBeforeUsedMacro(usedTree, data, false));
+                    realCodeStart = code.data.length;
+                }
+                if (usedTree.isValid)
+                {
+                    collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
+                            afterTypeInDeclSeq, usedTree, instanceCondition, data, null);
+                }
+            }
+
+            ConditionMap!string realId;
+            translateBuiltinAll(codeType, realId, instanceCondition, false, data);
+            realId.removeFalseEntries();
+            code.write(idMapToCode(realId, instanceCondition, data));
+            code.write(codeAfterDeclSeq.data);
         }
         else
         {

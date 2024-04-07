@@ -7,12 +7,14 @@ static if (defined!"DEF")
 {
 alias X1 = int;
 /+ #define X X1 +/
+alias X = X1;
 }
 static if (!defined!"DEF")
 {
 alias X2 = float;
 /+ #define X X2 +/
+alias X = X2;
 }
 
-/+ X +/__gshared Identity!(mixin((defined!"DEF")?q{X1}:q{X2})) var;
+__gshared X var;
 

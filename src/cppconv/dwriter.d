@@ -1623,6 +1623,9 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
     {
         if (isTreeExpression(childs[i], semantic))
             isExpression = true;
+        // Types are handled like expressions here.
+        if (parent.isValid && parent.nonterminalID.nonterminalIDAmong!("DeclSpecifierSeq", "SimpleTemplateId"))
+            isExpression = true;
         if (!logicSystem.and(condition, conditions[i]).isFalse)
         {
             numPossible++;
@@ -6008,6 +6011,79 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
     auto logicSystem = semantic.logicSystem;
     if (!tree.isValid)
         return;
+
+    if (tree in data.macroReplacement)
+    {
+        CodeWriter code2;
+
+        auto instance = data.macroReplacement[tree];
+        if (tree !is instance.firstUsedTree)
+            return;
+        bool needsParens = false;
+
+        string name = instance.usedName;
+
+        name = qualifyName(name, instance.macroDeclaration, data, currentScope, condition);
+
+        if (instance.macroDeclaration.type == DeclarationType.macroParam)
+        {
+            if (instance.macroTranslation == MacroTranslation.enumValue)
+            {
+                code2.write(instance.usedName);
+            }
+            else if (instance.macroTranslation == MacroTranslation.alias_)
+            {
+                code2.write(instance.usedName);
+            }
+            else if (instance.hasParamExpansion)
+            {
+                code2.write("$(stringifyMacroParameter(", instance.usedName, "))");
+            }
+            else
+                code2.write("$(", instance.usedName, ")");
+            if (data.sourceTokenManager.tokensLeft.data.length)
+                data.sourceTokenManager.collectTokens(tree.location.end);
+        }
+        else if (instance.macroTranslation.among(MacroTranslation.enumValue,
+                MacroTranslation.mixin_, MacroTranslation.alias_, MacroTranslation.builtin))
+        {
+            if (code2.inLine && code2.data.length
+                    && !code2.data[$ - 1].inCharSet!" \t" && !code2.data.endsWith("("))
+                code2.write(" ");
+
+            string macroSuffix;
+            if (instance.macroTranslation.among(MacroTranslation.enumValue,
+                    MacroTranslation.builtin))
+            {
+            }
+            else if (instance.macroTranslation == MacroTranslation.mixin_)
+            {
+                if (tree.nonterminalID == nonterminalIDFor!"TypeId")
+                {
+                    code2.write("Identity!(");
+                    macroSuffix = ")" ~ macroSuffix;
+                }
+                code2.write("mixin(");
+                macroSuffix = ")" ~ macroSuffix;
+            }
+            parseTreeToCodeTerminal!Tree(code2, name);
+
+            assert(instance.locationContextInfo.locationContext.name == "^");
+            assert(instance.locationContextInfo.locationContext.prev.name
+                    == instance.locationContextInfo.locationContext.prev.prev.name);
+            bool allowComments = instance.locationContextInfo.locationContext.prev.prev.prev.name == ""
+                || instance.locationContextInfo.locationContext.prev.prev.prev is data.sourceTokenManager.tokensContext;
+
+            parseTreeToCodeTerminal!Tree(code2, macroSuffix);
+            if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
+                data.sourceTokenManager.collectTokens(tree.location.end);
+        }
+
+        codeType.addCombine!((a, b) => a ~ b)(condition, code2.data.idup, logicSystem);
+
+        return;
+    }
+
     if (tree.nonterminalID.nonterminalIDAmong!("DeclSpecifierSeq"))
     {
         collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
@@ -8281,6 +8357,58 @@ string translateBuiltin(string name, bool builtinCppTypes)
     }
 }
 
+void translateBuiltinAll(ref ConditionMap!string codeType, ref ConditionMap!string realId, immutable(Formula)* condition, bool isConst, DWriterData data)
+{
+    auto semantic = data.semantic;
+    auto logicSystem = semantic.logicSystem;
+    foreach (e; codeType.entries)
+    {
+        if (!logicSystem.and(e.condition, condition).isFalse)
+        {
+            string name = e.data;
+            if (name.startsWith("$builtin_"))
+            {
+                name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
+            }
+            if (isConst && name == "auto")
+                name = ""; // const is enough
+            realId.addReplace(e.condition, name, semantic.logicSystem);
+        }
+    }
+}
+
+string idMapToCode(ref ConditionMap!string realId, immutable(Formula)* condition, DWriterData data)
+{
+    auto semantic = data.semantic;
+    auto logicSystem = semantic.logicSystem;
+    string r;
+    if (realId.entries.length == 1)
+        r ~= realId.entries[0].data;
+    else
+    {
+        r ~= "Identity!(mixin(";
+        foreach (i, e; realId.entries)
+        {
+            if (i + 1 < realId.entries.length)
+            {
+                r ~= "(";
+                auto simplified = logicSystem.removeRedundant(e.condition, condition);
+                simplified = removeLocationInstanceConditions(simplified,
+                        logicSystem, data.mergedFileByName);
+                r ~= conditionToDCode(simplified, data);
+                r ~= ")?";
+            }
+            r ~= "q{";
+            r ~= e.data;
+            r ~= "}";
+            if (i + 1 < realId.entries.length)
+                r ~= ":";
+        }
+        r ~= "))";
+    }
+    return r;
+}
+
 string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition, Scope currentScope,
         LocationRangeX currentLoc, DeclaratorData[] declList,
         ref ConditionMap!string codeType, TypeToCodeFlags flags = TypeToCodeFlags.none)
@@ -8291,17 +8419,10 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
     {
         CodeWriter code;
         code.write("UnknownType!q{");
-        foreach (i, e; codeType.entries)
-        {
-            if (i)
-                code.write(" ");
-            string name = e.data;
-            if (name.startsWith("$builtin_"))
-            {
-                name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
-            }
-            code.write(name);
-        }
+        ConditionMap!string realId;
+        translateBuiltinAll(codeType, realId, condition, false, data);
+        if (realId.entries.length)
+            code.write(idMapToCode(realId, condition, data));
 
         string codeBeforeDeclarator;
         string suffix;
@@ -8359,29 +8480,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
 
         typeCode.removeFalseEntries();
 
-        if (typeCode.entries.length == 1)
-            return r ~ typeCode.entries[0].data ~ suffix;
-
-        r ~= "Identity!(mixin(";
-
-        foreach (i, e; typeCode.entries)
-        {
-            if (i + 1 < typeCode.entries.length)
-            {
-                r ~= "(";
-                auto simplified = semantic.logicSystem.removeRedundant(e.condition, condition);
-                simplified = removeLocationInstanceConditions(simplified,
-                        semantic.logicSystem, data.mergedFileByName);
-                r ~= conditionToDCode(simplified, data);
-                r ~= ")?";
-            }
-            r ~= "q{";
-            r ~= e.data;
-            r ~= "}";
-            if (i + 1 < typeCode.entries.length)
-                r ~= ":";
-        }
-        r ~= "))" ~ suffix;
+        r ~= idMapToCode(typeCode, condition, data);
+        r ~= suffix;
         return r;
     }
 
@@ -8447,29 +8547,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
 
         typeCode.removeFalseEntries();
 
-        if (typeCode.entries.length == 1)
-            return r ~ typeCode.entries[0].data ~ suffix;
-
-        r ~= "Identity!(mixin(";
-
-        foreach (i, e; typeCode.entries)
-        {
-            if (i + 1 < typeCode.entries.length)
-            {
-                r ~= "(";
-                auto simplified = semantic.logicSystem.removeRedundant(e.condition, condition);
-                simplified = removeLocationInstanceConditions(simplified,
-                        semantic.logicSystem, data.mergedFileByName);
-                r ~= conditionToDCode(simplified, data);
-                r ~= ")?";
-            }
-            r ~= "q{";
-            r ~= e.data;
-            r ~= "}";
-            if (i + 1 < typeCode.entries.length)
-                r ~= ":";
-        }
-        r ~= "))" ~ suffix;
+        r ~= idMapToCode(typeCode, condition, data);
+        r ~= suffix;
         return r;
     }
     if (type.kind == TypeKind.reference)
@@ -8610,54 +8689,20 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
     {
         string translation = translateBuiltin(type.name, data.options.builtinCppTypes);
         ConditionMap!string realId;
-        if (type.qualifiers & Qualifiers.const_ && type.name == "auto")
+        bool isConst = (type.qualifiers & Qualifiers.const_) != 0;
+        if (isConst && type.name == "auto")
             realId.add(condition, "", semantic.logicSystem); // const is enough
         else if (translation.length)
             realId.add(condition, translation, semantic.logicSystem);
         else
             realId.add(condition, type.name, semantic.logicSystem);
-        foreach (e; codeType.entries)
-        {
-            if (!semantic.logicSystem.and(e.condition, condition).isFalse)
-            {
-                string name = e.data;
-                if (name.startsWith("$builtin_"))
-                {
-                    name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
-                }
-                if (type.qualifiers & Qualifiers.const_ && name == "auto")
-                    name = ""; // const is enough
-                realId.addReplace(e.condition, name, semantic.logicSystem);
-            }
-        }
+        translateBuiltinAll(codeType, realId, condition, isConst, data);
         realId.removeFalseEntries();
 
         if (realId.entries.length == 0)
             r ~= translation.length ? translation : type.name;
-        else if (realId.entries.length == 1)
-            r ~= realId.entries[0].data;
         else
-        {
-            r ~= "Identity!(mixin(";
-            foreach (i, e; realId.entries)
-            {
-                if (i + 1 < realId.entries.length)
-                {
-                    r ~= "(";
-                    auto simplified = semantic.logicSystem.removeRedundant(e.condition, condition);
-                    simplified = removeLocationInstanceConditions(simplified,
-                            semantic.logicSystem, data.mergedFileByName);
-                    r ~= conditionToDCode(simplified, data);
-                    r ~= ")?";
-                }
-                r ~= "q{";
-                r ~= e.data;
-                r ~= "}";
-                if (i + 1 < realId.entries.length)
-                    r ~= ":";
-            }
-            r ~= "))";
-        }
+            r ~= idMapToCode(realId, condition, data);
     }
     else if (type.kind.among(TypeKind.record, TypeKind.typedef_))
     {
@@ -8719,30 +8764,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
 
         if (realId.entries.length == 0)
             r ~= type.name ~ templateArgs;
-        else if (realId.entries.length == 1)
-            r ~= realId.entries[0].data;
         else
-        {
-            r ~= "Identity!(mixin(";
-            foreach (i, e; realId.entries)
-            {
-                if (i + 1 < realId.entries.length)
-                {
-                    r ~= "(";
-                    auto simplified = semantic.logicSystem.removeRedundant(e.condition, condition);
-                    simplified = removeLocationInstanceConditions(simplified,
-                            semantic.logicSystem, data.mergedFileByName);
-                    r ~= conditionToDCode(simplified, data);
-                    r ~= ")?";
-                }
-                r ~= "q{";
-                r ~= e.data;
-                r ~= "}";
-                if (i + 1 < realId.entries.length)
-                    r ~= ":";
-            }
-            r ~= "))";
-        }
+            r ~= idMapToCode(realId, condition, data);
     }
     else
         r ~= type.name;
@@ -9855,7 +9878,8 @@ ImportInfo[string] getNeededImportsLocal(Declaration d, DWriterData data)
 
 bool isConstExpression(Tree t, Semantic semantic, ref bool isType)
 {
-    Tree parent = getRealParent(t, semantic);
+    size_t indexInParent;
+    Tree parent = getRealParent(t, semantic, &indexInParent);
     if (t.nodeType == NodeType.nonterminal
             && t.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
     {
@@ -9883,6 +9907,23 @@ bool isConstExpression(Tree t, Semantic semantic, ref bool isType)
         return true;
     }
     if (t.nodeType == NodeType.nonterminal && t.nonterminalID == nonterminalIDFor!"TypeId")
+    {
+        isType = true;
+        return true;
+    }
+    if (t.nodeType == NodeType.nonterminal && t.nonterminalID == nonterminalIDFor!"TypeKeyword")
+    {
+        isType = true;
+        return true;
+    }
+    if (parent.isValid && parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
+        && t.nodeType == NodeType.nonterminal && t.nonterminalID == nonterminalIDFor!"NameIdentifier")
+    {
+        isType = true;
+        return true;
+    }
+    if (parent.isValid && parent.nonterminalID == nonterminalIDFor!"TypeId" && indexInParent == 0
+        && t.nodeType == NodeType.nonterminal && t.nonterminalID == nonterminalIDFor!"NameIdentifier")
     {
         isType = true;
         return true;
