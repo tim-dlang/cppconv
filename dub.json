@@ -5,8 +5,8 @@
     "license": "BSL-1.0",
     "targetType": "executable",
     "dependencies": {
-        "dparsergen:core": "~>0.1.1",
-        "dparsergen:generator": "~>0.1.1"
+        "dparsergen:core": "~>0.1.2",
+        "dparsergen:generator": "~>0.1.2"
     },
     "sourceFiles": [
         "src/cppconv/grammarcpp.d",
