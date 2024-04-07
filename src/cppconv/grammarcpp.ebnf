@@ -426,10 +426,13 @@ Condition
 
 // Section stmt.iter
 IterationStatement
-    = "while" "(" Condition ")" Statement
+    = IterationStatementHead Statement
     | DoWhileStatement ";"
-    | "for" "(" ForInitStatement Condition? ";" Expression? ")" Statement
-    | "for" "(" ForRangeDeclaration ":" ForRangeInitializer ")" Statement
+    ;
+IterationStatementHead
+    = "while" "(" Condition ")"
+    | "for" "(" ForInitStatement Condition? ";" Expression? ")"
+    | "for" "(" ForRangeDeclaration ":" ForRangeInitializer ")"
     ;
 DoWhileStatement
     = "do" Statement "while" "(" Expression ")"

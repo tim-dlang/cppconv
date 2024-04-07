@@ -1878,8 +1878,8 @@ void isStatementEndUnreachableImpl(Tree tree, immutable(Formula)* condition,
     else if (tree.nonterminalID == nonterminalIDFor!"IterationStatement")
     {
         if (auto match = tree.matchTreePattern!q{
-                IterationStatement("for", "(", *, null, ";", *, ")", *)
-                | IterationStatement("while", "(", Literal("1"), ")", *)
+                IterationStatement(IterationStatementHead("for", "(", *, null, ";", *, ")"), *)
+                | IterationStatement(IterationStatementHead("while", "(", Literal("1"), ")"), *)
             })
         {
             immutable(Formula)* hasBreak = semantic.logicSystem.false_;
@@ -3852,9 +3852,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 || nonExpr.name.endsWith("CommaExpression")))
             nonExpr = semantic.extraInfo(nonExpr).parent;
 
-        if (nonExpr.isValid && (nonExpr.nameOrContent != "IterationStatement"
-                || (nonExpr.nameOrContent == "IterationStatement"
-                && nonExpr.childs[0].nameOrContent == "while") /* && nonExpr.nameOrContent != "DoWhileStatement"*/ ))
+        if (nonExpr.isValid && (nonExpr.nameOrContent != "IterationStatementHead"
+                || nonExpr.matchTreePattern!q{IterationStatementHead("while", ...)}))
         {
             parseTreeToCodeTerminal!T(code, "()");
             parseTreeToCodeTerminal!T(code, "{");
@@ -3888,9 +3887,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 "InitializerClause")))
             nonExpr = semantic.extraInfo(nonExpr).parent;
         if (tree.childs[1].childs[0].content == "=" && nonExpr.isValid
-                && nonExpr.name != "ExpressionStatement" && !(parent.nameOrContent == "IterationStatement"
+                && nonExpr.name != "ExpressionStatement" && !(parent.nameOrContent == "IterationStatementHead"
                     && parent.childs[0].nameOrContent == "for"
-                    && parent.childs.length == 8 && indexInParent.among(2, 5))
+                    && parent.childs.length == 7 && indexInParent.among(2, 5))
                 && !(parent.nonterminalID == nonterminalIDFor!"PrimaryExpression"
                     && parent2.nonterminalID.nonterminalIDAmong!("RelationalExpression",
                     "EqualityExpression")))
