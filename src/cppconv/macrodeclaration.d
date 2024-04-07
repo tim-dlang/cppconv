@@ -256,6 +256,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             bool allParamsLiteral = true;
             bool allParamsNoConcat = true;
             bool allParamsNoExpansion = true;
+            bool allParamsStringLiterals = true;
             if (macroDeclaration.definition.nonterminalID == preprocNonterminalIDFor!"FuncDefine")
             {
                 foreach (p; macroDeclaration.definition.childs[7].childs)
@@ -291,9 +292,20 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                             allParamsNoExpansion = false;
                         if (x.hasMacroConcat)
                             allParamsNoConcat = false;
+
+                        bool allStringLiteral = true;
+                        foreach (t; x.macroTrees)
+                            if (t.nonterminalID != nonterminalIDFor!"StringLiteral2")
+                                allStringLiteral = false;
+                        if (x.macroTrees.length == 0 || !allStringLiteral)
+                            allParamsStringLiterals = false;
                     }
                 }
             }
+            bool allTreesStringLiteral = true;
+            foreach (t; macroTrees)
+                if (t.nonterminalID != nonterminalIDFor!"StringLiteral2")
+                    allTreesStringLiteral = false;
             if (macroName == "assert" && macroTrees.length == 1
                     && macroTrees[0].nonterminalID == nonterminalIDFor!"CppConvAssertExpression")
             {
@@ -306,6 +318,17 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     instance.extraDeps ~= data.macroReplacement[instance.macroTrees[0]];
                 data.macroReplacement[instance.macroTrees[0]] = instance;
                 instance.macroTranslation = MacroTranslation.builtin;
+            }
+            else if (macroTrees.length > 0 && allTreesStringLiteral && allParamsStringLiterals)
+            {
+                foreach (ps; instance.params)
+                    foreach (p; ps.instances)
+                    {
+                        p.macroTranslation = MacroTranslation.enumValue;
+                    }
+                foreach (t; instance.macroTrees)
+                    data.macroReplacement[t] = instance;
+                instance.macroTranslation = MacroTranslation.enumValue;
             }
             else if (allParamsNoConcat && allParamsNoExpansion && allParamsOneInstance && allParamsLiteral
                     && /*macroDeclaration.definition.nonterminalID == nonterminalIDFor!"VarDefine" &&*/ macroTrees.length == 1
@@ -391,6 +414,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         data.importGraphHere = data.importGraph.get(data.currentFilename, null);
         data.importedPackagesGraphHere = data.importedPackagesGraph.get(data.currentFilename, null);
         data.versionReplacementsOr = null;
+        data.afterStringLiteral = false;
 
         auto instanceCondition = locationContextInfo.condition;
         if (instanceCondition is null)

@@ -1993,7 +1993,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             runSemantic(semantic, c, tree, condition);
         }
 
-        extraInfoHere.type = semantic.extraInfo(tree.childs[0]).type;
+        extraInfoHere.type = semantic.extraInfo(tree.childs[0].childs[0]).type;
     }, (MatchNonterminals!("LiteralS")) {
         foreach (k, ref c; tree.childs)
         {

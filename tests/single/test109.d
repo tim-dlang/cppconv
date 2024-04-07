@@ -50,11 +50,11 @@ enum GIT_HOOKS_README_MODE = octal!777;
 "# to intercept various actions that git takes.  See `git help hooks` for\n"\
 "# more information.\n" +/
 enum GIT_HOOKS_README_CONTENT =
-    "#!/bin/sh\n" ~
-    "#\n" ~
-    "# Place appropriately named executable hook scripts into this directory\n" ~
-    "# to intercept various actions that git takes.  See `git help hooks` for\n" ~
-    "# more information.\n";
+    "#!/bin/sh\n"
+    ~ "#\n"
+    ~ "# Place appropriately named executable hook scripts into this directory\n"
+    ~ "# to intercept various actions that git takes.  See `git help hooks` for\n"
+    ~ "# more information.\n";
 
 /+ #define GIT_INFO_DIR "info/" +/
 enum GIT_INFO_DIR = "info/";
@@ -69,8 +69,8 @@ enum GIT_INFO_EXCLUDE_MODE = octal!666;
 "# File patterns to ignore; see `git help ignore` for more information.\n"\
 "# Lines that start with '#' are comments.\n" +/
 enum GIT_INFO_EXCLUDE_CONTENT =
-    "# File patterns to ignore; see `git help ignore` for more information.\n" ~
-    "# Lines that start with '#' are comments.\n";
+    "# File patterns to ignore; see `git help ignore` for more information.\n"
+    ~ "# Lines that start with '#' are comments.\n";
 
 /+ #define GIT_DESC_FILE "description" +/
 enum GIT_DESC_FILE = "description";

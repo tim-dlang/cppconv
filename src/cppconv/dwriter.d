@@ -189,6 +189,7 @@ class DWriterData
     string[string] paramNameMap;
     bool[string] usedPackages;
     string[DeclarationSet] functionChosenName;
+    bool afterStringLiteral;
 
     DFilename currentFilename;
     ImportInfo[string] importGraphHere;
@@ -1634,6 +1635,9 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
         return;
     }
 
+    if (data.afterStringLiteral)
+        code.write("~ ");
+
     size_t l = 0;
     string lastLineIndent;
     string origCustomIndent = code.customIndent;
@@ -1643,6 +1647,7 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
     string newCustomIndent2;
     foreach (i; 0 .. conditions.length)
     {
+        data.afterStringLiteral = false;
         if (logicSystem.and(condition, conditions[i]).isFalse)
             continue;
         if (i + 1 == conditions.length && (!childs[i].isValid
@@ -2496,16 +2501,28 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
             name = data.fileByDecl[instance.macroDeclaration].moduleName ~ "." ~ name;
 
+        bool possibleStringLiteral = instance.macroTranslation == MacroTranslation.enumValue || instance.hasParamExpansion;
+        if (data.afterStringLiteral && possibleStringLiteral)
+            code.write("~ ");
         if (instance.macroDeclaration.type == DeclarationType.macroParam)
         {
-            if (instance.macroTranslation.among(MacroTranslation.enumValue, MacroTranslation.alias_))
+            if (instance.macroTranslation == MacroTranslation.enumValue)
+            {
                 code.write(instance.usedName);
+            }
+            else if (instance.macroTranslation == MacroTranslation.alias_)
+            {
+                code.write(instance.usedName);
+            }
             else if (instance.hasParamExpansion)
+            {
                 code.write("$(stringifyMacroParameter(", instance.usedName, "))");
+            }
             else
                 code.write("$(", instance.usedName, ")");
             if (data.sourceTokenManager.tokensLeft.data.length)
                 data.sourceTokenManager.collectTokens(tree.location.end);
+            data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
         }
         else if (instance.macroTranslation.among(MacroTranslation.enumValue,
                 MacroTranslation.mixin_, MacroTranslation.alias_, MacroTranslation.builtin))
@@ -2697,6 +2714,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (instance.macroTranslation == MacroTranslation.mixin_
                     && (tree.name.endsWith("Statement") || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
                 parseTreeToCodeTerminal!T(code, ";");
+            else
+                data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
         }
 
         return;
@@ -2712,6 +2731,15 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
         parseTreeToCodeTerminal!T(code, macroReplacement);
         return;
+    }
+
+    scope(success)
+    {
+        if (tree.nodeType == NodeType.token
+                || (tree.nodeType == NodeType.nonterminal
+                    && tree.nonterminalID != nonterminalIDFor!"StringLiteral2"
+                    && tree.nonterminalID != CONDITION_TREE_NONTERMINAL_ID))
+            data.afterStringLiteral = false;
     }
 
     if (tree.nodeType == NodeType.token)
@@ -3555,14 +3583,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"StringLiteralSequence")
-    {
-        parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
-        code.write(" ~");
-        parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
-    }
     else if (tree.nonterminalID == nonterminalIDFor!"StringLiteral2")
     {
+        if (data.afterStringLiteral)
+            code.write("~ ");
         string value = tree.childs[0].content;
         if (value.length >= 4 && value[$ - 4] == '\\' && value[$ - 3] == 'x' && value[$ - 1] == '"')
             value = value[0 .. $ - 2] ~ "0" ~ value[$ - 2 .. $];
@@ -3577,6 +3601,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         else
             parseTreeToCodeTerminal!T(code, value);
         skipToken(code, data, tree.childs[0]);
+        data.afterStringLiteral = true;
     }
     else if (tree.nonterminalID == nonterminalIDFor!"CompoundLiteralExpression")
     {
@@ -7806,6 +7831,7 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                         data.sourceTokenManager.collectTokens(declarator.childs[1].start));
             skipToken(codeBefore, data, declarator.childs[1]);
             codeBefore.write("[");
+            data.afterStringLiteral = false;
             parseTreeToDCode(codeBefore, data, declarator.childs[2], condition, currentScope);
             if (!declarator.childs[2].isValid)
                 codeBefore.write("0");
@@ -8338,6 +8364,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             auto tokensLeftBak = data.sourceTokenManager.tokensLeft;
             data.sourceTokenManager.tokensLeft = typeof(data.sourceTokenManager.tokensLeft)();
+            data.afterStringLiteral = false;
             code.write("[");
             if (!arrayType.declarator.isValid)
                 code.write("0/* TODO: string literal has no declrarator for size. */");
