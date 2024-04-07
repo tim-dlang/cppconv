@@ -8905,6 +8905,8 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
             return;
         if (d2.type == DeclarationType.namespace)
             return;
+        if (d2.type == DeclarationType.macroParam)
+            return;
         if (condition.isFalse)
             return;
         auto x = d2 in r;
@@ -9056,6 +9058,8 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         inTemplate = 4
     }
 
+    bool[MacroDeclarationInstance] macroDone;
+
     void visitTree(Tree tree, immutable(Formula)* condition, Flags flags,
             MacroDeclarationInstance currentMacroInstance, bool outsideFunction, bool outsideMixin)
     {
@@ -9066,11 +9070,19 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         if (tree.nameOrContent == "FunctionBody")
             outsideFunction = false;
         Tree parent = getRealParent(tree, semantic);
+        if (currentMacroInstance)
+        {
+            if (currentMacroInstance in macroDone)
+                return;
+            macroDone[currentMacroInstance] = true;
+        }
         if (tree in data.macroReplacement)
         {
             bool foundThisMacro;
             bool isValueMacro;
             bool isMixinMacro;
+            bool isMacroParam;
+            bool hasSubMacros;
             void onDep(MacroDeclarationInstance instance2)
             {
                 if (instance2 is currentMacroInstance)
@@ -9080,6 +9092,7 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                     {
                         onDep(x);
                     }
+                    foundThisMacro = false;
                     return;
                 }
                 if (currentMacroInstance !is null && !foundThisMacro)
@@ -9090,9 +9103,21 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                     }
                     return;
                 }
+                hasSubMacros = true;
+
+                foreach (name, param; instance2.params)
+                    foreach (instanceParam; param.instances)
+                        foreach (t; instanceParam.macroTrees)
+                            visitTree(t, condition, flags, instanceParam, outsideFunction, outsideMixin);
+
+                if (instance2.macroDeclaration !is null && instance2.macroDeclaration.type == DeclarationType.macroParam)
+                    isMacroParam = true;
+
                 if ((flags & Flags.addInterpolatMixins)
                         || instance2.macroTranslation != MacroTranslation.mixin_)
-                    if (!instance2.macroDeclaration.name.among("Q_OBJECT"))
+                    if (instance2.macroTranslation != MacroTranslation.none
+                            && instance2.macroDeclaration !is null
+                            && !instance2.macroDeclaration.name.among("Q_OBJECT"))
                         add(instance2.macroDeclaration, condition,
                                 outsideFunction, outsideMixin, tree.start);
                 if (instance2.macroTranslation == MacroTranslation.enumValue
@@ -9104,19 +9129,14 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                 if (instance2.macroTranslation == MacroTranslation.mixin_)
                 {
                     isMixinMacro = true;
-                    return;
                 }
-                foreach (x; instance2.extraDeps)
-                {
-                    onDep(x);
-                }
+                foreach (t; instance2.macroTrees)
+                    visitTree(t, condition, flags, instance2, outsideFunction, outsideMixin && !isMixinMacro);
             }
 
             onDep(data.macroReplacement[tree]);
-            if (isValueMacro)
+            if (isValueMacro || isMacroParam || hasSubMacros)
                 return;
-            if (isMixinMacro)
-                outsideMixin = false;
         }
         if (semantic.extraInfo(tree).declarations.length
                 && !(tree.nameOrContent == "ParameterDeclarationAbstract"
