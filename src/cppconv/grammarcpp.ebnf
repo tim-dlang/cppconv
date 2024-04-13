@@ -1041,7 +1041,7 @@ ArrayAbstractDeclarator
     ;
 
 // Section dcl.fct
-ParameterDeclarationClause
+ParameterDeclarationClause @array
     = ParameterDeclarationList? //"..."?
     | "..."
     | ParameterDeclarationList "," "..."

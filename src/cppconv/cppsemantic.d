@@ -406,8 +406,10 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
         iteratePPVersions!collectParameters(tree.childs[ppVersion.combination.next(cast(uint)$)],
                 ppVersion, semantic, info, hasDefault);
     }
-    else if (tree.nodeType != NodeType.nonterminal)
+    else if (tree.nodeType == NodeType.token)
     {
+        if (tree.content == "...")
+            info.isVariadic = true;
     }
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers")
     {
@@ -417,12 +419,6 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"Parameters")
     {
         iteratePPVersions!collectParameters(tree.childs[1], ppVersion, semantic, info, hasDefault);
-    }
-    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationClause")
-    {
-        if (tree.childs[$ - 1].isValid && tree.childs[$ - 1].nameOrContent == "...")
-            info.isVariadic = true;
-        iteratePPVersions!collectParameters(tree.childs[0], ppVersion, semantic, info, hasDefault);
     }
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclaration"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationAbstract")
@@ -1394,7 +1390,6 @@ void checkValidParam(Tree tree, ref IteratePPVersions ppVersion,
             || tree.name.startsWith("FunctionDeclarator")
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"Parameters"
-            || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationClause"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclaration"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationAbstract"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"DeclSpecifierSeq")

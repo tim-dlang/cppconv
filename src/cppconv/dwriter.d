@@ -5592,6 +5592,8 @@ void findParams(Tree t, immutable(Formula)* condition3,
     {
         if (t.content == ",")
             info.commaTokens ~= t;
+        if (t.content == "...")
+            info.isVariadic = true;
     }
     else if (t.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
     {
@@ -5682,12 +5684,6 @@ void findParams(Tree t, immutable(Formula)* condition3,
     else if (t.nonterminalID == nonterminalIDFor!"VirtSpecifier")
     {
         info.attributeTrees ~= t;
-    }
-    else if (t.nonterminalID == nonterminalIDFor!"ParameterDeclarationClause")
-    {
-        findParams(t.childs[0], condition3, info, data, currentScope);
-        if (t.childs[$ - 1].isValid && t.childs[$ - 1].nameOrContent == "...")
-            info.isVariadic = true;
     }
     else if (t.nodeType == NodeType.nonterminal && t.hasChildWithName("innerDeclarator"))
         findParams(t.childByName("innerDeclarator"), condition3, info, data, currentScope);

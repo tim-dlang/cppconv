@@ -577,40 +577,36 @@ struct CppParseTreeCreator(alias GrammarModule)
     template mergeParseTrees(SymbolID nonterminalID)
     {
         NonterminalType!(nonterminalID) mergeParseTrees(Location firstParamStart, Location lastParamEnd,
-                ParseStackElem!(Location, NonterminalType!nonterminalID)[] trees,
-                string mergeInfo = "")
+                ParseStackElem!(Location, NonterminalType!nonterminalID)[] trees)
         {
-            if (mergeInfo.length == 0)
+            string[] childNames;
+            foreach (c; trees)
             {
-                string[] childNames;
-                foreach (c; trees)
+                string name;
+                static if (is(NonterminalType!nonterminalID == CppParseTreeArray))
                 {
-                    string name;
-                    static if (is(NonterminalType!nonterminalID == CppParseTreeArray))
+                    foreach (x; c.val.trees)
                     {
-                        foreach (x; c.val.trees)
-                        {
-                            if (name.length)
-                                name ~= " ";
-                            if (!x.isValid)
-                                name ~= "null";
-                            else
-                                name ~= x.nameOrContent;
-                        }
-                    }
-                    else
-                    {
-                        if (!c.val.isValid)
-                            name = "null";
+                        if (name.length)
+                            name ~= " ";
+                        if (!x.isValid)
+                            name ~= "null";
                         else
-                            name = c.val.name;
+                            name ~= x.nameOrContent;
                     }
-                    childNames ~= name;
                 }
-                sort(childNames);
-                mergeInfo = "Merged:" ~ allNonterminals[nonterminalID - startNonterminalID].name
-                    ~ "(" ~ childNames.join(" | ") ~ ")";
+                else
+                {
+                    if (!c.val.isValid)
+                        name = "null";
+                    else
+                        name = c.val.name;
+                }
+                childNames ~= name;
             }
+            sort(childNames);
+            string mergeInfo = "Merged:" ~ allNonterminals[nonterminalID - startNonterminalID].name
+                ~ "(" ~ childNames.join(" | ") ~ ")";
             static if (is(NonterminalType!nonterminalID == CppParseTreeArray))
                 return mergeParseTreesImplArray(firstParamStart, lastParamEnd, trees, mergeInfo);
             else
