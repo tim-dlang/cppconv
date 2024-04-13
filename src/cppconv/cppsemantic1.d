@@ -666,6 +666,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                             && (d2.flags & DeclarationFlags.function_) != 0)
                         {
                             addFunctionParamReclDecls(d, d2, ppVersion.condition, semantic);
+                            if (d2.flags & DeclarationFlags.static_)
+                                d.flags |= DeclarationFlags.static_;
                         }
                     }
                 }
