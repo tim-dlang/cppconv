@@ -818,7 +818,7 @@ bool isTreeExpression(Tree tree, Semantic semantic)
     if (tree.nameOrContent.among("NameIdentifier"))
     {
         if (parent.nonterminalID == nonterminalIDFor!"CastExpression")
-            return indexInParent == 3;
+            return indexInParent == 1;
         if (parent.nameOrContent == "PostfixExpression"
                 && parent.childs[1].nameOrContent.among("->", "."))
             return indexInParent == 0;
@@ -3447,11 +3447,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     else if (tree.nonterminalID == nonterminalIDFor!"CastExpression")
     {
         parseTreeToCodeTerminal!T(code, "cast");
-        parseTreeToDCode(code, data, tree.childs[0], condition, currentScope); // (
-
-        parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
-
-        parseTreeToDCode(code, data, tree.childs[2], condition, currentScope); // )
+        parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
 
         string suffix;
         if (tree.childs[$ - 1].nonterminalID == nonterminalIDFor!"LiteralS"
@@ -3460,7 +3456,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             code.write("(");
             suffix = ")";
         }
-        foreach (c; tree.childs[3 .. $])
+        foreach (c; tree.childs[1 .. $])
         {
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
@@ -3667,7 +3663,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     }
     else if (tree.nonterminalID == nonterminalIDFor!"CompoundLiteralExpression")
     {
-        parseTreeToDCode(code, data, tree.childs[3], condition, currentScope);
+        parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"BracedInitList")
     {
@@ -8886,7 +8882,7 @@ bool isConstExpression(Tree t, Semantic semantic, ref bool isType)
             "+", "~", "!") && isConstExpression(t.childs[1], semantic, isType))
         return true;
     if (t.nonterminalID == nonterminalIDFor!"CastExpression"
-            && isConstExpression(t.childs[3], semantic, isType))
+            && isConstExpression(t.childs[1], semantic, isType))
         return true;
     if (t.nameOrContent == "UnaryExpression" && t.childs[0].nameOrContent.among("sizeof",
             "alignof") && t.childs[1].nameOrContent == "(")

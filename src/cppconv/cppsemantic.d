@@ -1962,7 +1962,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                     semantic, ConflictExpressionFlags.none);
         }
     }
-    else if (tree.nonterminalID == nonterminalIDFor!"CastExpression")
+    else if (tree.nonterminalID == nonterminalIDFor!"CastExpressionHead")
     {
         foreach (i, ref c; tree.childs)
         {

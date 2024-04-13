@@ -249,11 +249,14 @@ NoexceptExpression
 // Section expr.cast
 CastExpression
     = <UnaryExpression
-    | "(" TypeId ")" CastExpression
+    | CastExpressionHead CastExpression
     | <CompoundLiteralExpression // https://en.cppreference.com/w/c/language/compound_literal
     ;
 CompoundLiteralExpression
-    = "(" TypeId ")" BracedInitList
+    = CastExpressionHead BracedInitList
+    ;
+CastExpressionHead
+    = "(" TypeId ")"
     ;
 
 // Section expr.mptr.oper

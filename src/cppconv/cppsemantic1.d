@@ -830,7 +830,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             }
             else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ElaboratedTypeSpecifier"
                 && parent2.nonterminalID.nonterminalIDAmong!("SimpleDeclaration1", "MemberDeclaration1",
-                    "UnaryExpression", "CastExpression",
+                    "UnaryExpression", "CastExpressionHead",
                     "ParameterDeclarationAbstract", "ParameterDeclaration",
                     "Condition", "MemberDeclaration2")
                 && (!parent3.isValid || parent3Index != 2 || parent3.nonterminalID != ParserWrapper.nonterminalIDFor!"TemplateDeclaration")
@@ -2067,15 +2067,18 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         }
 
         updateType(extraInfoHere.type, combinedType);
-    }, (MatchNonterminals!("CastExpression", "CompoundLiteralExpression")) {
+    }, (MatchNonterminals!("CastExpressionHead")) {
         assert(tree.childs[0].content == "(");
         assert(tree.childs[2].content == ")");
 
+        runSemantic(semantic, tree.childs[1], tree, condition);
+        extraInfoHere.type = semantic.extraInfo(tree.childs[1]).type;
+    }, (MatchNonterminals!("CastExpression", "CompoundLiteralExpression")) {
         foreach (k, ref c; tree.childs)
         {
             runSemantic(semantic, c, tree, condition);
-            if (k == 1)
-                extraInfoHere.type = semantic.extraInfo(tree.childs[1]).type;
+            if (k == 0)
+                extraInfoHere.type = semantic.extraInfo(tree.childs[0]).type;
         }
     }, (MatchNonterminals!("UnaryExpression"),
             MatchFunc!(() => (tree.childs[0].content == "sizeof" && tree.childs.length == 4))) {

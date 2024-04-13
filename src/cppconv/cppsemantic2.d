@@ -732,9 +732,12 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
         {
             runSemantic2(semantic, c, tree, condition);
         }
-    }, (MatchNonterminals!("CastExpression", "CompoundLiteralExpression")) {
+    }, (MatchNonterminals!("CastExpressionHead")) {
         assert(tree.childs[0].content == "(");
         assert(tree.childs[2].content == ")");
+
+        runSemantic2(semantic, tree.childs[1], tree, condition);
+    }, (MatchNonterminals!("CastExpression", "CompoundLiteralExpression")) {
         foreach (ref c; tree.childs)
         {
             runSemantic2(semantic, c, tree, condition);
@@ -747,7 +750,7 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
             IteratePPVersions ppVersion = IteratePPVersions(combination,
                 semantic.logicSystem, condition, null, semantic.mergedTreeDatas);
             auto type = chooseType(semantic.extraInfo(tree).type, ppVersion, true);
-            auto type1 = chooseType(semantic.extraInfo(tree.childs[3]).type, ppVersion, true);
+            auto type1 = chooseType(semantic.extraInfo(tree.childs[1]).type, ppVersion, true);
 
             if (type1.type !is null && type1.kind == TypeKind.function_)
                 type1 = QualType(semantic.getPointerType(type1));
@@ -758,7 +761,7 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
                 ppVersion.condition, semantic);
         }
 
-        distributeExpectedType(semantic, tree.childs[3], combinedType1, condition);
+        distributeExpectedType(semantic, tree.childs[1], combinedType1, condition);
     }, (MatchNonterminals!("UnaryExpression"),
             MatchFunc!(() => (tree.childs[0].content == "sizeof" && tree.childs.length == 4))) {
         foreach (ref c; tree.childs)
