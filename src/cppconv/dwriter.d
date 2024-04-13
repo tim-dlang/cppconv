@@ -6971,6 +6971,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             if (forwardDecl2.flags & DeclarationFlags.override_)
             {
+                if (forwardDecl2.flags & DeclarationFlags.final_)
+                {
+                    codeTmp.write("final ");
+                }
                 codeTmp.write("override ");
             }
             else if (forwardDecl2.flags & DeclarationFlags.virtual)

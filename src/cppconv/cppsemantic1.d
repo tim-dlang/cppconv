@@ -632,9 +632,46 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
             }
 
-            if (d.name && targetScope2 !is null && d.name in targetScope2.symbols)
+            void findParentFuncs(Scope s, immutable(Formula)* condition)
             {
-                foreach (e; targetScope2.symbols[d.name].entries)
+                if (s is null)
+                    return;
+                foreach (e; s.extraParentScopes.entries)
+                    if (e.data.type == ExtraScopeType.parentClass && !semantic.logicSystem.and(condition, e.condition).isFalse)
+                    {
+                        auto s2 = e.data.scope_;
+                        findParentFuncs(s2, semantic.logicSystem.and(condition, e.condition));
+
+                        foreach (e2; s2.symbolEntries(d.name))
+                        {
+                            auto d2 = e2.data;
+                            if (d2.type != d.type)
+                                continue;
+                            if ((d2.flags & DeclarationFlags.typedef_) != (d.flags & DeclarationFlags.typedef_))
+                                continue;
+                            if (filterType(d.type2, condition, semantic,
+                                FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
+                                | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef) !is filterType(
+                                d2.type2, condition, semantic,
+                                FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
+                                | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef))
+                                continue;
+                            auto condition2 = ppVersion.logicSystem.and(condition, d2.condition);
+                            if (condition2.isFalse)
+                                continue;
+                            if (d2.flags & DeclarationFlags.virtual)
+                            {
+                                d.flags |= DeclarationFlags.override_;
+                            }
+                        }
+                    }
+            }
+            if ((d.flags & DeclarationFlags.function_) != 0)
+                findParentFuncs(targetScope2, ppVersion.condition);
+
+            if (d.name && targetScope2 !is null)
+            {
+                foreach (e; targetScope2.symbolEntries(d.name))
                 {
                     auto d2 = e.data;
                     if (d2.type != d.type)

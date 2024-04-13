@@ -256,6 +256,14 @@ class Scope
         return symbols[name];
     }
 
+    final DeclarationSet.Entry[] symbolEntries(string name)
+    {
+        auto x = name in symbols;
+        if (x)
+            return x.entries;
+        return [];
+    }
+
     final void addDeclaration(string name, immutable(Formula)* condition,
             Declaration decl, LogicSystem logicSystem)
     {
