@@ -8168,6 +8168,10 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                                 compatibleReferencedType(semantic.extraInfo(tree)
                                     .type, e.data.type2, semantic));
                         add(e.data, newCondition, outsideFunction, outsideMixin, tree.start);
+
+                        if (e.data.tree.isValid && e.data.tree.nonterminalID == nonterminalIDFor!"Enumerator")
+                            visitType(semantic.extraInfo(tree).type, condition,
+                                    outsideFunction, outsideMixin, tree.start);
                     }
                 }
             }

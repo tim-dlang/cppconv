@@ -1,0 +1,5 @@
+{
+    "modulePatterns": [
+    {"match": {"filename": "testinclude104b.h", "name": "E"}, "moduleName": "testinclude104b_enum"}
+    ]
+}
