@@ -1,0 +1,5 @@
+{
+    "typeRenames": [
+    {"match": {"name": "_S"}, "rename": "S"}
+    ]
+}

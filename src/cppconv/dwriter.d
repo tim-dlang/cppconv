@@ -7920,16 +7920,6 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
     void add(Declaration d2, immutable(Formula)* condition, bool outsideFunction,
             bool outsideMixin, LocationX locAdded)
     {
-        if (d2.type == DeclarationType.type
-                && (d2.flags & DeclarationFlags.typedef_) != 0
-                && isSelfTypedef(d2, data))
-        {
-            Declaration d3 = getSelfTypedefTarget(d2, data);
-            if (d3 !is null && d3.type != DeclarationType.builtin)
-                add(d3, condition, outsideFunction, outsideMixin, locAdded);
-            return;
-        }
-
         LocationRangeX loc1 = d.location;
         if (d.tree.isValid)
             loc1 = d.tree.location;
@@ -7948,6 +7938,17 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                     return;
                 }
             }
+        }
+
+        if (d2.type == DeclarationType.type
+                && (d2.flags & DeclarationFlags.typedef_) != 0
+                && isSelfTypedef(d2, data))
+        {
+            Declaration d3 = getSelfTypedefTarget(d2, data);
+            if (d3 !is null && d3.type != DeclarationType.builtin)
+                d2 = d3;
+            else
+                return;
         }
 
         immutable(Formula)* conditionLeft = condition;

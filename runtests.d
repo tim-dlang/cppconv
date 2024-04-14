@@ -43,6 +43,7 @@ class Test
     string[] includedFiles;
     string[] testDefines;
     string[] expectedOutputFiles;
+    string[] extraArgs;
 }
 
 int cmpNumberStrings(string a, string b)
@@ -176,6 +177,10 @@ int main(string[] args)
             {
                 test.expectedOutputFiles ~= relativePath(absolutePath(e.name), absolutePath(test.workDir));
             }
+            else if (baseName(e.name) == "output-config.json")
+            {
+                test.extraArgs = ["--output-config", relativePath(absolutePath(e.name), absolutePath(test.workDir))];
+            }
             else
             {
                 stderr.writeln("Unexpected file: ", e.name);
@@ -235,6 +240,7 @@ int main(string[] args)
                 "--output-dir", relativePath(convDir, absolutePath(test.workDir)),
                 "--extra-output-dir", relativePath(testDir, absolutePath(test.workDir)),
                 "-DALWAYS_PREDEFINED_IN_TEST=1", "-UALWAYS_PREUNDEFINED_IN_TEST"]
+                ~ test.extraArgs
                 ~ test.translationUnits, test.workDir, &app);
 
             foreach (tu; test.translationUnits)
