@@ -571,8 +571,11 @@ QualType filterType(QualType type, immutable(Formula)* condition,
             return types2[0].withExtraQualifiers(type.qualifiers);
         if (!changed)
             return type;
-        return QualType(semantic.getConditionType(types2,
+        auto r = QualType(semantic.getConditionType(types2,
                 cast(immutable(Formula*)[]) conditions2), type.qualifiers);
+        if ((cast(ConditionType) r.type).types.length == 1)
+            return (cast(ConditionType) r.type).types[0].withExtraQualifiers(r.qualifiers);
+        return r;
     }
 
     if ((flags & (FilterTypeFlags.replaceRealTypes | FilterTypeFlags.fakeTemplateScope)) != 0

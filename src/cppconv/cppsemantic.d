@@ -286,8 +286,6 @@ class Semantic
             type.conditions = key.conditions;
             typeCacheCondition[key] = type;
         }
-        foreach (ref t; types)
-            t.qualifiers |= commonQualifiers;
         return QualType(type, commonQualifiers);
     }
 
