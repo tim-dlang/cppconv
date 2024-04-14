@@ -8058,7 +8058,7 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         inTemplate = 4
     }
 
-    bool[MacroDeclarationInstance] macroDone;
+    bool[Tree][MacroDeclarationInstance] macroDone;
 
     void visitTree(Tree tree, immutable(Formula)* condition, Flags flags,
             MacroDeclarationInstance currentMacroInstance, bool outsideFunction, bool outsideMixin)
@@ -8072,9 +8072,9 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         Tree parent = getRealParent(tree, semantic);
         if (currentMacroInstance)
         {
-            if (currentMacroInstance in macroDone)
+            if (currentMacroInstance in macroDone && tree in macroDone[currentMacroInstance])
                 return;
-            macroDone[currentMacroInstance] = true;
+            macroDone[currentMacroInstance][tree] = true;
         }
         if (tree in data.macroReplacement)
         {
