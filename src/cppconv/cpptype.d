@@ -389,6 +389,11 @@ string typeToString(const QualType type)
         if (ftype.isVariadic)
             line ~= ", ...";
     }
+    if (type.kind == TypeKind.array)
+    {
+        ArrayType atype = cast(ArrayType) type.type;
+        line ~= ", " ~ atype.declarator.toString;
+    }
     line ~= ")";
     if (type.kind == TypeKind.function_)
     {
@@ -527,6 +532,7 @@ enum FilterTypeFlags
     replaceRealTypes = 2,
     simplifyFunctionType = 4,
     fakeTemplateScope = 8,
+    removeTrees = 16,
 }
 
 QualType filterType(QualType type, immutable(Formula)* condition,
@@ -726,6 +732,10 @@ QualType filterType(QualType type, immutable(Formula)* condition,
                 else static if (is(T2 == QualType[]))
                 {
                     code ~= "filterChilds(xtype." ~ name ~ "), ";
+                }
+                else static if (is(T2 == Tree))
+                {
+                    code ~= "(flags & FilterTypeFlags.removeTrees) ? Tree.init : xtype." ~ name ~ ", ";
                 }
                 else
                 {

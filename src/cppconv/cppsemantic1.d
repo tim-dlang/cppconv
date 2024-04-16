@@ -632,6 +632,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
             }
 
+            FilterTypeFlags filterFlags = FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef | FilterTypeFlags.removeTrees;
+
             void findParentFuncs(Scope s, immutable(Formula)* condition)
             {
                 if (s is null)
@@ -649,12 +651,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                                 continue;
                             if ((d2.flags & DeclarationFlags.typedef_) != (d.flags & DeclarationFlags.typedef_))
                                 continue;
-                            if (filterType(d.type2, condition, semantic,
-                                FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
-                                | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef) !is filterType(
-                                d2.type2, condition, semantic,
-                                FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
-                                | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef))
+                            if (filterType(d.type2, condition, semantic, filterFlags)
+                                !is filterType(d2.type2, condition, semantic, filterFlags))
                                 continue;
                             auto condition2 = ppVersion.logicSystem.and(condition, d2.condition);
                             if (condition2.isFalse)
@@ -681,12 +679,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                     auto condition = ppVersion.logicSystem.and(ppVersion.condition, d2.condition);
                     if (condition.isFalse)
                         continue;
-                    if (filterType(d.type2, condition, semantic,
-                        FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
-                        | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef) !is filterType(
-                        d2.type2, condition, semantic,
-                        FilterTypeFlags.fakeTemplateScope | FilterTypeFlags.replaceRealTypes
-                        | FilterTypeFlags.simplifyFunctionType | FilterTypeFlags.removeTypedef))
+                    if (filterType(d.type2, condition, semantic, filterFlags)
+                        !is filterType(d2.type2, condition, semantic, filterFlags))
                         continue;
                     if (d.name == "operator cast")
                         continue;
