@@ -2152,6 +2152,8 @@ void findRealDecl(DeclarationSet ds, bool isTypedef, ref ConditionMap!Declaratio
         if (!hasCommonParentScope(currentScope, e.data.scope_))
         {
             auto conditionReachable = locationReachable(currentLoc, loc2, data);
+            if (e.data.scope_.isRootNamespaceScope && e.data.type == DeclarationType.varOrFunc && (e.data.flags & DeclarationFlags.static_) == 0)
+                conditionReachable = logicSystem.or(conditionReachable, realDecl.conditionAll is null ? logicSystem.true_ : realDecl.conditionAll.negated);
             if (conditionReachable.isFalse)
                 continue;
             newCondition = logicSystem.and(newCondition, conditionReachable);
@@ -2179,7 +2181,6 @@ void findRealDecl(DeclarationSet ds, bool isTypedef, ref ConditionMap!Declaratio
 void findRealDecl(Tree tree, ref ConditionMap!Declaration realDecl,
         immutable(Formula)* condition, DWriterData data, bool allowType, Scope currentScope)
 {
-    assert(tree.nonterminalID == nonterminalIDFor!"NameIdentifier");
     auto semantic = data.semantic;
     auto logicSystem = semantic.logicSystem;
     immutable(Formula)* nonType = logicSystem.false_;
@@ -2198,6 +2199,10 @@ void findRealDecl(Tree tree, ref ConditionMap!Declaration realDecl,
             if (!hasCommonParentScope(currentScope, e.data.scope_))
             {
                 auto conditionReachable = locationReachable(tree.location, loc2, data);
+                if (e.data.scope_.isRootNamespaceScope && e.data.type == DeclarationType.varOrFunc && (e.data.flags & DeclarationFlags.static_) == 0)
+                {
+                    conditionReachable = logicSystem.or(conditionReachable, realDecl.conditionAll is null ? logicSystem.true_ : realDecl.conditionAll.negated);
+                }
                 if (conditionReachable.isFalse)
                     continue;
                 newCondition = logicSystem.and(newCondition, conditionReachable);
@@ -7888,6 +7893,7 @@ struct DependencyInfo
 DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
 {
     auto semantic = data.semantic;
+    auto logicSystem = semantic.logicSystem;
 
     if (d.type == DeclarationType.forwardScope)
         return null;
@@ -8161,17 +8167,23 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                     {
                         if (e.data.flags & DeclarationFlags.templateSpecialization)
                             continue;
-                        immutable(Formula)* newCondition = semantic.logicSystem.and(condition,
-                                x.condition);
-
-                        newCondition = semantic.logicSystem.and(newCondition,
-                                compatibleReferencedType(semantic.extraInfo(tree)
-                                    .type, e.data.type2, semantic));
-                        add(e.data, newCondition, outsideFunction, outsideMixin, tree.start);
-
                         if (e.data.tree.isValid && e.data.tree.nonterminalID == nonterminalIDFor!"Enumerator")
                             visitType(semantic.extraInfo(tree).type, condition,
                                     outsideFunction, outsideMixin, tree.start);
+                    }
+                }
+            }
+            if (semantic.extraInfo(tree).referenced.entries.length)
+            {
+                ConditionMap!Declaration realDecl;
+                findRealDecl(tree, realDecl, condition, data, true /*allowType*/ , d.scope_);
+                foreach (e; realDecl.entries)
+                {
+                    if (e.data.flags & DeclarationFlags.templateSpecialization)
+                        continue;
+                    if (e.data.scope_.isRootNamespaceScope)
+                    {
+                        add(e.data, e.condition, outsideFunction, outsideMixin, tree.start);
                     }
                 }
             }
@@ -8496,52 +8508,6 @@ bool includeDeclsForFile(DWriterData data, string filename)
 void selectDeclarations(DWriterData data)
 {
     auto semantic = data.semantic;
-    Appender!(Declaration[]) tmpDeclarationBuffer;
-    void onScope(Scope s)
-    {
-        foreach (name, entries; s.symbols)
-        {
-            foreach (e; entries.entries ~ entries.entriesRedundant)
-            {
-                if (isDeclarationBlacklisted(data, e.data))
-                    continue;
-                if (e.data.type == DeclarationType.namespace)
-                    continue;
-                immutable(LocationContext)* locContext = e.data.location.context;
-                if (locContext is null)
-                    continue;
-                while (locContext !is null && locContext.name.length)
-                    locContext = locContext.prev;
-                if (locContext.contextDepth != 1)
-                    continue;
-                if (!includeDeclsForFile(data, locContext.filename))
-                    continue;
-                tmpDeclarationBuffer.put(e.data);
-            }
-        }
-        foreach (name, s2; s.childNamespaces)
-            onScope(s2);
-    }
-
-    onScope(semantic.rootScope);
-
-    foreach (key, d; data.sourceTokenManager.macroDeclarations)
-    {
-        if (includeDeclsForFile(data, d.location.context.filename))
-            tmpDeclarationBuffer.put(d);
-    }
-    tmpDeclarationBuffer.put(data.sourceTokenManager.commentDeclarations.data);
-
-    auto decls = tmpDeclarationBuffer.data;
-
-    decls.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
-    auto todo = new TodoList!Declaration;
-    foreach (d; decls)
-    {
-        todo.addAfter!({ addDeclaration(todo, d, data); })(d);
-    }
-    decls = todo.data;
-    decls.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
 
     string getDeclCategory(Declaration d, ref IteratePPVersions ppVersion)
     {
@@ -8593,8 +8559,44 @@ void selectDeclarations(DWriterData data)
         return category;
     }
 
+    Appender!(Declaration[]) tmpDeclarationBuffer;
+    bool[Declaration] added;
+    void onScope0(Scope s)
+    {
+        foreach (name, entries; s.symbols)
+        {
+            foreach (e; entries.entries ~ entries.entriesRedundant)
+            {
+                if (isDeclarationBlacklisted(data, e.data))
+                    continue;
+                if (e.data.type == DeclarationType.namespace)
+                    continue;
+                if (e.data !in added)
+                {
+                    tmpDeclarationBuffer.put(e.data);
+                    added[e.data] = true;
+                }
+                foreach (e2; e.data.realDeclaration.entries)
+                {
+                    if (isDeclarationBlacklisted(data, e2.data))
+                        continue;
+                    if (e2.data !in added)
+                    {
+                        tmpDeclarationBuffer.put(e2.data);
+                        added[e2.data] = true;
+                    }
+                }
+            }
+        }
+        foreach (name, s2; s.childNamespaces)
+            onScope0(s2);
+    }
+
+    onScope0(semantic.rootScope);
+    tmpDeclarationBuffer.data.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
+
     immutable(Formula)*[string][string] hasNonForwardDecl;
-    foreach (d; decls)
+    foreach (d; tmpDeclarationBuffer.data)
     {
         if (d.flags & DeclarationFlags.forward)
             continue;
@@ -8629,7 +8631,7 @@ void selectDeclarations(DWriterData data)
     immutable(Formula)*[string][string] doneForwardDecl;
 
     immutable(Formula)*[Declaration] forwardDecls;
-    foreach (d; decls)
+    foreach (d; tmpDeclarationBuffer.data)
     {
         if (d.type == DeclarationType.forwardScope)
             continue;
@@ -8685,6 +8687,56 @@ void selectDeclarations(DWriterData data)
         }
         forwardDecls[d] = skipForward;
     }
+    data.forwardDecls = forwardDecls;
+
+    tmpDeclarationBuffer.clear();
+    void onScope(Scope s)
+    {
+        foreach (name, entries; s.symbols)
+        {
+            foreach (e; entries.entries ~ entries.entriesRedundant)
+            {
+                if (isDeclarationBlacklisted(data, e.data))
+                    continue;
+                if (e.data.type == DeclarationType.namespace)
+                    continue;
+                immutable(LocationContext)* locContext = e.data.location.context;
+                if (locContext is null)
+                    continue;
+                while (locContext !is null && locContext.name.length)
+                    locContext = locContext.prev;
+                if (locContext.contextDepth != 1)
+                    continue;
+                if (!includeDeclsForFile(data, locContext.filename))
+                    continue;
+                tmpDeclarationBuffer.put(e.data);
+            }
+        }
+        foreach (name, s2; s.childNamespaces)
+            onScope(s2);
+    }
+
+    onScope(semantic.rootScope);
+
+    foreach (key, d; data.sourceTokenManager.macroDeclarations)
+    {
+        if (includeDeclsForFile(data, d.location.context.filename))
+        {
+            tmpDeclarationBuffer.put(d);
+        }
+    }
+    tmpDeclarationBuffer.put(data.sourceTokenManager.commentDeclarations.data);
+
+    auto decls = tmpDeclarationBuffer.data;
+
+    decls.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
+    auto todo = new TodoList!Declaration;
+    foreach (d; decls)
+    {
+        todo.addAfter!({ addDeclaration(todo, d, data); })(d);
+    }
+    decls = todo.data;
+    decls.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
 
     foreach (d; decls)
     {
@@ -8700,7 +8752,14 @@ void selectDeclarations(DWriterData data)
     }
 
     data.decls = decls;
-    data.forwardDecls = forwardDecls;
+
+    foreach (d; decls)
+    {
+        if (d.type.among(DeclarationType.forwardScope, DeclarationType.dummy, DeclarationType.namespace, DeclarationType.namespaceBegin, DeclarationType.namespaceEnd))
+            continue;
+        if (d !in forwardDecls)
+            forwardDecls[d] = semantic.logicSystem.false_;
+    }
 
     foreach (name, ref decls2; data.declsByFile)
     {
@@ -9892,7 +9951,7 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
         foreach (d; decls)
         {
             data.fileByDecl[d] = filename;
-            immutable(Formula)* skipForward = data.forwardDecls[d];
+            immutable(Formula)* skipForward = data.forwardDecls.get(d, data.logicSystem.false_);
             auto condition2 = mergedSemantic.logicSystem.and(d.condition, skipForward.negated);
             if (condition2.isFalse)
                 continue;

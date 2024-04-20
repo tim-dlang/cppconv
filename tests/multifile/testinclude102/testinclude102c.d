@@ -2,7 +2,6 @@ module testinclude102c;
 
 import config;
 import cppconvhelpers;
-import testinclude102b;
 
 struct Functions
 {
