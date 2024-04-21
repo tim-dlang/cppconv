@@ -2386,7 +2386,8 @@ void calcNeedsCast(T)(ref immutable(Formula)* needsCastCondition, ref immutable(
                         .next), fromType.qualifiers);
                 if (!combination.prefixDone && wholeExpressionWrapper !is null)
                 {
-                    if (tree.nonterminalID == nonterminalIDFor!"LiteralS" && tree.childs[0].nonterminalID == nonterminalIDFor!"StringLiteralSequence")
+                    if (tree.nonterminalID == nonterminalIDFor!"LiteralS" && tree.childs[0].nonterminalID == nonterminalIDFor!"StringLiteralSequence"
+                        && (tree.childs[0].childs[0].childs.length != 1 || tree.childs[0].childs[0].childs[0].nonterminalID != nonterminalIDFor!"StringLiteral2"))
                         wholeExpressionWrapper.add("(", ").ptr", ppVersion.condition);
                     else
                         wholeExpressionWrapper.add("", ".ptr", ppVersion.condition);
@@ -3495,7 +3496,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         string suffix;
         if (tree.childs[$ - 1].nonterminalID == nonterminalIDFor!"LiteralS"
-                && tree.childs[$ - 1].childs[0].nonterminalID == nonterminalIDFor!"StringLiteralSequence")
+                && tree.childs[$ - 1].childs[0].nonterminalID == nonterminalIDFor!"StringLiteralSequence"
+                && (tree.childs[$ - 1].childs[0].childs[0].childs.length != 1 || tree.childs[$ - 1].childs[0].childs[0].childs[0].nonterminalID != nonterminalIDFor!"StringLiteral2"))
         {
             code.write("(");
             suffix = ")";

@@ -1687,11 +1687,10 @@ fragment FloatingSuffix
 
 // Section lex.string
 StringLiteralSequence
-    = <StringLiteral2
-    | StringLiteral2X
+    = StringLiteral2X
     ;
 StringLiteral2X @array
-    = StringLiteral2 StringLiteral2+
+    = StringLiteral2+
     ;
 StringLiteral2
     = StringLiteral

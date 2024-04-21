@@ -3,30 +3,29 @@ module test365;
 import config;
 import cppconvhelpers;
 
-__gshared const(char)* s1 = mixin(((!defined!"DEF1" && !defined!"DEF2")) ? q{
-        "prefix"
+__gshared const(char)* s1 = "prefix"~ 
+mixin((defined!"DEF1") ? q{
+        "_suffix1"
+    } : ((!defined!"DEF1" && defined!"DEF2")) ? q{
+        "_suffix2"
     } : q{
-        "prefix"~ mixin((defined!"DEF1") ? q{
-                        "_suffix1"
-            } : q{
-                "_suffix2"
-            })
+        ""
     });
 __gshared const(char)* s2 =
 /+ #ifdef DEF1 +/
-mixin(((!defined!"DEF1" && !defined!"DEF2")) ? q{
-        /+ "prefix1_"
-        #elif defined(DEF2)
+mixin((defined!"DEF1") ? q{
+        "prefix1_"
+    } : ((!defined!"DEF1" && defined!"DEF2")) ? q{
+        /+ #elif defined(DEF2) +/
         "prefix2_"
-        #endif +/
-        "suffix"
     } : q{
-        mixin((defined!"DEF1") ? q{
-                        "prefix1_"
-            } : q{
-                "prefix2_"
-            })~ "suffix"
-    });
+        /+ #endif +/
+        "suffix"
+    })~ mixin(((defined!"DEF1" || defined!"DEF2")) ? q{
+            "suffix"
+        } : q{
+        ""
+        });
 __gshared const(char)* s3 = "pre" ~ "fix"~ 
 mixin((defined!"DEF1") ? q{
         "_suffix1"
