@@ -81,14 +81,11 @@ void g(const(char)* str)
 	{
     mixin(write2__1(q{str}));
 	}
-	static if (!defined!"DEF")
-	{
-    	write3(str);
-	}
-	else
-	{
-    (mixin(write3(q{str})));
-	}
+	(mixin((!defined!"DEF") ? q{
+        	write3(str)
+    	} : q{
+        (mixin(write3(q{str})))
+    	}));
 	static if (!defined!"DEF")
 	{
     	write4(str);

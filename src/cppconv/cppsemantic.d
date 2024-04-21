@@ -1818,6 +1818,8 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         goodConditionsStrict2.length = tree.childs.length;
         immutable(Formula)*[] goodConditions2;
         goodConditions2.length = tree.childs.length;
+        immutable(Formula)*[] extraConditions;
+        extraConditions.length = tree.childs.length;
         QualType[] childContextTypes;
         QualType origContextType;
         size_t defaultTree = size_t.max;
@@ -1836,9 +1838,16 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
             }
             goodConditionsStrict2[i] = goodConditionStrict;
             goodConditions2[i] = goodCondition;
+            extraConditions[i] = semantic.logicSystem.true_;
+            Tree c2 = c;
+            if (c.nonterminalID == CONDITION_TREE_NONTERMINAL_ID && c.childs.length == 2 && !c.childs[1].isValid)
+            {
+                extraConditions[i] = c.toConditionTree.conditions[0];
+                c2 = c.childs[0];
+            }
             if (contextType !is null)
                 *contextType = origContextType;
-            handleConflictExpression(c, goodConditionsStrict2[i],
+            handleConflictExpression(c2, goodConditionsStrict2[i],
                     goodConditions2[i], semantic, flags, contextType);
             if (contextType !is null)
                 childContextTypes[i] = *contextType;
@@ -1853,17 +1862,29 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                             goodConditionsStrict2[j]));
             }
 
-        foreach (i, ref c; tree.childs)
+        foreach (i; 0 .. tree.childs.length)
         {
             goodConditionsStrict2[i] = semantic.logicSystem.and(goodConditionsStrict2[i],
                     allConditionStrict.negated);
             goodConditions2[i] = semantic.logicSystem.and(goodConditions2[i], allCondition.negated);
+
+            immutable(Formula)* extraConditionElse = semantic.logicSystem.true_;
+            foreach (j; 0 .. tree.childs.length)
+                if (i != j)
+                    extraConditionElse = semantic.logicSystem.and(extraConditionElse, extraConditions[j].negated);
+
+            goodConditionsStrict2[i] = semantic.logicSystem.and(goodConditionsStrict2[i], extraConditions[i]);
+            goodConditions2[i] = semantic.logicSystem.and(goodConditions2[i], extraConditions[i]);
+            goodConditionsStrict2[i] = semantic.logicSystem.or(goodConditionsStrict2[i], extraConditionElse);
+            goodConditions2[i] = semantic.logicSystem.or(goodConditions2[i], extraConditionElse);
+        }
+
+        foreach (i; 0 .. tree.childs.length)
+        {
             if (mergeDepth == 1)
             {
                 mdata.conditions[i] = semantic.logicSystem.or(mdata.conditions[i],
-                        goodConditionsStrict2[i]);
-                mdata.conditions[i] = semantic.logicSystem.or(mdata.conditions[i],
-                        goodConditions2[i]);
+                        semantic.logicSystem.or(goodConditionsStrict2[i], goodConditions2[i]));
             }
             resultGoodConditionStrict = semantic.logicSystem.or(resultGoodConditionStrict,
                     goodConditionsStrict2[i]);
@@ -1877,8 +1898,19 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         if (defaultTree != size_t.max)
         {
             if (mergeDepth == 1)
+            {
+                immutable(Formula)* extraConditionElse = semantic.logicSystem.true_;
+                foreach (j; 0 .. tree.childs.length)
+                    if (defaultTree != j)
+                        extraConditionElse = semantic.logicSystem.and(extraConditionElse, extraConditions[j].negated);
+
+                immutable(Formula)* badCondition2 = badCondition;
+                badCondition2 = semantic.logicSystem.and(badCondition2, extraConditions[defaultTree]);
+                badCondition2 = semantic.logicSystem.or(badCondition2, extraConditionElse);
+
                 mdata.conditions[defaultTree] = semantic.logicSystem.or(
-                        mdata.conditions[defaultTree], badCondition);
+                        mdata.conditions[defaultTree], badCondition2);
+            }
             resultGoodConditionStrict = semantic.logicSystem.or(resultGoodConditionStrict,
                     badCondition);
             resultGoodCondition = semantic.logicSystem.or(resultGoodCondition, badCondition);

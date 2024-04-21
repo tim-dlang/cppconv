@@ -792,7 +792,7 @@ bool isTreeExpression(Tree tree, Semantic semantic)
     if (tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
     {
         foreach (c; tree.childs)
-            if (!isTreeExpression(c, semantic))
+            if (c.isValid && !isTreeExpression(c, semantic))
                 return false;
         return true;
     }
@@ -1476,6 +1476,8 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
     string commonMacro;
     foreach (i; 0 .. conditions.length)
     {
+        if (!childs[i].isValid)
+            continue;
         immutable(LocationContext)* locContext = childs[i].start.context;
         while (locContext !is null && locContext.prev !is tree.start.context)
         {
@@ -1614,6 +1616,8 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
     bool isExpression;
     foreach (i; 0 .. conditions.length)
     {
+        if (!childs[i].isValid)
+            continue;
         if (isTreeExpression(childs[i], semantic))
             isExpression = true;
         // Types are handled like expressions here.

@@ -417,6 +417,103 @@ Tree mergeCompatibleTrees(Tree treeA2, Tree treeB2, immutable(Formula)*[2] child
     return tree2;
 }
 
+Tree tryMergeConflictNodes(Tree treeA, Tree treeB, immutable(Formula)*[2] childConditions,
+        LogicSystem logicSystem, immutable(Formula)* anyErrorCondition,
+        immutable(Formula)* contextCondition, MergeFlags flags, size_t indentNum)
+    in (treeA.nodeType == NodeType.merged || treeB.nodeType == NodeType.merged)
+{
+    if (treeA.nodeType != NodeType.merged)
+        return tryMergeConflictNodes(treeB, treeA, [childConditions[1], childConditions[0]],
+            logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
+
+    if (!treeB.nodeType.among(NodeType.nonterminal, NodeType.merged))
+        return Tree.init;
+
+    if (treeB.nodeType == NodeType.nonterminal)
+    {
+        bool found;
+        foreach (c; treeA.childs)
+            if (c.nonterminalID == treeB.nonterminalID && c.productionID == treeB.productionID)
+                found = true;
+        if (!found)
+            return Tree.init;
+    }
+
+    struct Child
+    {
+        Tree tree;
+        bool fromA;
+        bool fromB;
+    }
+    Child[] childs;
+    foreach (c; treeA.childs)
+        childs ~= Child(c, true);
+
+    if (treeB.nodeType == NodeType.nonterminal)
+    {
+        bool found;
+        foreach (ref c; childs)
+            if (c.tree.nonterminalID == treeB.nonterminalID && c.tree.productionID == treeB.productionID)
+            {
+                if (!areTreesCompatible(c.tree, treeB))
+                    return Tree.init;
+                c.tree = mergeCompatibleTrees(c.tree, treeB, childConditions,
+                        logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
+                c.fromB = true;
+                if (!c.tree.isValid)
+                    return Tree.init;
+                found = true;
+                break;
+            }
+        assert(found);
+    }
+    else if (treeB.nodeType == NodeType.merged)
+    {
+        foreach (childB; treeB.childs)
+        {
+            bool found;
+            foreach (ref c; childs)
+                if (c.tree.nonterminalID == childB.nonterminalID && c.tree.productionID == childB.productionID)
+                {
+                    if (!areTreesCompatible(c.tree, childB))
+                        return Tree.init;
+                    c.tree = mergeCompatibleTrees(c.tree, childB, childConditions,
+                            logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
+                    c.fromB = true;
+                    if (!c.tree.isValid)
+                        return Tree.init;
+                    found = true;
+                    break;
+                }
+            if (!found)
+                childs ~= Child(childB, false, true);
+        }
+    }
+    else
+        assert(false);
+
+    Tree[] newChilds = new Tree[childs.length];
+    foreach (i, c; childs)
+    {
+        if (c.fromA && c.fromB)
+            newChilds[i] = c.tree;
+        else if (c.fromA)
+            newChilds[i] = createConditionTree([c.tree, Tree.init], [childConditions[0], childConditions[1]]).toTree;
+        else if (c.fromB)
+            newChilds[i] = createConditionTree([c.tree, Tree.init], [childConditions[1], childConditions[0]]).toTree;
+    }
+
+    Location nonterminalStart = minLoc(treeA.start, treeB.start);
+    Location nonterminalEnd = maxLoc(treeA.end, treeB.end);
+
+    Tree tree2;
+    tree2 = Tree(treeA.name, treeA.nonterminalID,
+            treeA.productionID, treeA.nodeType, newChilds, treeAllocator);
+    tree2.grammarInfo = treeA.grammarInfo;
+    tree2.setStartEnd(nonterminalStart, nonterminalEnd);
+    return tree2;
+}
+
 Tree mergeTrees(Tree treeA, Tree treeB, immutable(Formula)*[2] childConditions,
         LogicSystem logicSystem, immutable(Formula)* anyErrorCondition,
         immutable(Formula)* contextCondition, MergeFlags flags, size_t indentNum = 4)
@@ -463,45 +560,19 @@ Tree mergeTrees(Tree treeA, Tree treeB, immutable(Formula)*[2] childConditions,
         foreach (iA, ref treeTupleA2; treesAppA.data[treesAppAStartSize .. $])
         {
             auto treeA2 = treeTupleA2[0];
-            if (treeA2.nodeType == NodeType.merged && treeA2.name == treeB2.name
-                    && treeA2.childs.length == treeB2.childs.length)
+            if (treeA2.nodeType == NodeType.merged || treeB2.nodeType == NodeType.merged)
             {
-                bool allCompatible = true;
-                foreach (i; 0 .. treeA2.childs.length)
+                Tree newTree = tryMergeConflictNodes(treeA2, treeB2, childConditions, logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
+                if (newTree.isValid)
                 {
-                    if (!areTreesCompatible(treeA2.childs[i], treeB2.childs[i]))
-                        allCompatible = false;
+                    treesAppA.data[treesAppAStartSize .. $][iA][0] = newTree;
+                    treesAppA.data[treesAppAStartSize .. $][iA][1] = logicSystem.simplify(
+                            logicSystem.or(treesAppA.data[treesAppAStartSize .. $][iA][1],
+                            treeTupleB2[1]));
+                    continue outer;
                 }
-                if (!allCompatible)
-                    continue;
-                Tree[] newChilds = new Tree[treeA2.childs.length];
-                foreach (i; 0 .. treeA2.childs.length)
-                {
-                    newChilds[i] = mergeCompatibleTrees(treeA2.childs[i], treeB2.childs[i], childConditions,
-                            logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
-                    if (!newChilds[i].isValid)
-                    {
-                        allCompatible = false;
-                        break;
-                    }
-                }
-                if (!allCompatible)
-                    continue;
-                Location nonterminalStart = minLoc(treeA2.start, treeB2.start);
-                Location nonterminalEnd = maxLoc(treeA2.end, treeB2.end);
-
-                Tree tree2;
-                tree2 = Tree(treeA2.name, treeA2.nonterminalID,
-                        treeA2.productionID, treeA2.nodeType, newChilds, treeAllocator);
-                tree2.grammarInfo = treeA2.grammarInfo;
-                tree2.setStartEnd(nonterminalStart, nonterminalEnd);
-                treesAppA.data[treesAppAStartSize .. $][iA][0] = tree2;
-                treesAppA.data[treesAppAStartSize .. $][iA][1] = logicSystem.simplify(
-                        logicSystem.or(treesAppA.data[treesAppAStartSize .. $][iA][1],
-                        treeTupleB2[1]));
-                continue outer;
             }
-            else if (areTreesCompatible(treeA2, treeB2))
+            if (areTreesCompatible(treeA2, treeB2))
             {
                 Tree tree2 = mergeCompatibleTrees(treeA2, treeB2, childConditions,
                         logicSystem, anyErrorCondition, contextCondition, flags, indentNum);
@@ -678,6 +749,8 @@ ConditionTree createConditionTree(Tree[] arrs, immutable(Formula)*[] conditions)
     Location end = Location.invalid;
     foreach (i, arr; arrs)
     {
+        if (!arr.isValid)
+            continue;
         start = minLoc(start, arr.start);
         end = maxLoc(end, arr.end);
     }

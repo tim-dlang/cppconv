@@ -324,7 +324,7 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
             analyzeDeclSpecifierSeq2(tree.childByName("declSeq"), condition,
                 semantic, semantic.extraInfo2(tree).accessSpecifier);
         }
-        else if (tree.childs[0].nonterminalID == nonterminalIDFor!"FunctionDefinitionHead")
+        else if (tree.childs[0].nodeType == NodeType.nonterminal && tree.childs[0].nonterminalID == nonterminalIDFor!"FunctionDefinitionHead")
         {
             analyzeDeclSpecifierSeq2(tree.childs[0].childByName("declSeq"),
                 condition, semantic, semantic.extraInfo2(tree).accessSpecifier);

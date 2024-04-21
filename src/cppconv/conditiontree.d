@@ -585,6 +585,8 @@ string recreateMergedName(const CppParseTree tree)
         {
             if (!c.isValid)
                 name = "null";
+            else if (c.nonterminalID == CONDITION_TREE_NONTERMINAL_ID && c.childs.length == 2 && !c.childs[1].isValid)
+                name = recreateMergedName(c.childs[0]);
             else
                 name = recreateMergedName(c);
         }

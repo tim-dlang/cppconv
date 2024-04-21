@@ -242,46 +242,58 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         updateType(extraInfoHere.type, combinedType);
         return;
     }
-    else if (tree.nodeType == NodeType.merged)
+    else if (tree.nodeType == NodeType.merged && tree.childs.length == 2)
     {
         immutable(Formula)* conditionA = semantic.logicSystem.false_;
         immutable(Formula)* conditionB = semantic.logicSystem.false_;
-        Tree treeA;
-        Tree treeB;
-        size_t indexA, indexB;
         auto mdata = &semantic.mergedTreeData(tree);
         mdata.mergedCondition = semantic.logicSystem.or(mdata.mergedCondition, condition);
+
+        immutable(Formula)* extraConditionA = semantic.logicSystem.true_;
+        immutable(Formula)* extraConditionB = semantic.logicSystem.true_;
+        Tree treeA = tree.childs[0];
+        Tree treeB = tree.childs[1];
+        bool swapped;
+        if (treeA.nonterminalID == CONDITION_TREE_NONTERMINAL_ID && treeA.childs.length == 2 && !treeA.childs[1].isValid)
+        {
+            extraConditionA = treeA.toConditionTree.conditions[0];
+            treeA = treeA.childs[0];
+        }
+        if (treeB.nonterminalID == CONDITION_TREE_NONTERMINAL_ID && treeB.childs.length == 2 && !treeB.childs[1].isValid)
+        {
+            extraConditionB = treeB.toConditionTree.conditions[0];
+            treeB = treeB.childs[0];
+        }
+
+        bool handled;
         foreach (handler; AliasSeq!(handleConflictInitDeclarator, handleConflictTypeof,
                 handleConflictMemberDeclaration, handleConflictConstructor,
                 handleConflictTemplateParameter,))
         {
-            if (__traits(getAttributes, handler)[0].check(tree, tree.childs[0], tree.childs[1]))
+            if (__traits(getAttributes, handler)[0].check(tree, treeA, treeB))
             {
-                assert(!treeA.isValid);
-                treeA = tree.childs[0];
-                treeB = tree.childs[1];
-                indexA = 0;
-                indexB = 1;
-
+                assert(!handled);
+                handled = true;
                 handler(semantic, tree, treeA, treeB, conditionA, conditionB, condition);
             }
-            else if (__traits(getAttributes, handler)[0].check(tree,
-                    tree.childs[1], tree.childs[0]))
+            else if (__traits(getAttributes, handler)[0].check(tree, treeB, treeA))
             {
-                assert(!treeA.isValid);
-                treeA = tree.childs[1];
-                treeB = tree.childs[0];
-                indexA = 1;
-                indexB = 0;
-
-                handler(semantic, tree, treeA, treeB, conditionA, conditionB, condition);
+                assert(!handled);
+                handled = true;
+                swapped = true;
+                handler(semantic, tree, treeB, treeA, conditionB, conditionA, condition);
             }
         }
 
-        if (treeA.isValid)
+        if (handled)
         {
             with (semantic.logicSystem)
             {
+                conditionA = and(conditionA, extraConditionA);
+                conditionB = and(conditionB, extraConditionB);
+                conditionA = or(conditionA, extraConditionB.negated);
+                conditionB = or(conditionB, extraConditionA.negated);
+
                 immutable(Formula)* conditionMerged = semantic.logicSystem.and(semantic.logicSystem.and(condition,
                         conditionA.negated), conditionB.negated);
 
@@ -293,16 +305,20 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                     conditionB2 = or(conditionB2, and(conditionMerged, literal("#merged")));
                 }
 
-                mdata.conditions[indexA] = or(mdata.conditions[indexA], and(condition, conditionA));
-                mdata.conditions[indexB] = or(mdata.conditions[indexB], and(condition, conditionB));
+                mdata.conditions[0] = or(mdata.conditions[0], and(condition, conditionA));
+                mdata.conditions[1] = or(mdata.conditions[1], and(condition, conditionB));
                 mdata.mergedCondition = and(mdata.mergedCondition,
                         and(condition, or(conditionA, conditionB)).negated);
 
+                if (swapped && conditionB2 !is false_)
+                {
+                    runSemantic(semantic, treeB, tree, and(condition, conditionB2));
+                }
                 if (conditionA2 !is false_)
                 {
                     runSemantic(semantic, treeA, tree, and(condition, conditionA2));
                 }
-                if (conditionB2 !is false_)
+                if (!swapped && conditionB2 !is false_)
                 {
                     runSemantic(semantic, treeB, tree, and(condition, conditionB2));
                 }

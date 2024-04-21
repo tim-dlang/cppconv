@@ -39,10 +39,6 @@ struct S2(T2)
 {
 }
 
-__gshared S2!( mixin(((defined!"DEF" || defined!"DEF2" || defined!"DEF3")) ? q{
-        /+ T +/Identity!(mixin(((defined!"DEF" || defined!"DEF2"))?q{T}:q{ulong}))
-    } : q{
-        T
-    })) z;
+__gshared S2!(/+ T +/Identity!(mixin(((defined!"DEF" || defined!"DEF2" || !defined!"DEF3"))?q{T}:q{ulong}))) z;
 __gshared S2!(const(Identity!(mixin(((defined!"DEF" || defined!"DEF2" || !defined!"DEF3"))?q{const(T)}:q{const(ulong)})))) z2;
 
