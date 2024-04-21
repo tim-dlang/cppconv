@@ -1,0 +1,6 @@
+{
+    "versionReplacements": {
+        "CPPCONV_OS_WIN": "Windows",
+        "DEF1": "DEF1"
+    }
+}

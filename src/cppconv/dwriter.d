@@ -1077,7 +1077,42 @@ bool isVersionOnlyCondition(immutable(Formula)* condition, DWriterData data, boo
     }
     else
     {
-        bool isBound = condition.type == FormulaType.greaterEq || condition.type == FormulaType.less;
+        string name = condition.data.name;
+        bool useVersion;
+        if (name.startsWith("defined("))
+        {
+            name = name["defined(".length .. $ - 1];
+        }
+        if (name in data.options.versionReplacements)
+            useVersion = true;
+
+        return useVersion;
+    }
+}
+bool isVersionOnlyConditionSimple(immutable(Formula)* condition, DWriterData data)
+{
+    string[immutable(Formula)*] versionReplacementsOr = data.versionReplacementsOr;
+    if (condition.type == FormulaType.or)
+    {
+        return false;
+    }
+    else if (condition.type == FormulaType.and)
+    {
+        return false;
+    }
+    else if (condition in data.mergedAliasMap)
+    {
+        return true;
+    }
+    else if (condition.negated in data.mergedAliasMap)
+    {
+        return false;
+    }
+    else
+    {
+        if (!isLiteralPositive(condition))
+            return false;
+
         string name = condition.data.name;
         bool useVersion;
         if (name.startsWith("defined("))
@@ -1749,10 +1784,11 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
             }
             else
             {
-                if (conditions.length <= 2 && simplified.isAnyLiteralFormula && isVersionOnlyCondition(simplified, data)
-                        && (simplified.type == FormulaType.literal || (conditions.length == 2
+                if ((conditions.length == 1 && isVersionOnlyCondition(simplified, data))
+                        || (conditions.length == 2 && isVersionOnlyConditionSimple(simplified, data))
+                        || (conditions.length == 2 && isVersionOnlyCondition(simplified, data)
                             && (!childs[1].isValid || (childs[1].nodeType == NodeType.array
-                            && childs[1].childs.length == 0)))))
+                            && childs[1].childs.length == 0))))
                     versionConditionToDCode(code, simplified, data, false);
                 else
                     code.write("static if (", conditionToDCode(simplified, data), ")");
