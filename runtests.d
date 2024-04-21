@@ -122,11 +122,10 @@ int main(string[] args)
         string name = e.name.stripExtension;
         string ext = e.name.extension;
 
-        if (!ext.among(".c", ".cpp", ".d"))
+        if (e.name.endsWith("-output-config.json"))
         {
-            stderr.writeln("Unexpected file: ", e.name);
-            anyFailure = true;
-            continue;
+            ext = "-output-config.json";
+            name = e.name[0 .. $ - ext.length];
         }
 
         Test test;
@@ -150,6 +149,16 @@ int main(string[] args)
         else if (ext == ".d")
         {
             test.expectedOutputFiles ~= relativePath(absolutePath(e.name), absolutePath(test.workDir));
+        }
+        else if (ext == "-output-config.json")
+        {
+            test.extraArgs = ["--output-config", relativePath(absolutePath(e.name), absolutePath(test.workDir))];
+        }
+        else
+        {
+            stderr.writeln("Unexpected file: ", e.name);
+            anyFailure = true;
+            continue;
         }
     }
 
