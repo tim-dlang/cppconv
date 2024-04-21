@@ -516,8 +516,8 @@ struct CppParseTreeCreator(alias GrammarModule)
                 result.startFromParent = start - Location();
     }
 
-    CppParseTree mergeParseTreesImpl(Location firstParamStart, Location lastParamEnd,
-            ParseStackElem!(Location, CppParseTree)[] trees, string mergeInfo = "")
+    CppParseTree mergeParseTreesImpl(SymbolID nonterminalID, Location firstParamStart, Location lastParamEnd,
+            ParseStackElem!(Location, CppParseTree)[] trees)
     {
         CppParseTree[] childs;
         foreach (i, p; trees)
@@ -525,19 +525,15 @@ struct CppParseTreeCreator(alias GrammarModule)
             childs ~= p.val;
         }
 
-        string name = mergeInfo;
-        if (name.length == 0)
-            name = "Merged" /*~nonterminalName*/ ;
-        auto grammarInfo = getDummyGrammarInfo(name);
-        auto r = CppParseTree(name, grammarInfo.startNonterminalID,
-                grammarInfo.startProductionID, NodeType.merged, childs, allocator);
-        r.grammarInfo = grammarInfo;
+        auto r = CppParseTree("", nonterminalID,
+                SymbolID.max, NodeType.merged, childs, allocator);
+        r.grammarInfo = &GrammarModule.grammarInfo;
         r.setStartEnd(firstParamStart, lastParamEnd);
         return r;
     }
 
-    CppParseTreeArray mergeParseTreesImplArray(Location firstParamStart, Location lastParamEnd,
-            ParseStackElem!(Location, CppParseTreeArray)[] trees, string mergeInfo = "")
+    CppParseTreeArray mergeParseTreesImplArray(SymbolID nonterminalID, Location firstParamStart, Location lastParamEnd,
+            ParseStackElem!(Location, CppParseTreeArray)[] trees)
     {
         size_t commonPrefix;
         outer: while (true)
@@ -563,13 +559,9 @@ struct CppParseTreeCreator(alias GrammarModule)
             childs[$ - 1].setStartEnd(p.start, p.end);
         }
 
-        string name = mergeInfo;
-        if (name.length == 0)
-            name = "Merged" /*~nonterminalName*/ ;
-        auto grammarInfo = getDummyGrammarInfo(name);
-        auto r = CppParseTree(name, grammarInfo.startNonterminalID,
-                grammarInfo.startProductionID, NodeType.merged, childs, allocator);
-        r.grammarInfo = grammarInfo;
+        auto r = CppParseTree("", nonterminalID,
+                SymbolID.max, NodeType.merged, childs, allocator);
+        r.grammarInfo = &GrammarModule.grammarInfo;
         r.setStartEnd(firstParamStart, lastParamEnd);
         return CppParseTreeArray(trees[0].val.trees[0 .. commonPrefix] ~ [r], lastParamEnd);
     }
@@ -579,38 +571,10 @@ struct CppParseTreeCreator(alias GrammarModule)
         NonterminalType!(nonterminalID) mergeParseTrees(Location firstParamStart, Location lastParamEnd,
                 ParseStackElem!(Location, NonterminalType!nonterminalID)[] trees)
         {
-            string[] childNames;
-            foreach (c; trees)
-            {
-                string name;
-                static if (is(NonterminalType!nonterminalID == CppParseTreeArray))
-                {
-                    foreach (x; c.val.trees)
-                    {
-                        if (name.length)
-                            name ~= " ";
-                        if (!x.isValid)
-                            name ~= "null";
-                        else
-                            name ~= x.nameOrContent;
-                    }
-                }
-                else
-                {
-                    if (!c.val.isValid)
-                        name = "null";
-                    else
-                        name = c.val.name;
-                }
-                childNames ~= name;
-            }
-            sort(childNames);
-            string mergeInfo = "Merged:" ~ allNonterminals[nonterminalID - startNonterminalID].name
-                ~ "(" ~ childNames.join(" | ") ~ ")";
             static if (is(NonterminalType!nonterminalID == CppParseTreeArray))
-                return mergeParseTreesImplArray(firstParamStart, lastParamEnd, trees, mergeInfo);
+                return mergeParseTreesImplArray(nonterminalID, firstParamStart, lastParamEnd, trees);
             else
-                return mergeParseTreesImpl(firstParamStart, lastParamEnd, trees, mergeInfo);
+                return mergeParseTreesImpl(nonterminalID, firstParamStart, lastParamEnd, trees);
         }
     }
 }

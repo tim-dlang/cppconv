@@ -71,7 +71,7 @@ Tree addArrayElem(Tree tree, Tree el)
     {
         return tree;
     }
-    else if (tree.nodeType == NodeType.merged && tree.nonterminalID >= 30_000)
+    else if (tree.nodeType == NodeType.merged)
     {
         return tree;
     }

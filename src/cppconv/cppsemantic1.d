@@ -202,26 +202,18 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
     size_t indexInRealParent;
     Tree realParent = getRealParent(tree, semantic, &indexInRealParent);
 
-    assert((tree.nonterminalID >= 30_000) == (tree.name.startsWith("Merged")));
-    assert((tree.nonterminalID >= 30_000) == (tree.nodeType == NodeType.merged));
-
     if (tree.nodeType == NodeType.merged && () {
-            foreach (i, char c; tree.name)
-                if (c == '(')
-                {
-                    return (tree.name[0 .. i].endsWith("Expression")
-                        && !tree.name[0 .. i].endsWith("Merged:TypeIdOrExpression"))
-                        || tree.name[0 .. i].endsWith("InitializerClause")
-                        || tree.name[0 .. i].endsWith("ArrayDeclarator")
-                        || tree.name[0 .. i].endsWith("TemplateArgument")
-                        || tree.name[0 .. i].endsWith("TemplateArgument2")
-                        || tree.name[0 .. i].endsWith("EnumeratorInitializer")
-                        || tree.name[0 .. i].endsWith("FunctionDefinitionHead")
-                        || tree.name[0 .. i].endsWith("StaticAssertDeclarationX")
-                        || tree.name[0 .. i].endsWith("Statement")
-                        || tree.name[0 .. i].endsWith("Merged:TemplateArgumentList");
-                }
-            return false;
+            return (tree.name.endsWith("Expression")
+                    && tree.name != "TypeIdOrExpression")
+                || tree.name.endsWith("InitializerClause")
+                || tree.name.endsWith("ArrayDeclarator")
+                || tree.name.endsWith("TemplateArgument")
+                || tree.name.endsWith("TemplateArgument2")
+                || tree.name.endsWith("EnumeratorInitializer")
+                || tree.name.endsWith("FunctionDefinitionHead")
+                || tree.name.endsWith("StaticAssertDeclarationX")
+                || tree.name.endsWith("Statement")
+                || tree.nonterminalID == nonterminalIDFor!"TemplateArgumentList";
         }())
     {
         immutable(Formula)* goodConditionStrict = condition;
@@ -250,7 +242,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         updateType(extraInfoHere.type, combinedType);
         return;
     }
-    else if (tree.nonterminalID >= 30_000)
+    else if (tree.nodeType == NodeType.merged)
     {
         immutable(Formula)* conditionA = semantic.logicSystem.false_;
         immutable(Formula)* conditionB = semantic.logicSystem.false_;

@@ -1494,7 +1494,6 @@ Tree getRealParent(Tree tree, Semantic semantic, size_t* indexInParent = null)
 {
     Tree realParent = semantic.extraInfo(tree).parent;
     while (realParent.isValid && (realParent.nodeType != NodeType.nonterminal
-            || realParent.nonterminalID >= 30_000
             || realParent.nonterminalID == CONDITION_TREE_NONTERMINAL_ID))
     {
         tree = realParent;
@@ -1611,7 +1610,7 @@ template ConflictHandler(alias F)
 @ConflictHandler!((Tree mergedTree, Tree initDecl, Tree funcDecl) {
     if (initDecl.nonterminalID == nonterminalIDFor!"InitDeclarator")
         return true;
-    if (mergedTree.name.startsWith("Merged:InitDeclaratorList("))
+    if (mergedTree.nonterminalID == nonterminalIDFor!"InitDeclaratorList")
     {
         if (initDecl.nodeType == NodeType.array && funcDecl.nodeType == NodeType.array
             && initDecl.childs.length == 1 && funcDecl.childs.length == 1
@@ -1650,7 +1649,7 @@ template ConflictHandler(alias F)
 }
 
 @ConflictHandler!((Tree mergedTree, Tree typeofExpr, Tree typeofType) {
-    return mergedTree.name.startsWith("Merged:TypeIdOrExpression")
+    return mergedTree.name.startsWith("TypeIdOrExpression")
         && typeofType.nonterminalID == nonterminalIDFor!"TypeId";
 }) void handleConflictTypeof(ref SemanticRunInfo semantic, Tree mergedTree, Tree typeofExpr, Tree typeofType,
         ref immutable(Formula)* conditionTypeofExpr,
@@ -1690,7 +1689,7 @@ template ConflictHandler(alias F)
 }
 
 @ConflictHandler!((Tree mergedTree, Tree decl1, Tree decl2) {
-    return mergedTree.name.startsWith("Merged:TemplateParameter(")
+    return mergedTree.nonterminalID == nonterminalIDFor!"TemplateParameter"
         && decl1.nonterminalID == nonterminalIDFor!"ParameterDeclarationAbstract"
         && decl2.nonterminalID == nonterminalIDFor!"TypeParameter";
 }) void handleConflictTemplateParameter(ref SemanticRunInfo semantic, Tree mergedTree, Tree decl1,
@@ -1704,7 +1703,7 @@ template ConflictHandler(alias F)
 }
 
 @ConflictHandler!((Tree mergedTree, Tree constructorDecl, Tree otherDecl) {
-    if (mergedTree.name.startsWith("Merged:MemberDeclaration1("))
+    if (mergedTree.nonterminalID == nonterminalIDFor!"MemberDeclaration1")
     {
         if (constructorDecl.name.startsWith("MemberDeclaration1")
             && otherDecl.name.startsWith("MemberDeclaration1")
@@ -1713,7 +1712,7 @@ template ConflictHandler(alias F)
             return true;
         }
     }
-    if (mergedTree.name.startsWith("Merged:MemberSpecification("))
+    if (mergedTree.nonterminalID == nonterminalIDFor!"MemberSpecification")
     {
         assert(constructorDecl.nodeType == NodeType.array);
         assert(otherDecl.nodeType == NodeType.array);
@@ -1789,7 +1788,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     else if (tree.nodeType == NodeType.token)
     {
     }
-    else if (tree.name.startsWith("Merged:TypeIdOrExpression"))
+    else if (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"TypeIdOrExpression")
     {
         goodConditionStrict = semantic.logicSystem.false_;
         goodCondition = semantic.logicSystem.false_;

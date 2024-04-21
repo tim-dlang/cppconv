@@ -555,3 +555,45 @@ CppParseTree deepCopyTree(CppParseTree tree, LogicSystem logicSystem)
 
     return r;
 }
+
+string recreateMergedName(const CppParseTree tree)
+{
+    if (tree.nodeType != NodeType.merged)
+        return tree.nameOrContent;
+
+    string r;
+    r = "Merged:";
+    r ~= tree.name;
+
+    string[] childNames;
+    foreach (c; tree.childs)
+    {
+        string name;
+        if (c.nodeType == NodeType.array)
+        {
+            foreach (x; c.childs)
+            {
+                if (name.length)
+                    name ~= " ";
+                if (!x.isValid)
+                    name ~= "null";
+                else
+                    name ~= recreateMergedName(x);
+            }
+        }
+        else
+        {
+            if (!c.isValid)
+                name = "null";
+            else
+                name = recreateMergedName(c);
+        }
+        childNames ~= name;
+    }
+    import std.algorithm;
+    sort(childNames);
+    r ~= "(";
+    r ~= childNames.join(" | ");
+    r ~= ")";
+    return r;
+}

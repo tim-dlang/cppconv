@@ -267,9 +267,6 @@ void runSemantic2(Semantic semantic, ref Tree tree, Tree parent, immutable(Formu
 
     Tree realParent = getRealParent(tree, semantic);
 
-    assert((tree.nonterminalID >= 30_000) == (tree.name.startsWith("Merged")));
-    assert((tree.nonterminalID >= 30_000) == (tree.nodeType == NodeType.merged));
-
     if (tree.nodeType == NodeType.merged)
     {
         auto mdata = &semantic.mergedTreeData(tree);

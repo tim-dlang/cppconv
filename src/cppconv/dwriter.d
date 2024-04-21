@@ -786,15 +786,7 @@ bool isTreeExpression(Tree tree, Semantic semantic)
 {
     if (tree.nodeType == NodeType.merged)
     {
-        assert(tree.name.startsWith("Merged:"));
-        string name2 = tree.name["Merged:".length .. $];
-        foreach (i, char c; name2)
-            if (c == '(')
-            {
-                name2 = name2[0 .. i];
-                break;
-            }
-        if (name2.endsWith("Expression"))
+        if (tree.name.endsWith("Expression"))
             return true;
     }
     if (tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
@@ -866,7 +858,7 @@ bool isTreePossibleMixin(Tree tree, Semantic semantic)
         return true;
     if (tree.nodeType == NodeType.token)
         return false;
-    if (tree.name.startsWith("Merged:TemplateArgument2"))
+    if (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"TemplateArgument2")
         return true;
     if (tree.nodeType == NodeType.merged)
     {
@@ -1665,7 +1657,7 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
             }
             bool inLine = code.inLine;
             code.write("})");
-            if (tree.name.startsWith("Merged:Statement"))
+            if (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"Statement")
                 code.write(";");
             if (!inLine)
                 code.writeln();
@@ -2747,7 +2739,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
                 data.sourceTokenManager.collectTokens(tree.location.end);
             if (instance.macroTranslation == MacroTranslation.mixin_
-                    && (tree.name.endsWith("Statement") || tree.name.startsWith("Merged:Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
+                    && (tree.name.endsWith("Statement") || (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
                 parseTreeToCodeTerminal!T(code, ";");
             else
                 data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
@@ -7407,7 +7399,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             Tree parent = getRealParent(instance.macroTrees[0], semantic);
             if (data.options.addDeclComments)
                 code.writeln("// instance ", (!parent.isValid) ? "null" : parent.name,
-                        " ", instance.macroTrees[0].nameOrContent, " ", locationStr(LocationX(LocationN.init,
+                        " ", recreateMergedName(instance.macroTrees[0]), " ", locationStr(LocationX(LocationN.init,
                             instance.locationContextInfo.locationContext)) /*, " ", instance.locationContextInfo.condition.toString*/ );
             if (instance.usedName.length == 0)
                 continue;
