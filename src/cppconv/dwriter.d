@@ -1723,7 +1723,8 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
         if (logicSystem.and(condition, conditions[i]).isFalse)
             continue;
         if (i + 1 == conditions.length && (!childs[i].isValid
-                || (childs[i].nodeType == NodeType.array && childs[i].childs.length == 0)))
+                || (childs[i].nodeType == NodeType.array && childs[i].childs.length == 0
+                    && !(parent.isValid && parent.nonterminalID.nonterminalIDAmong!("StringLiteralSequence")))))
             continue;
         auto simplified0 = logicSystem.removeRedundant(logicSystem.and(condition,
                 conditions[i]), condition);
@@ -1865,6 +1866,12 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
                 code.write("#}");
             else
                 code.writeln("#}");
+        }
+        else if (childs[i].nodeType == NodeType.array && childs[i].childs.length == 0
+            && parent.isValid && parent.nonterminalID.nonterminalIDAmong!("StringLiteralSequence"))
+        {
+            code.write("\"\"");
+            data.afterStringLiteral = true;
         }
         else
             parseTreeToDCode(code, data, childs[i], logicSystem.and(condition, conditions[i]), currentScope);
