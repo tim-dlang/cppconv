@@ -19,13 +19,10 @@ mixin((defined!"DEF1") ? q{
         /+ #elif defined(DEF2) +/
         "prefix2_"
     } : q{
-        /+ #endif +/
-        "suffix"
-    })~ mixin(((defined!"DEF1" || defined!"DEF2")) ? q{
-            "suffix"
-        } : q{
         ""
-        });
+    })/+ #endif +/
+~ "suffix"
+;
 __gshared const(char)* s3 = "pre" ~ "fix"~ 
 mixin((defined!"DEF1") ? q{
         "_suffix1"
@@ -42,13 +39,9 @@ mixin((defined!"DEF1") ? q{
         /+ #elif defined(DEF2) +/
         "prefix2_"
     } : q{
-        /+ #endif +/
-        "suf"
-    })~ mixin(((defined!"DEF1" || defined!"DEF2")) ? q{
-            "suf"
-        } : q{
         ""
-        }) ~ "fix"
+    })/+ #endif +/
+~ "suf" ~ "fix"
 ;
 __gshared const(char)* s5 = "prefix_"~ 
 mixin((defined!"DEF1") ? q{
