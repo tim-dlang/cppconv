@@ -544,7 +544,9 @@ void mergeFiles(Context rootContext, ref MergedFile[] mergedFiles, MergedFile[] 
                         "@includetu:" ~ mergedFile1.filename.name,
                         ">=", mergedFile1.numTranslationUnits);
                 mergedFile1.mergedTrees = mergeArrays(mergedFile1.mergedTrees, mergedFile2.mergedTrees,
-                        [rootContext.logicSystem.and(condition.negated, conditionNeeded1), rootContext.logicSystem.and(condition, conditionNeeded2)], rootContext.logicSystem,/*anyErrorCondition*/
+                        [rootContext.logicSystem.or(rootContext.logicSystem.and(condition.negated, conditionNeeded1), rootContext.logicSystem.and(condition, conditionNeeded2.negated)),
+                         rootContext.logicSystem.or(rootContext.logicSystem.and(condition, conditionNeeded2), rootContext.logicSystem.and(condition.negated, conditionNeeded1.negated))],
+                        rootContext.logicSystem,/*anyErrorCondition*/
                         rootContext.logicSystem.false_,
                         rootContext.logicSystem.or(conditionNeeded1,
                             conditionNeeded2), MergeFlags.none /*MergeFlags.nullOnTreeConditionRec*/ ,
