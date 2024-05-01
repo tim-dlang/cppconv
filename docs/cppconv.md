@@ -66,6 +66,20 @@ but in practice at most one of them can be defined. Using the single
 macro OS internally tells the converter, which combinations are
 possible.
 
+### `#imply EXPR`
+
+Add implication for preprocessor symbols. Only simple implications
+are supported. This can simplify conditions in the generated code.
+All implications should be declared early and be the same for all
+translation units. In following example `ANDROID` is only defined, when
+`LINUX` is also defined.
+
+```
+#if defined(ANDROID)
+#imply defined(LINUX)
+#endif
+```
+
 ## Output
 
 Argument --output-dir of cppconv selects the directory, where the

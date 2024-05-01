@@ -55,6 +55,7 @@ ControlLine
     | <AliasDefine
     | <AddIncludePath
     | <RegexUndef
+    | <Imply
     ;
 
 Include     = WSC "#" WSC Identifier>>"include"      HeaderPart WSC ^NewLine;
@@ -82,6 +83,7 @@ Unknown = WSC "#" WSC Identifier>>"unknown" WSC Identifier WSC ^NewLine;
 AliasDefine = WSC "#" WSC Identifier>>"alias"  WSC Identifier WSC repeatOrNone(Token) ^NewLine;
 AddIncludePath = WSC "#" WSC Identifier>>"addincludepath" WSC StringLiteral WSC ^NewLine;
 RegexUndef = WSC "#" WSC Identifier>>"regex_undef" WSC StringLiteral WSC ^NewLine;
+Imply = WSC "#" WSC Identifier>>"imply" WSC repeatOrNone(Token) ^NewLine;
 
 TextLine
     = WSC !"#" repeat(Token) NewLine

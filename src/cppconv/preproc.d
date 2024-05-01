@@ -166,11 +166,38 @@ class DefineSet
     }
 }
 
+struct Implication
+{
+    immutable(Formula)* lhs;
+    immutable(Formula)* rhs;
+    LocationRangeX location;
+}
+
+void mergeImplications(LogicSystem logicSystem, ref Implication[] implications, const Implication[] implications2)
+{
+    if (implications2.length == 0)
+        return;
+    bool[immutable(Implication)] done;
+    foreach (implication; implications)
+    {
+        done[implication] = true;
+    }
+    foreach (implication; implications2)
+    {
+        if (implication in done)
+            continue;
+        implications ~= implication;
+        logicSystem.addImplication(implication.lhs, implication.rhs);
+        done[implication] = true;
+    }
+}
+
 class DefineSets
 {
     DefineSet[string] defineSets;
     LogicSystem logicSystem;
     string[immutable(Formula)*] aliasMap;
+    Implication[] implications;
 
     this(LogicSystem logicSystem)
     {
@@ -1093,6 +1120,41 @@ void updateDefineSet(ParserWrapper)(DefineSets defineSets, immutable(Formula)* c
 
         if (condition2 !in defineSets.aliasMap)
             defineSets.aliasMap[condition2] = def;
+    }
+    else if (l.nonterminalID == preprocNonterminalIDFor!"Imply")
+    {
+        immutable(Formula)* condition2 = exprToCondition!(ParserWrapper)(l.childs[5],
+                l.location.context, defineSets.logicSystem.true_,
+                defineSets.logicSystem, defineSets);
+
+        if (condition.type == FormulaType.and)
+            throw new Exception(text("imply with complex condition ", l,
+                    " ", condition.toString, " => ", condition2.toString));
+        if (condition2.type == FormulaType.or)
+            throw new Exception(text("imply with complex condition ", l,
+                    " ", condition.toString, " => ", condition2.toString));
+
+        if (condition.type == FormulaType.or)
+        {
+            foreach (x; condition.subFormulas_)
+            {
+                if (!x.isAnyLiteralFormula)
+                    throw new Exception(text("imply with complex condition ", l,
+                            " ", condition.toString, " => ", condition2.toString));
+            }
+        }
+        if (condition2.type == FormulaType.and)
+        {
+            foreach (x; condition2.subFormulas_)
+            {
+                if (!x.isAnyLiteralFormula)
+                    throw new Exception(text("imply with complex condition ", l,
+                            " ", condition.toString, " => ", condition2.toString));
+            }
+        }
+
+        defineSets.implications ~= Implication(condition, condition2, l.location);
+        logicSystem.addImplication(condition, condition2);
     }
     else
         assert(false);

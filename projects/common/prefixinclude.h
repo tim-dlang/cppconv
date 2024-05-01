@@ -24,6 +24,7 @@
 #regex_undef "__GLIBCXX.*"
 #regex_undef "Q_CC_.*"
 #regex_undef "Q_OS_.*"
+#regex_undef "Q_PROCESSOR_.*"
 #regex_undef ".*_H___"
 
 #undef __WINE_INTERNAL_POPPACK
@@ -35,37 +36,77 @@
 #alias CPPCONV_OS_IOS CPPCONV_OS == 4
 #alias CPPCONV_OS_TVOS CPPCONV_OS == 5
 #alias CPPCONV_OS_WATCHOS CPPCONV_OS == 6
+#alias CPPCONV_OS_BSD CPPCONV_OS == 7
+#alias __gnu_hurd__ CPPCONV_OS == 8
+#alias __WEBOS__ CPPCONV_OS == 9
+#alias __sun CPPCONV_OS == 10
+#alias __hpux CPPCONV_OS == 11
+#alias __INTERIX CPPCONV_OS == 12
+#alias _AIX CPPCONV_OS == 13
+#alias __Lynx__ CPPCONV_OS == 14
+#alias __QNXNTO__ CPPCONV_OS == 15
+#alias __INTEGRITY CPPCONV_OS == 16
+#alias __VXWORKS__ CPPCONV_OS == 17
+#alias __HAIKU__ CPPCONV_OS == 18
+#alias __EMSCRIPTEN__ CPPCONV_OS == 19
+#alias __native_client__ CPPCONV_OS == 20
+#alias __minix CPPCONV_OS == 21
+#alias __MSDOS__ CPPCONV_OS == 22
+#alias __OS400__ CPPCONV_OS == 23
+#alias __OS2__ CPPCONV_OS == 24
+#alias __VMS CPPCONV_OS == 25
+#alias __MVS__ CPPCONV_OS == 26
+
+#if defined(CPPCONV_OS_LINUX) || defined(CPPCONV_OS_BSD) || defined(__EMSCRIPTEN__) \
+    || defined(_AIX) || defined(__HAIKU__) || defined(__gnu_hurd__) || defined(__sun)
+#imply defined(__unix)
+#endif
 
 #unknown CPPCONV_POINTER_SIZE
 #unknown CPPCONV_ARCH
 #alias CPPCONV_ARCH_X86 CPPCONV_ARCH == 1
 #alias CPPCONV_ARCH_POWERPC CPPCONV_ARCH == 2
+#alias CPPCONV_ARCH_ARM CPPCONV_ARCH == 3
+#alias __avr32__ CPPCONV_ARCH == 4
+#alias __bfin__ CPPCONV_ARCH == 5
+#alias __ia64__ CPPCONV_ARCH == 6
+#alias __mips__ CPPCONV_ARCH == 7
+#alias __riscv CPPCONV_ARCH == 8
+#alias __s390__ CPPCONV_ARCH == 9
+#alias __sh__ CPPCONV_ARCH == 10
+#alias __sparc__ CPPCONV_ARCH == 11
+#alias CPPCONV_ARCH_EMSCRIPTEN CPPCONV_ARCH == 11
 
 #undef i386
 #undef __i386
 #undef __i386__
-#undef _X86_
-#ifdef CPPCONV_ARCH_X86
-#if CPPCONV_POINTER_SIZE == 32
+#undef _M_IX86
+#ifdef _X86_
 #define i386 1
 #define __i386 1
 #define __i386__ 1
 #define _X86_ 1
-#endif
+#define _M_IX86 1
+#imply defined(CPPCONV_ARCH_X86)
+#imply CPPCONV_POINTER_SIZE == 32
 #endif
 
 #undef __amd64__
 #undef __amd64
-#undef __x86_64__
 #undef __x86_64
 #undef _M_AMD64
-#ifdef CPPCONV_ARCH_X86
-#if CPPCONV_POINTER_SIZE == 64
+#undef _M_X64
+#ifdef __x86_64__
 #define __amd64__ 1
 #define __amd64 1
 #define __x86_64__ 1
 #define _M_AMD64 1
+#define _M_X64 1
+#imply defined(CPPCONV_ARCH_X86)
 #endif
+
+#if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4_1__) || defined(__SSE4_2__) || defined(__AVX__)
+#imply defined(CPPCONV_ARCH_X86)
 #endif
 
 #undef __powerpc
@@ -93,6 +134,45 @@
 #define _M_PPC 1
 #endif
 
+#undef _M_ARM
+#ifdef __arm__
+#unknown _M_ARM
+#imply defined(CPPCONV_ARCH_ARM)
+#endif
+
+#ifdef __thumb__
+#imply defined(CPPCONV_ARCH_ARM)
+#endif
+
+#undef _M_ARM64
+#undef __ARM64__
+#ifdef __aarch64__
+#unknown _M_ARM64
+#define __ARM64__ 1
+#imply defined(CPPCONV_ARCH_ARM)
+#endif
+
+#undef __ia64
+#undef _M_IA64
+#ifdef __ia64__
+#define __ia64 1
+#define _M_IA64 1
+#endif
+
+#undef __mips
+#undef _M_MRX000
+#ifdef __mips__
+#unknown __mips
+#unknown _M_MRX000
+#endif
+
+#ifdef __EMSCRIPTEN__
+#imply defined(CPPCONV_ARCH_EMSCRIPTEN)
+#endif
+#ifndef __EMSCRIPTEN__
+#imply !defined(CPPCONV_ARCH_EMSCRIPTEN)
+#endif
+
 #undef __APPLE__
 #if defined(CPPCONV_OS_MACOS) || defined(CPPCONV_OS_IOS) || defined(CPPCONV_OS_TVOS) || defined(CPPCONV_OS_WATCHOS)
 #define __APPLE__
@@ -112,30 +192,29 @@
 #define TARGET_OS_WATCH 1
 #endif
 
-#undef WIN64
-#undef _WIN64
-#undef __WIN64__
 #undef WIN32
 #undef _WIN32
 #undef __WIN32__
 #ifdef CPPCONV_OS_WIN
 /*#if CPPCONV_POINTER_SIZE == 16
 #define _WIN16
+#endif*/
+#define WIN32 1
+#define _WIN32 1
+#define __WIN32__ 1
 #endif
-#if CPPCONV_POINTER_SIZE >= 32*/
-#define WIN32
-#define _WIN32
-#define __WIN32__
-//#endif
-#if CPPCONV_POINTER_SIZE == 64
-#define WIN64
-#define _WIN64
-#define __WIN64__
+
+#undef WIN64
+#undef _WIN64
+#ifdef __WIN64__
+#define WIN64 1
+#define _WIN64 1
+#define __WIN64__ 1
+#imply defined(CPPCONV_OS_WIN)
+#imply CPPCONV_POINTER_SIZE == 64
 #endif
-#endif
-#ifndef CPPCONV_OS_WIN
-#undef __CYGWIN__
-#undef __NT__
+#if defined(__CYGWIN__) || defined(__NT__)
+#imply defined(CPPCONV_OS_WIN)
 #endif
 
 #undef __linux__
@@ -145,10 +224,83 @@
 #define __linux
 #endif
 
-#ifndef CPPCONV_OS_LINUX
 #undef ANDROID
-#undef __ANDROID__
-#undef __WEBOS__
+#ifdef __ANDROID__
+#define ANDROID 1
+#endif
+
+#if defined(ANDROID) || defined(__ANDROID__) || defined(__WEBOS__)
+#imply defined(CPPCONV_OS_LINUX)
+#endif
+
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__) \
+    || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__MidnightBSD__) || defined(__bsdi__)
+#imply defined(CPPCONV_OS_BSD)
+#endif
+
+#undef sun
+#ifdef __sun
+#define sun 1
+#endif
+
+#undef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
+#define EMSCRIPTEN 1
+#endif
+
+#undef hpux
+#undef _hpux
+#ifdef __hpux
+#define hpux 1
+#define _hpux 1
+#endif
+
+#undef __unix
+#ifdef __unix__
+#define __unix 1
+#endif
+
+#ifdef __gnu_hurd__
+#imply defined(__GNU__)
+#endif
+
+#undef MSDOS
+#undef _MSDOS
+#undef __DOS__
+#ifdef __MSDOS__
+#define MSDOS 1
+#define _MSDOS 1
+#define __DOS__ 1
+#endif
+
+#undef OS2
+#undef _OS2
+#undef __TOS_OS2__
+#undef OS_2
+#ifdef __OS2__
+#define OS2 1
+#define _OS2 1
+#define __TOS_OS2__ 1
+#define OS_2 1
+#endif
+
+#undef VMS
+#ifdef __VMS
+#define VMS 1
+#endif
+
+#undef VXWORKS
+#undef __vxworks
+#ifdef __VXWORKS__
+#define VXWORKS 1
+#define __vxworks 1
+#endif
+
+#undef __HOS_MVS__
+#undef __TOS_MVS__
+#ifdef __MVS__
+#define __HOS_MVS__ 1
+#define __TOS_MVS__ 1
 #endif
 
 #undef SAG_COM

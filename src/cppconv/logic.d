@@ -480,6 +480,13 @@ class LogicSystemX(T)
     SimpleArrayAllocator2!(immutable(DoubleFormula)) formulaAllocator;
     SimpleArrayAllocator2!(immutable(Formula*)) formulaArrayAllocator;
 
+    struct Implication
+    {
+        immutable(Formula)* lhs;
+        immutable(Formula)* rhs;
+    }
+    Implication[][typeof(T.init.mergeKey())] implications;
+
     immutable(Formula*) formula(FormulaType type, T data)
     in
     {
@@ -727,8 +734,7 @@ class LogicSystemX(T)
                 continue;
             for (size_t k = i + 1; k < subFormulas2.length;)
             {
-                if (subFormulas2[k].isAnyLiteralFormula
-                        && subFormulas2[i].data.mergeKey == subFormulas2[k].data.mergeKey)
+                if (subFormulas2[k].isAnyLiteralFormula)
                 {
                     auto f1 = subFormulas2[i];
                     auto f2 = subFormulas2[k];
@@ -1196,7 +1202,7 @@ class LogicSystemX(T)
         if (a is b)
             return true;
         if (a.isAnyLiteralFormula && b.isAnyLiteralFormula
-                && a.data.mergeKey == b.data.mergeKey && mergeAndImpl(a, b) is a)
+                && mergeAndImpl(a, b) is a)
             return true;
         if (maxDepth == 0)
             return false;
@@ -1641,12 +1647,35 @@ class LogicSystemX(T)
         return r;
     }
 
-    immutable(Formula)* mergeAndImpl(immutable(Formula)* f1, immutable(Formula)* f2)
+    immutable(Formula)* mergeAndImpl(immutable(Formula)* f1, immutable(Formula)* f2, uint depth = 0)
     {
         if (!f1.isAnyLiteralFormula || !f2.isAnyLiteralFormula)
             return null;
         if (f1.data.mergeKey != f2.data.mergeKey)
+        {
+            if (depth < 2)
+            {
+                foreach (implication; implications.get(f1.data.mergeKey, []))
+                    if (mergeAndImpl(f1, implication.lhs, depth + 1) is f1)
+                    {
+                        auto f3 = mergeAndImpl(implication.rhs, f2, depth + 1);
+                        if (f3 is implication.rhs)
+                            return f1;
+                        if (f3 !is null && f3.isFalse)
+                            return false_;
+                    }
+                foreach (implication; implications.get(f2.data.mergeKey, []))
+                    if (mergeAndImpl(f2, implication.lhs, depth + 1) is f2)
+                    {
+                        auto f3 = mergeAndImpl(implication.rhs, f1, depth + 1);
+                        if (f3 is implication.rhs)
+                            return f2;
+                        if (f3 !is null && f3.isFalse)
+                            return false_;
+                    }
+            }
             return null;
+        }
         T data1 = f1.data;
         FormulaType type1 = f1.type;
         T data2 = f2.data;
@@ -1692,6 +1721,31 @@ class LogicSystemX(T)
         else if (b in foundA)
             result.put(b);
         return and(result.data);
+    }
+
+    void addImplication(immutable(Formula)* lhs, immutable(Formula)* rhs)
+    {
+        if (lhs.type == FormulaType.or)
+        {
+            foreach (c; lhs.subFormulas)
+                addImplication(c, rhs);
+            return;
+        }
+        if (rhs.type == FormulaType.and)
+        {
+            foreach (c; rhs.subFormulas)
+                addImplication(lhs, c);
+            return;
+        }
+        assert(lhs.isAnyLiteralFormula);
+        assert(rhs.isAnyLiteralFormula);
+
+        if (lhs.data.mergeKey !in implications)
+            implications[lhs.data.mergeKey] = [];
+        if (rhs.data.mergeKey !in implications)
+            implications[rhs.data.mergeKey] = [];
+        implications[lhs.data.mergeKey].addOnce(Implication(lhs, rhs));
+        implications[rhs.data.mergeKey].addOnce(Implication(rhs.negated, lhs.negated));
     }
 }
 

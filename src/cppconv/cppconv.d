@@ -279,6 +279,7 @@ int main(string[] args)
 
     MergedFile[] mergedFiles;
     string[immutable(Formula)*] mergedAliasMap;
+    Implication[] mergedImplications;
     foreach (inputFile; inputFiles)
     {
         auto savedAllocator = treeAllocator;
@@ -348,6 +349,7 @@ int main(string[] args)
             else
                 mergedAliasMap[c] = def;
         }
+        mergeImplications(context.logicSystem, mergedImplications, context2.defineSets.implications);
 
         treeAllocator = savedAllocator;
         tmpAllocator.clearAll();

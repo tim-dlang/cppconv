@@ -347,7 +347,7 @@ do
             context.fileCache.includeDirs ~= IncludeDir(path, condition);
         }
         else if (l.name.among("VarDefine", "FuncDefine", "Undef", "LockDefine",
-                "AliasDefine", "Unknown", "RegexUndef"))
+                "AliasDefine", "Unknown", "RegexUndef", "Imply"))
         {
             locConditions.add(l.start.loc, l.end.loc, condition);
             updateDefineSet!ParserWrapper(context.defineSets, condition, l);

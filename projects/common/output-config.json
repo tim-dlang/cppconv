@@ -68,9 +68,11 @@
         "__HAIKU__": "Haiku",
         "__CYGWIN__": "Cygwin",
         "CPPCONV_OS_WIN": "Windows",
+        "__ANDROID__": "Android",
+        "__amigaos4__": "AmigaOS4",
+
         "NDEBUG": "!assert",
 
-        "__amigaos4__": "AmigaOS4",
 
         "NO_ADDRINFO": "NO_ADDRINFO",
 
@@ -78,7 +80,6 @@
         "_LP64": "D_LP64",
 
         "__x86_64__": "X86_64",
-        "__i386__": "X86",
         "_X86_": "X86",
         "__arm__": "ARM",
         "__aarch64__": "AArch64",
