@@ -436,9 +436,10 @@ void mergeSemantics(Semantic mergedSemantic, Semantic semantic2,
                             treeCondition), mergedSemantic);
             }
 
-            targetExtraInfo.type = combineTypes(targetExtraInfo.type,
-                    mapType(sourceExtraInfo.type), null,
-                    combinedInstanceCondition, mergedSemantic);
+            if (!logicSystem.and(treeCondition, combinedInstanceConditionUsed).isFalse)
+                targetExtraInfo.type = combineTypes(targetExtraInfo.type,
+                        mapType(sourceExtraInfo.type), null,
+                        combinedInstanceCondition, mergedSemantic);
             mergeConditionMaps!(x => mergeFilesData.getTargetDeclarationSet(x))(
                     targetExtraInfo.referenced, sourceExtraInfo.referenced,
                     combinedInstanceCondition, combinedInstanceConditionUsed, logicSystem);
