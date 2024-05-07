@@ -1773,7 +1773,7 @@ enum ConflictExpressionFlags
 
 void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionStrict,
         ref immutable(Formula)* goodCondition,
-        ref SemanticRunInfo semantic, ConflictExpressionFlags flags, QualType* contextType = null)
+        ref SemanticRunInfo semantic, ConflictExpressionFlags flags, QualType* contextType = null, immutable(Formula)** isDependentName = null)
 {
     if (!tree.isValid)
         return;
@@ -1782,7 +1782,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     {
         foreach (i, ref c; tree.childs)
         {
-            handleConflictExpression(c, goodConditionStrict, goodCondition, semantic, flags);
+            handleConflictExpression(c, goodConditionStrict, goodCondition, semantic, flags, null, isDependentName);
         }
     }
     else if (tree.nodeType == NodeType.token)
@@ -1820,6 +1820,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         goodConditions2.length = tree.childs.length;
         immutable(Formula)*[] extraConditions;
         extraConditions.length = tree.childs.length;
+        immutable(Formula)* origIsDependentName = isDependentName ? *isDependentName : semantic.logicSystem.false_;
         QualType[] childContextTypes;
         QualType origContextType;
         size_t defaultTree = size_t.max;
@@ -1830,13 +1831,14 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         }
         foreach (i, ref c; tree.childs)
         {
+            immutable(Formula)* isDependentName2 = origIsDependentName;
             if (qualifiedIdIndex != size_t.max
                     && c.nonterminalID.nonterminalIDAmong!("TypeId",
                         "SimpleTypeSpecifierNoKeyword"))
             {
                 defaultTree = qualifiedIdIndex;
             }
-            goodConditionsStrict2[i] = goodConditionStrict;
+            goodConditionsStrict2[i] = goodCondition;
             goodConditions2[i] = goodCondition;
             extraConditions[i] = semantic.logicSystem.true_;
             Tree c2 = c;
@@ -1848,9 +1850,14 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
             if (contextType !is null)
                 *contextType = origContextType;
             handleConflictExpression(c2, goodConditionsStrict2[i],
-                    goodConditions2[i], semantic, flags, contextType);
+                    goodConditions2[i], semantic, flags, contextType, &isDependentName2);
             if (contextType !is null)
                 childContextTypes[i] = *contextType;
+
+            if (isDependentName)
+            {
+                *isDependentName = semantic.logicSystem.or(*isDependentName, isDependentName2);
+            }
         }
         foreach (i; 0 .. tree.childs.length)
             foreach (j; 0 .. i)
@@ -1937,7 +1944,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         if (mergeDepth == 1)
             mdata.mergedCondition = semantic.logicSystem.or(mdata.mergedCondition, badCondition);
 
-        goodConditionStrict = resultGoodConditionStrict;
+        goodConditionStrict = semantic.logicSystem.and(resultGoodConditionStrict, goodConditionStrict);
         goodCondition = resultGoodCondition;
     }
     else if (tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
@@ -1947,18 +1954,24 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
 
         immutable(Formula)* combinedConditionStrict = semantic.logicSystem.false_;
         immutable(Formula)* combinedCondition = semantic.logicSystem.false_;
+        immutable(Formula)* origIsDependentName = isDependentName ? *isDependentName : semantic.logicSystem.false_;
         foreach (i; 0 .. ctree.childs.length)
         {
+            immutable(Formula)* isDependentName2 = origIsDependentName;
             immutable(Formula)* goodConditionStrict2 = semantic.logicSystem.and(
                     goodConditionStrict, ctree.conditions[i]);
             immutable(Formula)* goodCondition2 = semantic.logicSystem.and(goodCondition,
                     ctree.conditions[i]);
             handleConflictExpression(ctree.childs[i], goodConditionStrict2,
-                    goodCondition2, semantic, flags);
+                    goodCondition2, semantic, flags, null, &isDependentName2);
             tree.childs[i] = ctree.childs[i];
             combinedCondition = semantic.logicSystem.or(combinedCondition, goodCondition2);
             combinedConditionStrict = semantic.logicSystem.or(combinedConditionStrict,
                     goodConditionStrict2);
+            if (isDependentName)
+            {
+                *isDependentName = semantic.logicSystem.or(*isDependentName, semantic.logicSystem.and(isDependentName2, ctree.conditions[i]));
+            }
         }
         goodCondition = combinedCondition;
         goodConditionStrict = combinedConditionStrict;
@@ -2084,6 +2097,12 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                 scope_ = scopeForRecord(recordType, ppVersion, semantic);
             }
 
+            if (isDependentName && (flags & ConflictExpressionFlags.inType) && isInCorrectVersion(ppVersion, *isDependentName))
+            {
+                goodCondition = semantic.logicSystem.and(goodCondition, ppVersion.condition.negated);
+                continue;
+            }
+
             Declaration[] ds = lookupName(name, scope_, ppVersion,
                     LookupNameFlags.followForwardScopes | LookupNameFlags.strictCondition);
 
@@ -2100,6 +2119,8 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                     isNotDecl = true;
                 if (d.flags & DeclarationFlags.template_)
                     isTemplate = true;
+                if ((d.flags & DeclarationFlags.templateParam) && isDependentName)
+                    *isDependentName = ppVersion.logicSystem.or(*isDependentName, ppVersion.condition);
 
                 QualType type2 = d.declaredType;
                 if (type2.type is null)
@@ -2135,6 +2156,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     }
     else if (tree.nonterminalID == nonterminalIDFor!"QualifiedId" && tree.childs.length == 3)
     {
+        immutable(Formula)* isDependentName2 = semantic.logicSystem.false_;
         immutable(Formula)* origGoodConditionStrict = goodConditionStrict;
         goodConditionStrict = goodCondition;
         scope (exit)
@@ -2143,14 +2165,14 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
 
         QualType contextType2;
         handleConflictExpression(tree.childs[0], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.none, &contextType2);
+                goodCondition, semantic, ConflictExpressionFlags.none, &contextType2, &isDependentName2);
         handleConflictExpression(tree.childs[$ - 1], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.none, &contextType2);
+                goodCondition, semantic, ConflictExpressionFlags.none, &contextType2, &isDependentName2);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"NestedNameSpecifier")
     {
         handleConflictExpression(tree.childs[0], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.inType, contextType);
+                goodCondition, semantic, ConflictExpressionFlags.inType, contextType, isDependentName);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"NestedNameSpecifierHead")
     {
@@ -2162,12 +2184,13 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     else if (tree.nonterminalID == nonterminalIDFor!"SimpleTemplateId")
     {
         handleConflictExpression(tree.childs[0], goodConditionStrict, goodCondition,
-                semantic, flags | ConflictExpressionFlags.inTemplate, contextType);
+                semantic, flags | ConflictExpressionFlags.inTemplate, contextType, isDependentName);
         handleConflictExpression(tree.childs[2], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.none);
+                goodCondition, semantic, ConflictExpressionFlags.none, null, isDependentName);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"SimpleTypeSpecifierNoKeyword")
     {
+        immutable(Formula)* isDependentName2 = semantic.logicSystem.false_;
         immutable(Formula)* origGoodConditionStrict = goodConditionStrict;
         goodConditionStrict = goodCondition;
         scope (exit)
@@ -2176,9 +2199,9 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
 
         QualType contextType2;
         handleConflictExpression(tree.childs[0], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.inType, &contextType2);
+                goodCondition, semantic, ConflictExpressionFlags.inType, &contextType2, &isDependentName2);
         handleConflictExpression(tree.childs[$ - 1], goodConditionStrict,
-                goodCondition, semantic, ConflictExpressionFlags.inType, &contextType2);
+                goodCondition, semantic, ConflictExpressionFlags.inType, &contextType2, &isDependentName2);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"EnumeratorInitializer")
     {
@@ -2186,6 +2209,11 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                 goodCondition, semantic, flags);
     }
     else if (tree.nonterminalID == nonterminalIDFor!"TemplateName")
+    {
+        goodConditionStrict = semantic.logicSystem.false_;
+        goodCondition = semantic.logicSystem.false_;
+    }
+    else if (tree.nonterminalID == nonterminalIDFor!"TypenameSpecifier" && !(flags & ConflictExpressionFlags.inType))
     {
         goodConditionStrict = semantic.logicSystem.false_;
         goodCondition = semantic.logicSystem.false_;
@@ -2198,6 +2226,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
     else if (tree.nonterminalID.nonterminalIDAmong!("TypeId"))
     {
         assert(tree.childs[0].nodeType == NodeType.array);
+        immutable(Formula)* isDependentName2 = semantic.logicSystem.false_;
         if (tree.childs[0].childs.length == 0)
         {
             goodConditionStrict = semantic.logicSystem.false_;
@@ -2208,7 +2237,7 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
             foreach (i, ref c; tree.childs)
             {
                 handleConflictExpression(c, goodConditionStrict, goodCondition,
-                        semantic, ConflictExpressionFlags.inType);
+                        semantic, ConflictExpressionFlags.inType, null, &isDependentName2);
             }
         }
     }

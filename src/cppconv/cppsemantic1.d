@@ -566,6 +566,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
 
             if (parent2.isValid && parent2.nonterminalID == nonterminalIDFor!"TemplateDeclaration")
                 dk.flags |= DeclarationFlags.template_;
+            if (targetScope.currentlyInsideParams)
+                dk.flags |= DeclarationFlags.templateParam;
 
             if (realParent.nonterminalID == nonterminalIDFor!"FunctionDefinitionHead")
             {
@@ -983,6 +985,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 dk.flags |= DeclarationFlags.templateSpecialization;
             if (wrappperInfo.flags & DeclarationFlags.friend)
                 dk.flags |= DeclarationFlags.friend;
+            if (targetScope.currentlyInsideParams)
+                dk.flags |= DeclarationFlags.templateParam;
             dk.name = classSpecifierInfo.className;
             dk.scope_ = targetScope;
 
