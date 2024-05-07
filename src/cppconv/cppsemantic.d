@@ -104,6 +104,14 @@ class Semantic
     ComponentManager!TreeExtraInfo2 componentExtraInfo2;
     DeclarationExtra2*[Declaration] declarationExtra2Map;
 
+    static struct InitListState
+    {
+        bool inArray;
+        Declaration[] fields;
+        size_t currentField;
+    }
+    ConditionMap!InitListState currentInitListStates;
+
     EntityID treeID(const Tree tree)
     {
         auto x = tree in treeToID;
@@ -482,75 +490,6 @@ void collectParameterExprs(Tree tree, ref IteratePPVersions ppVersion,
             writeln("WARNING: multiple nonterminals in arg list: ",
                     locationStr(tree.start), " ", ppVersion.condition.toString);
         hasNonterminal = true;
-    }
-}
-
-void collectParameterExprs2(Tree tree, immutable(Formula)* condition, Semantic semantic,
-        ref ConditionMap!Tree parameterExprs, ref immutable(Formula)* hasNonterminal)
-{
-    if (!tree.isValid)
-        return;
-    if (tree.nodeType == NodeType.array)
-    {
-        foreach (c; tree.childs)
-        {
-            collectParameterExprs2(c, condition, semantic, parameterExprs, hasNonterminal);
-        }
-    }
-    else if (tree.nodeType == NodeType.merged)
-    {
-        auto mdata = &semantic.mergedTreeData(tree);
-
-        foreach (i; 0 .. tree.childs.length)
-        {
-            auto subTreeCondition = mdata.conditions[i];
-            auto condition2 = semantic.logicSystem.and(semantic.logicSystem.or(subTreeCondition,
-                    semantic.logicSystem.and(mdata.mergedCondition,
-                    semantic.logicSystem.literal("#merged"))), condition);
-            collectParameterExprs2(tree.childs[i], condition2, semantic, parameterExprs, hasNonterminal);
-        }
-    }
-    else if (tree.nodeType == NodeType.nonterminal
-            && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
-    {
-        auto ctree = tree.toConditionTree;
-        assert(ctree !is null);
-
-        foreach (i; 0 .. ctree.childs.length)
-        {
-            auto subTreeCondition = ctree.conditions[i];
-
-            collectParameterExprs2(ctree.childs[i], semantic.logicSystem.and(subTreeCondition,
-                    condition), semantic, parameterExprs, hasNonterminal);
-        }
-    }
-    else if (tree.nodeType == NodeType.token)
-    {
-        assert(tree.content == "," || tree.content == "..." || tree.content == "",
-                text(locationStr(tree.start), " ", tree.content));
-        if (tree.content == ",")
-        {
-            immutable(Formula)* doubleComma = semantic.logicSystem.and(condition,
-                    hasNonterminal.negated);
-            if (!doubleComma.isFalse)
-            {
-                writeln("WARNING: unexpected or duplicate comma in arg list: ",
-                        locationStr(tree.start), " ", doubleComma.toString);
-                parameterExprs.addNew(doubleComma, Tree.init, semantic.logicSystem);
-            }
-            hasNonterminal = semantic.logicSystem.and(hasNonterminal, condition.negated);
-        }
-    }
-    else
-    {
-        if (!semantic.logicSystem.and(condition, hasNonterminal.negated).isFalse)
-            parameterExprs.addNew(semantic.logicSystem.and(condition,
-                    hasNonterminal.negated), tree, semantic.logicSystem);
-        immutable(Formula)* doubleNonterminal = semantic.logicSystem.and(condition, hasNonterminal);
-        if (!doubleNonterminal.isFalse)
-            writeln("WARNING: multiple nonterminals in arg list: ",
-                    locationStr(tree.start), " ", doubleNonterminal.toString);
-        hasNonterminal = semantic.logicSystem.or(hasNonterminal, condition);
     }
 }
 
@@ -1211,59 +1150,6 @@ void collectRecordFieldsImpl(Tree tree, immutable(Formula)* condition,
             {
                 declarations ~= d;
             }
-        }
-    }
-}
-
-void collectRecordFields2(Tree tree, immutable(Formula)* condition,
-        Semantic semantic, ref ConditionMap!Declaration declarations)
-{
-    if (tree.nodeType == NodeType.token)
-    {
-    }
-    else if (tree.nodeType == NodeType.array)
-    {
-        foreach (i; 0 .. tree.childs.length)
-        {
-            collectRecordFields2(tree.childs[i], condition, semantic, declarations);
-        }
-    }
-    else if (tree.nodeType == NodeType.nonterminal
-            && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
-    {
-        auto ctree = tree.toConditionTree;
-        assert(ctree !is null);
-
-        foreach (i; 0 .. ctree.childs.length)
-        {
-            auto subTreeCondition = ctree.conditions[i];
-
-            collectRecordFields2(ctree.childs[i], semantic.logicSystem.and(subTreeCondition,
-                    condition), semantic, declarations);
-        }
-    }
-    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassSpecifier")
-    {
-        collectRecordFields2(tree.childs[1], condition, semantic, declarations);
-    }
-    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassBody")
-    {
-        collectRecordFields2(tree.childs[1], condition, semantic, declarations);
-    }
-    else if (tree.name.startsWith("SimpleDeclaration") || tree.name.startsWith("MemberDeclaration")
-            || tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
-                "FunctionDefinitionGlobal", "MemberDeclaration" /*, "ParameterDeclaration", "ParameterDeclarationAbstract"*/ ))
-    {
-        foreach (d; semantic.extraInfo(tree).declarations)
-        {
-            if ((d.flags & DeclarationFlags.static_) != 0)
-                continue;
-            if ((d.flags & DeclarationFlags.function_) != 0)
-                continue;
-            if (d.type == DeclarationType.type)
-                continue;
-
-            declarations.addNew(condition, d, semantic.logicSystem);
         }
     }
 }

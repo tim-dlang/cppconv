@@ -346,6 +346,12 @@ struct ConditionMap(T)
         }
         entries.length = i;
     }
+
+    void reset()
+    {
+        entries.length = 0;
+        conditionAll = null;
+    }
 }
 
 void addCombine(alias F, T)(ref ConditionMap!T conditionMap, immutable(Formula)* condition, T data, LogicSystem logicSystem)

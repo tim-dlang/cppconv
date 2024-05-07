@@ -1548,6 +1548,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
     }, (MatchNonterminals!("BracedInitList")) {
         updateType(extraInfoHere.type, semantic.extraInfo(realParent).type);
 
+        assert(semantic.currentInitListStates.entries.length == 0);
+
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination, semantic.logicSystem,
@@ -1555,23 +1557,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             auto expectedType2 = chooseType(semantic.extraInfo(realParent).type, ppVersion, true);
             if (expectedType2.type !is null && expectedType2.kind == TypeKind.array)
             {
-                auto t = cast(ArrayType) expectedType2.type;
-
-                ConditionMap!Tree parameterExprs;
-                immutable(Formula)* hasNonterminal = semantic.logicSystem.false_;
-                collectParameterExprs2(tree.childs[1], ppVersion.condition,
-                    semantic, parameterExprs, hasNonterminal);
-
-                foreach (param; parameterExprs.entries)
-                {
-                    if (!param.data.isValid)
-                        continue;
-                    assert(param.data.nonterminalID.nonterminalIDAmong!("InitializerClause",
-                        "InitializerClauseDesignator"));
-                    auto extraInfoChild = &semantic.extraInfo(param.data);
-                    extraInfoChild.type = combineTypes(extraInfoChild.type, t.next, null,
-                        semantic.logicSystem.and(ppVersion.condition, param.condition), semantic);
-                }
+                semantic.currentInitListStates.addReplace(ppVersion.condition, Semantic.InitListState(true), semantic.logicSystem);
             }
             else if (expectedType2.type !is null && expectedType2.kind == TypeKind.record)
             {
@@ -1587,84 +1573,9 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                     if (!isInCorrectVersion(ppVersion, e.condition))
                         continue;
 
-                    ConditionMap!Declaration recordFields;
-                    collectRecordFields2(e.data.tree, ppVersion.condition, semantic, recordFields);
-
-                    ConditionMap!Tree parameterExprs;
-                    immutable(Formula)* hasNonterminal = semantic.logicSystem.false_;
-                    collectParameterExprs2(tree.childs[1], ppVersion.condition,
-                        semantic, parameterExprs, hasNonterminal);
-
-                    ConditionMap!size_t[2] currentRecordStart;
-                    bool currentRecordStartI;
-                    currentRecordStart[0].addNew(ppVersion.condition, 0, semantic.logicSystem);
-                    currentRecordStart[1].addNew(ppVersion.condition, 0, semantic.logicSystem);
-
-                    foreach (param; parameterExprs.entries)
-                    {
-                        if (!param.data.isValid)
-                            continue;
-                        auto extraInfoChild = &semantic.extraInfo(param.data);
-                        if (param.data.nonterminalID == nonterminalIDFor!"InitializerClause")
-                        {
-                            currentRecordStart[!currentRecordStartI].entries.length
-                                = currentRecordStart[currentRecordStartI].entries.length;
-                            currentRecordStart[!currentRecordStartI].entries.toSlice[]
-                                = currentRecordStart[currentRecordStartI].entries.toSlice[];
-
-                            foreach (combination2; iterateCombinations())
-                            {
-                                IteratePPVersions ppVersion2 = IteratePPVersions(combination2, semantic.logicSystem,
-                                    semantic.logicSystem.and(ppVersion.condition, param.condition),
-                                    semantic.instanceCondition, semantic.mergedTreeDatas);
-                                size_t start = currentRecordStart[currentRecordStartI].choose(
-                                    ppVersion2);
-                                while (start < recordFields.entries.length
-                                    && !isInCorrectVersion(ppVersion2,
-                                    recordFields.entries[start].condition))
-                                    start++;
-
-                                if (start < recordFields.entries.length)
-                                {
-                                    extraInfoChild.type = combineTypes(extraInfoChild.type,
-                                        recordFields.entries[start].data.type2,
-                                        null, ppVersion2.condition, semantic);
-
-                                    start++;
-                                }
-                                currentRecordStart[!currentRecordStartI].addReplace(ppVersion2.condition,
-                                    start, semantic.logicSystem, true);
-                            }
-                            currentRecordStartI = !currentRecordStartI;
-                        }
-                        else if (param.data.nonterminalID == nonterminalIDFor!"InitializerClauseDesignator")
-                        {
-                            assert(param.data.childs[0].nodeType == NodeType.array);
-                            if (param.data.childs[0].childs.length == 1)
-                            {
-                                auto designator = param.data.childs[0].childs[0];
-                                Declaration d;
-                                foreach (f; recordFields.entries)
-                                {
-                                    if (f.data.name == designator.childs[1].content)
-                                        d = f.data;
-                                }
-                                if (d !is null)
-                                {
-                                    extraInfoChild.referenced.add(semantic.logicSystem.and(ppVersion.condition,
-                                        param.condition), d.declarationSet, semantic.logicSystem);
-                                    extraInfoChild.type = combineTypes(extraInfoChild.type, d.type2, null,
-                                        semantic.logicSystem.and(ppVersion.condition,
-                                        param.condition), semantic);
-                                }
-                            }
-                            else
-                                writeln("TODO: InitializerClauseDesignator ",
-                                    locationStr(tree.location));
-                        }
-                        else
-                            writeln("TODO: ", param.data.name, " ", locationStr(tree.location));
-                    }
+                    Declaration[] recordFields;
+                    collectRecordFields(e.data.tree, ppVersion.condition, semantic, ppVersion, recordFields);
+                    semantic.currentInitListStates.addReplace(ppVersion.condition, Semantic.InitListState(false, recordFields), semantic.logicSystem);
                 }
             }
         }
@@ -1673,22 +1584,82 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         {
             runSemantic(semantic, c, tree, condition);
         }
-    }, (MatchNonterminals!("InitializerClause")) {
-        if (realParent.name != "BracedInitList")
+
+        semantic.currentInitListStates.reset();
+    }, (MatchNonterminals!("InitializerClause", "InitializerClauseDesignator")) {
+        ConditionMap!(Semantic.InitListState) savedInitListStates;
+        savedInitListStates.swap(semantic.currentInitListStates);
+
+        if (realParent.nonterminalID == nonterminalIDFor!"BracedInitList")
+        {
+            ConditionMap!(Semantic.InitListState) newInitListStates;
+            foreach (e; savedInitListStates.entries)
+            {
+                auto condition2 = semantic.logicSystem.and(e.condition, condition.negated);
+                if (!condition2.isFalse)
+                    newInitListStates.addReplace(condition2, e.data, semantic.logicSystem);
+            }
+            foreach (combination; iterateCombinations())
+            {
+                IteratePPVersions ppVersion = IteratePPVersions(combination, semantic.logicSystem,
+                    condition, semantic.instanceCondition, semantic.mergedTreeDatas);
+                auto expectedType2 = chooseType(semantic.extraInfo(realParent).type, ppVersion, true);
+                auto initListState = savedInitListStates.choose(ppVersion);
+
+                if (initListState.inArray)
+                {
+                    auto t = cast(ArrayType) expectedType2.type;
+
+                    extraInfoHere.type = combineTypes(extraInfoHere.type, t.next, null,
+                        semantic.logicSystem.and(ppVersion.condition, condition), semantic);
+                }
+                else if (tree.nonterminalID == nonterminalIDFor!"InitializerClauseDesignator")
+                {
+                    assert(tree.childs[0].nodeType == NodeType.array);
+                    if (tree.childs[0].childs.length == 1)
+                    {
+                        auto designator = tree.childs[0].childs[0];
+                        Declaration d;
+                        foreach (f; initListState.fields)
+                        {
+                            if (f.name == designator.childs[1].content)
+                                d = f;
+                        }
+                        if (d !is null)
+                        {
+                            extraInfoHere.referenced.add(semantic.logicSystem.and(ppVersion.condition,
+                                condition), d.declarationSet, semantic.logicSystem);
+                            extraInfoHere.type = combineTypes(extraInfoHere.type, d.type2, null,
+                                semantic.logicSystem.and(ppVersion.condition,
+                                condition), semantic);
+                        }
+                    }
+                    else
+                        writeln("TODO: InitializerClauseDesignator ",
+                            locationStr(tree.location));
+                }
+                else if (initListState.currentField < initListState.fields.length)
+                {
+                    extraInfoHere.type = combineTypes(extraInfoHere.type,
+                        initListState.fields[initListState.currentField].type2,
+                        null, semantic.logicSystem.and(ppVersion.condition, condition), semantic);
+                    initListState.currentField++;
+                }
+                newInitListStates.addReplace(ppVersion.condition, initListState, semantic.logicSystem);
+            }
+            savedInitListStates.swap(newInitListStates);
+        }
+        else
             updateType(extraInfoHere.type, semantic.extraInfo(realParent).type);
+
         foreach (ref c; tree.childs)
         {
             runSemantic(semantic, c, tree, condition);
         }
-        if (realParent.name != "BracedInitList")
+        if (realParent.nonterminalID != nonterminalIDFor!"BracedInitList")
             updateType(extraInfoHere.type, semantic.extraInfo(tree.childs[0]).type);
-    }, (MatchNonterminals!("InitializerClauseDesignator")) {
-        if (realParent.name != "BracedInitList")
-            updateType(extraInfoHere.type, semantic.extraInfo(realParent).type);
-        foreach (ref c; tree.childs)
-        {
-            runSemantic(semantic, c, tree, condition);
-        }
+
+        semantic.currentInitListStates.swap(savedInitListStates);
     }, (MatchProductions!((p, nonterminalName, symbolNames) => nonterminalName == "PostfixExpression"
             && symbolNames.length == 4 && symbolNames[1] == q{"("} && !p.symbols[0].isToken)) {
         runSemantic(semantic, tree.childs[2], tree, condition);
