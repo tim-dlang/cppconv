@@ -337,6 +337,8 @@ struct ConditionalCodeWrapper
 
     static bool isTreeArray(Tree tree)
     {
+        if (!tree.isValid)
+            return false;
         if (tree.nodeType == NodeType.array)
             return true;
         if (tree.nodeType == NodeType.nonterminal
@@ -344,16 +346,26 @@ struct ConditionalCodeWrapper
             foreach (c; tree.childs)
                 if (isTreeArray(c))
                     return true;
+        if (tree.nodeType == NodeType.merged)
+            foreach (i, c; tree.childs)
+                if (isTreeArray(c))
+                    return true;
         return false;
     }
 
     static bool isTreeAnyTerminal(Tree tree)
     {
+        if (!tree.isValid)
+            return false;
         if (tree.nodeType == NodeType.token)
             return true;
         if (tree.nodeType == NodeType.nonterminal
                 && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
             foreach (c; tree.childs)
+                if (isTreeAnyTerminal(c))
+                    return true;
+        if (tree.nodeType == NodeType.merged)
+            foreach (i, c; tree.childs)
                 if (isTreeAnyTerminal(c))
                     return true;
         return false;
@@ -362,16 +374,40 @@ struct ConditionalCodeWrapper
     bool allowNonArrayPPIf;
     bool allowNonArrayPPIfSet;
 
+    bool isConditionalMergedTree(Tree tree)
+    {
+        if (tree.nodeType == NodeType.merged)
+        {
+            size_t numPossible;
+            auto mdata = &data.semantic.mergedTreeData(tree);
+            if (!mdata.mergedCondition.isFalse)
+                numPossible++;
+            foreach (i, condition; mdata.conditions)
+                if (!condition.isFalse)
+                    numPossible++;
+
+            if (numPossible > 1)
+                return true;
+        }
+        return false;
+    }
+
     void checkTree(Tree tree, bool allowNonArrayPPIf)
     {
         if (allowNonArrayPPIfSet)
             assert(this.allowNonArrayPPIf == allowNonArrayPPIf);
         this.allowNonArrayPPIf = allowNonArrayPPIf;
         allowNonArrayPPIfSet = true;
-        if (tree.nodeType == NodeType.nonterminal && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID
-                && (!allowNonArrayPPIf || isTreeArray(tree) || isTreeAnyTerminal(tree)))
+        if (!allowNonArrayPPIf || isTreeArray(tree) || isTreeAnyTerminal(tree))
         {
-            alwaysUseMixin = true;
+            if (tree.nodeType == NodeType.nonterminal && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+            {
+                alwaysUseMixin = true;
+            }
+            if (isConditionalMergedTree(tree))
+            {
+                alwaysUseMixin = true;
+            }
         }
         if (tree.nodeType == NodeType.array)
         {
@@ -559,6 +595,8 @@ struct ConditionalCodeWrapper
     void writeTree(ref CodeWriter code, scope void delegate(Tree,
             immutable(Formula)*) F, Tree tree, immutable(Formula)* condition)
     {
+        if (!tree.isValid)
+            return;
         if (tree.nodeType == NodeType.nonterminal && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID
                 && (!allowNonArrayPPIf || isTreeArray(tree) || isTreeAnyTerminal(tree)))
         {
@@ -568,6 +606,19 @@ struct ConditionalCodeWrapper
             {
                 writeTree(code, F, ctree.childs[i],
                         data.logicSystem.and(condition, ctree.conditions[i]));
+            }
+        }
+        else if (isConditionalMergedTree(tree))
+        {
+            auto mdata = &data.semantic.mergedTreeData(tree);
+            foreach (i; 0 .. mdata.conditions.length)
+            {
+                writeTree(code, F, tree.childs[i],
+                        data.logicSystem.and(condition,
+                            data.logicSystem.or(
+                                data.logicSystem.and(mdata.mergedCondition,
+                                    data.logicSystem.literal("#merged")),
+                                mdata.conditions[i])));
             }
         }
         else if (tree.nodeType == NodeType.array)

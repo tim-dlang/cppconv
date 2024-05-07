@@ -213,7 +213,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 || tree.name.endsWith("FunctionDefinitionHead")
                 || tree.name.endsWith("StaticAssertDeclarationX")
                 || tree.name.endsWith("Statement")
-                || tree.nonterminalID == nonterminalIDFor!"TemplateArgumentList";
+                || tree.nonterminalID == nonterminalIDFor!"TemplateArgumentList"
+                || tree.nonterminalID == nonterminalIDFor!"InitializerList";
         }())
     {
         immutable(Formula)* goodConditionStrict = condition;

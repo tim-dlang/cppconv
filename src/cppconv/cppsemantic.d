@@ -1862,6 +1862,14 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                             goodConditionsStrict2[j]));
             }
 
+        immutable(Formula)* defaultCondition = semantic.logicSystem.false_;
+        immutable(Formula)* defaultConditionStrict = semantic.logicSystem.false_;
+        if (defaultTree != size_t.max)
+        {
+            defaultCondition = goodConditions2[defaultTree];
+            defaultConditionStrict = goodConditionsStrict2[defaultTree];
+        }
+
         foreach (i; 0 .. tree.childs.length)
         {
             goodConditionsStrict2[i] = semantic.logicSystem.and(goodConditionsStrict2[i],
@@ -1906,22 +1914,12 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
                 immutable(Formula)* badCondition2 = badCondition;
                 badCondition2 = semantic.logicSystem.and(badCondition2, extraConditions[defaultTree]);
 
-                if (mergeDepth == 1)
-                {
-                    immutable(Formula)* extraConditionElse = semantic.logicSystem.true_;
-                    foreach (j; 0 .. tree.childs.length)
-                        if (defaultTree != j)
-                            extraConditionElse = semantic.logicSystem.and(extraConditionElse, extraConditions[j].negated);
-
-                    badCondition2 = semantic.logicSystem.or(badCondition2, extraConditionElse);
-                }
-
                 mdata.conditions[defaultTree] = semantic.logicSystem.or(
                         mdata.conditions[defaultTree], badCondition2);
             }
             resultGoodConditionStrict = semantic.logicSystem.or(resultGoodConditionStrict,
-                    badCondition);
-            resultGoodCondition = semantic.logicSystem.or(resultGoodCondition, badCondition);
+                    semantic.logicSystem.and(badCondition, defaultConditionStrict));
+            resultGoodCondition = semantic.logicSystem.or(resultGoodCondition, semantic.logicSystem.and(badCondition, defaultCondition));
             badCondition = semantic.logicSystem.false_;
         }
 
