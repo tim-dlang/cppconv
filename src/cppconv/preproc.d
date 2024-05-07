@@ -519,8 +519,8 @@ StringOrNum expressionToString(ParserWrapper)(Tree tree,
                 {
                     if (op2 == "/" && rhs.n == 0)
                     {
-                        throw new Exception("division by zero in condition ",
-                                locationStr(tree.start));
+                        throw new Exception(text("division by zero in condition ",
+                                locationStr(tree.start), " ", ppVersion.condition.toString));
                     }
                     if (lhs.type == StringOrNumType.unsigned || rhs.type == StringOrNumType.unsigned)
                     {
