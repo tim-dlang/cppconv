@@ -1108,12 +1108,15 @@ InitializerClauseDesignator
 InitializerList @array
     = InitializerClauseDesignator
     | InitializerClauseDesignator "..."
-    | InitializerList "," InitializerClauseDesignator
-    | InitializerList "," InitializerClauseDesignator "..."
+    | InitializerListComma InitializerClauseDesignator
+    | InitializerListComma InitializerClauseDesignator "..."
+    ;
+InitializerListComma @array
+    = InitializerList ","
     ;
 InitializerList2 @array
     = InitializerList
-    | InitializerList ","
+    | InitializerListComma
     | @empty;
 DesignatorList @array
     = Designator

@@ -52,22 +52,23 @@ __gshared const(int) b = 3;
 void g()
 {
     S data = mixin("S(" ~ q{
-                1
+                1,
     }
     ~ (defined!"DEF" ? q{
-        ,
 
                 f!(a, b)(2)
     }:"")
     ~ (!defined!"DEF" ? q{
-        ,f<a,b>(2)
+        f<a,b>(2)
     }:"")
-    ~ (defined!"DEF" ? q{
+    ~ q{
         ,
+    }
+    ~ (defined!"DEF" ? q{
                 f!(a, b)(3)
     }:"")
     ~ (!defined!"DEF" ? q{
-        ,f<a,b>(3)
+        f<a,b>(3)
     }:"")
     ~ q{
         ,

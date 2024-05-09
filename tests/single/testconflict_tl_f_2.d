@@ -29,13 +29,13 @@ void f()
     }
     ~ "("
     ~ q{
-        1, 2
+        1, 2,
     }
     ~ (!defined!"DEF" ? q{
-        , T1!(a, b) (c)
+         T1!(a, b) (c)
     }:"")
     ~ (defined!"DEF" ? q{
-        ,T1<a,b>(c)
+        T1<a,b>(c)
     }:"")
     ~ q{
         , 4, 5
