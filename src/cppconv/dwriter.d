@@ -7072,7 +7072,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 {
                     codeTmp.write("final ");
                 }
-                codeTmp.write("override ");
+                if (!isDestructor)
+                    codeTmp.write("override ");
             }
             else if (forwardDecl2.flags & DeclarationFlags.virtual)
             {
