@@ -563,7 +563,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
             if (macroDeclaration2 is null)
             {
                 tokens = data.sourceTokenManager.sourceTokens[RealFilename(
-                            locationContext.filename)];
+                            locRange.context.filename)];
             }
             else
             {

@@ -3036,8 +3036,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (!hasNewline)
             {
                 while (tokens.length && tokens[$ - 1].isWhitespace
-                        && (tokens[$ - 1].token.name.startsWith(" ")
-                            || tokens[$ - 1].token.name.startsWith("\t")))
+                        && (tokens[$ - 1].token.content.startsWith(" ")
+                            || tokens[$ - 1].token.content.startsWith("\t")))
                     tokens = tokens[0 .. $ - 1];
             }
             writeComments(code, data, tokens);
