@@ -12,22 +12,47 @@
                 "strtok", "strxfrm"
                 ]}, "moduleName": "core.stdc.string", "extraPrefix": "%P"},
 
+    {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
+                "wcschr", "wcscmp", "wcscpy", "wcslen", "wmemcmp",
+                "wmemcpy", "wmemmove", "wprintf"
+                ]}, "moduleName": "core.stdc.wchar_", "extraPrefix": "%P"},
+
     {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": ["free", "malloc",
                 "calloc", "realloc", "abort", "wcstombs", "exit", "qsort", "atoi",
-                "strtol", "strtoll", "rand", "srand"
+                "strtol", "strtoll", "rand", "srand", "strtoul", "strtod", "strtold",
+                "strtof", "wctomb", "labs", "llabs"
                 ]}, "moduleName": "core.stdc.stdlib", "extraPrefix": "%P"},
 
     {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": ["FILE", "_iobuf",
                 "_IO_FILE", "fprintf", "fopen", "fread", "perror", "printf", "fclose", "fileno", "stdin", "stdout",
                 "stderr", "fflush", "fputc", "fwrite", "ferror", "fseek", "SEEK_SET", "SEEK_END", "SEEK_CUR", "ftell",
                 "snprintf", "sprintf", "fputs", "puts", "putchar", "putc",
-                "rename", "vsprintf", "vsnprintf", "BUFSIZ"
+                "rename", "_?vsprintf", "_?vsnprintf", "BUFSIZ", "vfprintf", "ungetc", "rewind",
+                "fgetc", "remove", "getc", "fgets", "EOF"
                 ]}, "moduleName": "core.stdc.stdio", "extraPrefix": "%P"},
 
     {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
                 "isalnum", "isalpha", "isblank", "iscntrl", "isdigit", "isgraph",
                 "islower", "isprint", "ispunct", "isspace", "isupper", "isxdigit", "tolower", "toupper"
                 ]}, "moduleName": "core.stdc.ctype", "extraPrefix": "%P"},
+
+    {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
+                "time_t", "time", "mktime", "ctime", "localtime", "gmtime",
+                "strftime", "tm", "difftime"
+                ]}, "moduleName": "core.stdc.time", "extraPrefix": "%P"},
+
+    {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
+                "u?int(|_least|_fast)[0-9]*_t", "u?intptr_t", "u?intmax_t",
+                "U?INT(|_LEAST|_FAST)[0-9]*_(MAX|MIN)", "U?INTPTR_(MAX|MIN)", "U?INTMAX_(MAX|MIN)",
+                "PTRDIFF_(MAX|MIN)", "SIZE_MAX", "WCHAR_(MAX|MIN)", "WINT_(MAX|MIN)"
+                ]}, "moduleName": "core.stdc.stdint", "extraPrefix": "%P"},
+
+    {"match": {"filename": "(?P<P>wine|glibc)/.*", "name": [
+                "NAN", "INFINITY", "pow", "floor", "ceil", "isnan", "isinf", "fabs", "copysign", "powl",
+                "log10", "fmod", "nan", "modf", "HUGE_VAL(|F|L)",
+                "FP_INFINITE", "FP_NAN", "FP_SUBNORMAL", "FP_ZERO",
+                "fpclassify", "fmodl", "floorl"
+                ]}, "moduleName": "core.stdc.math", "extraPrefix": "%P"},
 
     {"match": {"filename": "gcc-rt/orig/include-cxx/.*"}, "moduleName": "libcxx.libcxx"},
 
@@ -38,7 +63,6 @@
     {"match": {"name": "p_stat"}, "rename": "p_stat_t"},
     {"match": {"name": "statvfs"}, "rename": "statvfs_t"},
     {"match": {"name": "timezone"}, "rename": "timezone_t"},
-    {"match": {"name": "tm"}, "rename": "tm_t"},
     ],
     "macroReplacements": {
         "SHRT_MAX": "short.max",
