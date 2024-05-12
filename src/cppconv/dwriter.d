@@ -10039,6 +10039,92 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
         }
     }
 
+    void findQtMetaTypeId(Tree t)
+    {
+        if (!t.isValid)
+            return;
+        if (t.nodeType == NodeType.array)
+        {
+            foreach (c; t.childs)
+                findQtMetaTypeId(c);
+        }
+        else if (t.nodeType == NodeType.merged)
+        {
+            auto mdata = &mergedSemantic.mergedTreeData(t);
+            foreach (i, c; t.childs)
+                if (!mdata.conditions[i].isFalse)
+                    findQtMetaTypeId(c);
+        }
+        else if (t.nodeType == NodeType.nonterminal
+                && t.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+        {
+            foreach (c; t.childs)
+                findQtMetaTypeId(c);
+        }
+        else if (t.nonterminalID == nonterminalIDFor!"ClassSpecifier")
+        {
+            findQtMetaTypeId(t.childs[0]);
+        }
+        else if (t.nonterminalID == nonterminalIDFor!"ClassHead" && t.hasChildWithName("name"))
+        {
+            findQtMetaTypeId(t.childByName("name"));
+        }
+        else if (t.nonterminalID == nonterminalIDFor!"ClassHeadName")
+        {
+            findQtMetaTypeId(t.childs[$ - 1]);
+        }
+        else if (t.nonterminalID == nonterminalIDFor!"SimpleTemplateId")
+        {
+            findQtMetaTypeId(t.childs[2]);
+        }
+        else if (t.nonterminalID == nonterminalIDFor!"TypeId")
+        {
+            auto type = mergedSemantic.extraInfo(t).type;
+
+            if (type.kind == TypeKind.record)
+            {
+                auto recordType = cast(RecordType) type.type;
+                foreach (e2; recordType.declarationSet.entries)
+                {
+                    if (e2.data.type != DeclarationType.type)
+                        continue;
+                    if (e2.data.flags & DeclarationFlags.forward)
+                        continue;
+                    data.declarationData(e2.data)
+                        .extraAttributes.addOnce("Q_DECLARE_METATYPE");
+
+                    auto f = getDeclarationFilename(e2.data, data);
+
+                    if (f !in data.importGraph)
+                        data.importGraph[f] = null;
+
+                    ImportInfo importInfo;
+                    if ("qt.core.metatype" in data.importGraph[f])
+                    {
+                        importInfo = data.importGraph[f]["qt.core.metatype"];
+                        importInfo.condition = mergedSemantic.logicSystem.or(importInfo.condition,
+                                e2.condition);
+                        importInfo.outsideFunction |= true;
+                    }
+                    else
+                    {
+                        importInfo = new ImportInfo;
+                        data.importGraph[f]["qt.core.metatype"] = importInfo;
+                        importInfo.condition = e2.condition;
+                        importInfo.outsideFunction = true;
+                    }
+                }
+            }
+        }
+    }
+    if ("QMetaTypeId" in data.semantic.rootScope.symbols)
+        foreach (e; data.semantic.rootScope.symbols["QMetaTypeId"].entries)
+        {
+            if (!(e.data.flags & DeclarationFlags.templateSpecialization))
+                continue;
+            findQtMetaTypeId(e.data.tree);
+        }
+
     foreach (filename, decls; data.declsByFile)
     {
         foreach (d; decls)
