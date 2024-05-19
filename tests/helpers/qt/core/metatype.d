@@ -1,0 +1,1 @@
+enum Q_DECLARE_METATYPE;
