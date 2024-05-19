@@ -4933,7 +4933,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         }
         else
         {
+            bool needsParens = !tree.childs[3].matchTreePattern!q{
+                NewTypeId([NameIdentifier | TypeKeyword], null)
+            };
+            if (needsParens)
+                code.write("(");
             parseTreeToDCode(code, data, tree.childs[3], condition, currentScope);
+            if (needsParens)
+                code.write(")");
         }
         parseTreeToDCode(code, data, tree.childs[$ - 1], condition, currentScope);
     }
