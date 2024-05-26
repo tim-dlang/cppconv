@@ -222,3 +222,8 @@ template<int> struct QIntegerForSize
 #define QT_HAS_BUILTIN_CTZLL
 
 #undef QT_NO_SSL
+
+#undef QT_BUILD_QMLDEVTOOLS_LIB
+#undef QT_QMLDEVTOOLS_LIB
+#undef QT_QML_BOOTSTRAPPED
+#undef QQMLLISTPROPERTY

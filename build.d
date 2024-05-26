@@ -423,19 +423,28 @@ int main(string[] args)
     };
     projects ~= new class Project
     {
-        string archive, archive2, archiveExtracted;
+        string archiveExtracted;
+        string[] baseArchives;
+        string webengineArchive;
         string[] docArchives;
         this()
         {
             super("qt5");
             dependencies = ["common"];
-            archive = "5.15.2-0-202011130601qtbase-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z";
-            archive2 = "5.15.2-0-202011130601qtwebengine-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z";
+            baseArchives = [
+                "5.15.2-0-202011130601qtbase-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z",
+                "5.15.2-0-202011130601qtdeclarative-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z",
+                "5.15.2-0-202011130601qtquickcontrols2-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z",
+                ];
+            webengineArchive = "5.15.2-0-202011130601qtwebengine-Linux-RHEL_7_6-GCC-Linux-RHEL_7_6-X86_64.7z";
             docArchives = [
                 "qt.qt5.5152.doc/5.15.2-0-202011130614qtcore-documentation.7z",
                 "qt.qt5.5152.doc/5.15.2-0-202011130614qtgui-documentation.7z",
                 "qt.qt5.5152.doc/5.15.2-0-202011130614qtwidgets-documentation.7z",
                 "qt.qt5.5152.doc/5.15.2-0-202011130614qtnetwork-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtqml-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtquick-documentation.7z",
+                "qt.qt5.5152.doc/5.15.2-0-202011130614qtquickcontrols-documentation.7z",
                 "qt.qt5.5152.doc.qtwebengine/5.15.2-0-202011130614qtwebengine-documentation.7z",
                 ];
             archiveExtracted = "5.15.2";
@@ -447,6 +456,9 @@ int main(string[] args)
                 "-Iqt5/orig/qtbase/QtGui",
                 "-Iqt5/orig/qtbase/QtWidgets",
                 "-Iqt5/orig/qtbase/QtNetwork",
+                "-Iqt5/orig/qtbase/QtQml",
+                "-Iqt5/orig/qtbase/QtQuick",
+                "-Iqt5/orig/qtbase/QtQuickControls2",
                 "-Iqt5/orig/qtwebengine",
                 "-Iqt5/orig/qtwebengine/QtWebEngineCore",
                 "-Iqt5/orig/qtwebengine/QtWebEngineWidgets",
@@ -461,8 +473,10 @@ int main(string[] args)
 
         override void download()
         {
-            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.gcc_64/" ~ archive, projectDir ~ "/" ~ archive, verbose);
-            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.qtwebengine.gcc_64/" ~ archive2, projectDir ~ "/" ~ archive2, verbose);
+            foreach (a; baseArchives)
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.gcc_64/" ~ a, projectDir ~ "/" ~ a, verbose);
+
+            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152/qt.qt5.5152.qtwebengine.gcc_64/" ~ webengineArchive, projectDir ~ "/" ~ webengineArchive, verbose);
 
             foreach (a; docArchives)
                 downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt5_5152_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
@@ -470,10 +484,11 @@ int main(string[] args)
 
         override void prepare()
         {
-            runCommand(["7z", "x", archive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
+            foreach (a; baseArchives)
+                runCommand(["7z", "x", a, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtbase"));
 
-            runCommand(["7z", "x", archive2, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
+            runCommand(["7z", "x", webengineArchive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtwebengine"));
 
             foreach (a; docArchives)
@@ -484,19 +499,27 @@ int main(string[] args)
     };
     projects ~= new class Project
     {
-        string archive, archive2, archiveExtracted;
+        string archiveExtracted;
+        string[] baseArchives;
+        string webengineArchive;
         string[] docArchives;
         this()
         {
             super("qt6");
             dependencies = ["common"];
-            archive = "6.2.3-0-202201260729qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
-            archive2 = "6.2.3-0-202201260729qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
+            baseArchives = [
+                "6.2.3-0-202201260729qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
+                "6.2.3-0-202201260729qtdeclarative-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
+                ];
+            webengineArchive = "6.2.3-0-202201260729qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             docArchives = [
                 "qt.qt6.623.doc/6.2.3-0-202201260755qtcore-documentation.7z",
                 "qt.qt6.623.doc/6.2.3-0-202201260755qtgui-documentation.7z",
                 "qt.qt6.623.doc/6.2.3-0-202201260755qtwidgets-documentation.7z",
                 "qt.qt6.623.doc/6.2.3-0-202201260755qtnetwork-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtqml-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtquick-documentation.7z",
+                "qt.qt6.623.doc/6.2.3-0-202201260755qtquickcontrols-documentation.7z",
                 "qt.qt6.623.doc.qtwebengine/6.2.3-0-202201260755qtwebengine-documentation.7z",
                 ];
             archiveExtracted = "6.2.3";
@@ -508,6 +531,9 @@ int main(string[] args)
                 "-Iqt6/orig/qtbase/QtGui",
                 "-Iqt6/orig/qtbase/QtWidgets",
                 "-Iqt6/orig/qtbase/QtNetwork",
+                "-Iqt6/orig/qtbase/QtQml",
+                "-Iqt6/orig/qtbase/QtQuick",
+                "-Iqt6/orig/qtbase/QtQuickControls2",
                 "-Iqt6/orig/qtwebengine",
                 "-Iqt6/orig/qtwebengine/QtWebEngineCore",
                 "-Iqt6/orig/qtwebengine/QtWebEngineWidgets",
@@ -522,8 +548,10 @@ int main(string[] args)
 
         override void download()
         {
-            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.gcc_64/" ~ archive, projectDir ~ "/" ~ archive, verbose);
-            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.addons.qtwebengine.gcc_64/" ~ archive2, projectDir ~ "/" ~ archive2, verbose);
+            foreach (a; baseArchives)
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.gcc_64/" ~ a, projectDir ~ "/" ~ a, verbose);
+
+            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623/qt.qt6.623.addons.qtwebengine.gcc_64/" ~ webengineArchive, projectDir ~ "/" ~ webengineArchive, verbose);
 
             foreach (a; docArchives)
                 downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_623_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
@@ -531,10 +559,11 @@ int main(string[] args)
 
         override void prepare()
         {
-            runCommand(["7z", "x", archive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
+            foreach (a; baseArchives)
+                runCommand(["7z", "x", a, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtbase"));
 
-            runCommand(["7z", "x", archive2, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
+            runCommand(["7z", "x", webengineArchive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtwebengine"));
 
             foreach (a; docArchives)
