@@ -2,6 +2,7 @@
     "include": ["../common/output-config.json", "doccomments.json"],
     "configModule": "qt.config",
     "helperModule": "qt.helpers",
+    "importedSymbol": "dqtimported",
     "builtinCppTypes": true,
     "includeDeclFilenamePatterns": ["qt[0-9]*/orig/.*"],
     "arrayLikeTypes": [

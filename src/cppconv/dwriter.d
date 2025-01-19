@@ -128,6 +128,7 @@ struct DCodeOptions
     string indent = "    ";
     string configModule = "config";
     string helperModule = "cppconvhelpers";
+    string importedSymbol = "imported";
     bool includeAllDecls;
     ConfigRegex includeDeclFilenamePatterns;
     bool builtinCppTypes;
@@ -7766,7 +7767,7 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
         && data.currentMacroInstance.macroDeclaration !is null
         && data.currentMacroInstance.macroDeclaration.type == DeclarationType.macro_
         && data.currentMacroInstance.macroTranslation == MacroTranslation.mixin_)
-        name = "imported!q{" ~ data.fileByDecl[d].moduleName ~ "}." ~ name;
+        name = data.options.importedSymbol ~ "!q{" ~ data.fileByDecl[d].moduleName ~ "}." ~ name;
     else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
             && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
         name = data.fileByDecl[d].moduleName ~ "." ~ name;
