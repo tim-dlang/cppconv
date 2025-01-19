@@ -3762,6 +3762,15 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     {
         parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
     }
+    else if (tree.nonterminalID == nonterminalIDFor!"BracedInitList"
+        && parent.nonterminalID == nonterminalIDFor!"PostfixExpression" && parent.childs.length == 2 && indexInParent == 1)
+    {
+        skipToken(code, data, tree.childs[0]);
+        code.write("(");
+        parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
+        skipToken(code, data, tree.childs[2]);
+        code.write(")");
+    }
     else if (tree.nonterminalID == nonterminalIDFor!"BracedInitList")
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
