@@ -1014,6 +1014,9 @@ void analyzeSimpleDeclaration(Tree tree, immutable(Formula)* condition,
                 info.flags |= DeclarationFlags.constExpr;
         }
     }
+    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"AlignmentSpecifier")
+    {
+    }
     else if (tree.nonterminalID.nonterminalIDAmong!("NameIdentifier",
             "SimpleTypeSpecifierNoKeyword", "SimpleTemplateId", "DecltypeSpecifier"))
     {
