@@ -514,6 +514,11 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             {
                 continue;
             }
+            if (tree.nonterminalID == nonterminalIDFor!"FunctionDeclaratorTrailing" && realParent.nonterminalID == nonterminalIDFor!"SimpleDeclaration2")
+            {
+                // template deduction guide
+                continue;
+            }
 
             declaratorInfo.namespaceType = chooseType(declaratorInfo.namespaceType,
                 ppVersion, false);
