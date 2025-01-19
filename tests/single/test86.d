@@ -13,11 +13,11 @@ struct S
 	static if (defined!"DEF")
 	{
 	ubyte bitfieldData_test2;
-	final uint test2() const
+	uint test2() const
 	{
     	return (bitfieldData_test2 >> 0) & 0x1;
 	}
-	final uint test2(uint value)
+	uint test2(uint value)
 	{
     	bitfieldData_test2 = (bitfieldData_test2 & ~0x1) | ((value & 0x1) << 0);
     	return value;
@@ -26,11 +26,11 @@ struct S
 	static if (!defined!"DEF")
 	{
 	ubyte bitfieldData_test2;
-	final uint test2() const
+	uint test2() const
 	{
     	return (bitfieldData_test2 >> 0) & 0x1;
 	}
-	final uint test2(uint value)
+	uint test2(uint value)
 	{
     	bitfieldData_test2 = (bitfieldData_test2 & ~0x1) | ((value & 0x1) << 0);
     	return value;
@@ -39,11 +39,11 @@ struct S
 	/+ unsigned test3: 2; +/
 	static if (defined!"DEF")
 	{
-	final uint test3() const
+	uint test3() const
 	{
     	return (bitfieldData_test2 >> 1) & 0x3;
 	}
-	final uint test3(uint value)
+	uint test3(uint value)
 	{
     	bitfieldData_test2 = (bitfieldData_test2 & ~0x6) | ((value & 0x3) << 1);
     	return value;
@@ -51,11 +51,11 @@ struct S
 	}
 	static if (!defined!"DEF")
 	{
-	final uint test3() const
+	uint test3() const
 	{
     	return (bitfieldData_test2 >> 1) & 0x3;
 	}
-	final uint test3(uint value)
+	uint test3(uint value)
 	{
     	bitfieldData_test2 = (bitfieldData_test2 & ~0x6) | ((value & 0x3) << 1);
     	return value;
@@ -68,11 +68,11 @@ struct S
 	/+ unsigned test5: 1; +/
 	static if (defined!"DEF")
 	{
-	final uint test5() const
+	uint test5() const
 	{
     	return (bitfieldData_test2 >> 3) & 0x1;
 	}
-	final uint test5(uint value)
+	uint test5(uint value)
 	{
     	bitfieldData_test2 = (bitfieldData_test2 & ~0x8) | ((value & 0x1) << 3);
     	return value;
@@ -81,11 +81,11 @@ struct S
 	static if (!defined!"DEF")
 	{
 	ubyte bitfieldData_test5;
-	final uint test5() const
+	uint test5() const
 	{
     	return (bitfieldData_test5 >> 0) & 0x1;
 	}
-	final uint test5(uint value)
+	uint test5(uint value)
 	{
     	bitfieldData_test5 = (bitfieldData_test5 & ~0x1) | ((value & 0x1) << 0);
     	return value;

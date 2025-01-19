@@ -6393,7 +6393,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             if (d.name.length)
             {
                 if (data.currentClassDeclaration !is null
-                        && !isClass(data.currentClassDeclaration.tree, data))
+                        && isClass(data.currentClassDeclaration.tree, data))
                     code.write("final ");
                 code.writeln(typeCode, " ", replaceKeywords(d.name), "() const");
                 code.writeln("{").incIndent;
@@ -6402,7 +6402,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                         toChars!16((ulong(1) << e.data.length) - 1), ";");
                 code.decIndent.writeln("}");
                 if (data.currentClassDeclaration !is null
-                        && !isClass(data.currentClassDeclaration.tree, data))
+                        && isClass(data.currentClassDeclaration.tree, data))
                     code.write("final ");
                 code.writeln(typeCode, " ", replaceKeywords(d.name), "(", typeCode, " value)");
                 code.writeln("{").incIndent;
