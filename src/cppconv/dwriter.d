@@ -3479,7 +3479,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         skipToken(code, data, tree.childs[0]);
         code.write(name);
 
-        foreach (c; tree.childs[1 .. $])
+        foreach (c; tree.childs[2 .. $])
         {
             parseTreeToDCode(code, data, c, condition, currentScope);
         }

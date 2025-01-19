@@ -763,7 +763,7 @@ EnumeratorList @array
     | EnumeratorList "," Enumerator
     ;
 Enumerator
-    = Identifier EnumeratorInitializer?
+    = Identifier AttributeSpecifierSeq EnumeratorInitializer?
     ;
 EnumeratorInitializer
     = "=" ConstantExpression
