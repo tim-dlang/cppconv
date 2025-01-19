@@ -154,6 +154,7 @@
         ".*::fromStdString",
         ".*::fromStdWString",
         ".*::fromType",
+        ".*::iterator_category",
         ".*::keyBegin",
         ".*::keyEnd",
         ".*::keyValueBegin",
