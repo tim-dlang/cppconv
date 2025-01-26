@@ -331,6 +331,7 @@ class Semantic
     }
 
     bool[QualType] hasMutableIndirectionCache;
+    string[Declaration] fullyQualifiedNameCache;
 }
 
 struct SemanticRunInfo
@@ -2435,6 +2436,9 @@ template iterateTreeConditions(alias F)
 
 string fullyQualifiedName(Semantic semantic, Declaration d)
 {
+    auto inCache = d in semantic.fullyQualifiedNameCache;
+    if (inCache)
+        return *inCache;
     Appender!string app;
     void visitScope(Scope s)
     {
@@ -2484,7 +2488,11 @@ string fullyQualifiedName(Semantic semantic, Declaration d)
     }
     visitScope(s);
     if (app.data.length == 0)
+    {
+        semantic.fullyQualifiedNameCache[d] = d.name;
         return d.name;
+    }
     app.put(d.name);
+    semantic.fullyQualifiedNameCache[d] = app.data;
     return app.data;
 }
