@@ -2,6 +2,9 @@
 #include <mutex>
 
 // QtCore
+//#include <QtCore/q20algorithm.h>
+//#include <QtCore/q20functional.h>
+//#include <QtCore/q20iterator.h>
 //#include <QtCore/qabstractanimation.h>
 //#include <QtCore/qabstracteventdispatcher.h>
 #include <QtCore/qabstractitemmodel.h>
@@ -10,6 +13,7 @@
 #include <QtCore/qalgorithms.h>
 //#include <QtCore/qanimationgroup.h>
 #include <QtCore/qanystringview.h>
+//#include <QtCore/qapplicationstatic.h>
 #include <QtCore/qarraydata.h>
 //#include <QtCore/qarraydataops.h>
 //#include <QtCore/qarraydatapointer.h>
@@ -174,6 +178,7 @@
 //#include <QtCore/qsystemdetection.h>
 //#include <QtCore/qsystemsemaphore.h>
 #include <QtCore/qtaggedpointer.h>
+//#include <QtCore/qtcoreexports.h>
 //#include <QtCore/qtcoreversion.h>
 //#include <QtCore/qtcore-config.h>
 //#include <QtCore/qtemporarydir.h>
@@ -304,6 +309,7 @@
 #include <QtGui/qtextobject.h>
 #include <QtGui/qtextoption.h>
 #include <QtGui/qtexttable.h>
+//#include <QtGui/qtguiexports.h>
 #include <QtGui/qtguiglobal.h>
 //#include <QtGui/qtguiversion.h>
 //#include <QtGui/qtgui-config.h>
@@ -438,6 +444,7 @@
 #include <QtWidgets/qtreeview.h>
 #include <QtWidgets/qtreewidget.h>
 #include <QtWidgets/qtreewidgetitemiterator.h>
+//#include <QtWidgets/qtwidgetsexports.h>
 #include <QtWidgets/qtwidgetsglobal.h>
 //#include <QtWidgets/qtwidgetsversion.h>
 //#include <QtWidgets/qtwidgets-config.h>
@@ -489,6 +496,7 @@
 #include <QtNetwork/qsslsocket.h>
 //#include <QtNetwork/qtcpserver.h>
 #include <QtNetwork/qtcpsocket.h>
+//#include <QtNetwork/qtnetworkexports.h>
 #include <QtNetwork/qtnetworkglobal.h>
 //#include <QtNetwork/qtnetworkversion.h>
 //#include <QtNetwork/qtnetwork-config.h>
@@ -562,6 +570,7 @@
 #include <QtQml/qqmlregistration.h>
 //#include <QtQml/qqmlscriptstring.h>
 //#include <QtQml/qtqmlcompilerglobal.h>
+//#include <QtQml/qtqmlexports.h>
 //#include <QtQml/qtqmlglobal.h>
 //#include <QtQml/qtqmlversion.h>
 //#include <QtQml/qtqml-config.h>
@@ -598,12 +607,14 @@
 //#include <QtQuick/qsgtextureprovider.h>
 //#include <QtQuick/qsgtexture_platform.h>
 //#include <QtQuick/qsgvertexcolormaterial.h>
+//#include <QtQuick/qtquickexports.h>
 //#include <QtQuick/qtquickglobal.h>
 //#include <QtQuick/qtquickversion.h>
 //#include <QtQuick/qtquick-config.h>
 
 // QtQuickControls2
 #include <QtQuickControls2/qquickstyle.h>
+//#include <QtQuickControls2/qtquickcontrols2exports.h>
 //#include <QtQuickControls2/qtquickcontrols2global.h>
 //#include <QtQuickControls2/qtquickcontrols2version.h>
 //#include <QtQuickControls2/qtquickcontrols2-config.h>
