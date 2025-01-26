@@ -8520,14 +8520,14 @@ struct DFilename
 DFilename getDeclarationFilename(Declaration d, DWriterData data)
 {
     auto semantic = data.semantic;
-    string name = d.name;
+    string name = fullyQualifiedName(semantic, d);
     if (d.name.length == 0 && d.type == DeclarationType.type
             && (d.flags & DeclarationFlags.typedef_) == 0)
     {
         auto d2 = getTypedefForDecl(d, data);
         if (d2 !is null)
         {
-            name = d2.name;
+            name = fullyQualifiedName(semantic, d2);
         }
     }
 
