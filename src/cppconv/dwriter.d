@@ -6557,7 +6557,11 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         if (d.declaratorTree.name != "InitDeclarator" && d in semantic.declarationExtra2Map)
         {
             auto declarationExtra2 = &semantic.declarationExtra2(d);
-            if (declarationExtra2.defaultInit.entries.length)
+            if (declarationExtra2.defaultInit.entries.length > 1)
+            {
+                code.write(" /* = TODO*/");
+            }
+            else if (declarationExtra2.defaultInit.entries.length)
             {
                 enforce(declarationExtra2.defaultInit.entries.length == 1);
                 auto e = declarationExtra2.defaultInit.entries[0];
@@ -6570,6 +6574,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 {
                     code.write(" = ");
                     parseTreeToDCode(code, data, e.data.childs[2], condition2, currentScope);
+                }
+                else
+                {
+                    code.write(" /* = TODO*/");
                 }
                 restoreCodeTokenInfoBak(code, data, bak);
             }
