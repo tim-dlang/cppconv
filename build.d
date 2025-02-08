@@ -508,21 +508,21 @@ int main(string[] args)
             super("qt6");
             dependencies = ["common"];
             baseArchives = [
-                "6.3.2-0-202209071847qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
-                "6.3.2-0-202209071847qtdeclarative-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
+                "6.4.2-0-202212131055qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
+                "6.4.2-0-202212131055qtdeclarative-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
                 ];
-            webengineArchive = "6.3.2-0-202209071847qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
+            webengineArchive = "6.4.2-0-202212131055qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             docArchives = [
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtcore-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtgui-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtwidgets-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtnetwork-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtqml-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtquick-documentation.7z",
-                "qt.qt6.632.doc/6.3.2-0-202209071926qtquickcontrols-documentation.7z",
-                "qt.qt6.632.doc.qtwebengine/6.3.2-0-202209071926qtwebengine-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtcore-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtgui-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtwidgets-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtnetwork-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtqml-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtquick-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtquickcontrols-documentation.7z",
+                "qt.qt6.642.doc.qtwebengine/6.4.2-0-202212131055qtwebengine-documentation.7z",
                 ];
-            archiveExtracted = "6.3.2";
+            archiveExtracted = "6.4.2";
             sourceFiles = ["qt6/allincludes.cpp"];
             converterArgs = [
                 "--output-config", "qt6/output-config.json",
@@ -549,12 +549,12 @@ int main(string[] args)
         override void download()
         {
             foreach (a; baseArchives)
-                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_632/qt.qt6.632.gcc_64/" ~ a, projectDir ~ "/" ~ a, verbose);
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642/qt.qt6.642.gcc_64/" ~ a, projectDir ~ "/" ~ a, verbose);
 
-            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_632/qt.qt6.632.addons.qtwebengine.gcc_64/" ~ webengineArchive, projectDir ~ "/" ~ webengineArchive, verbose);
+            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642/qt.qt6.642.addons.qtwebengine.gcc_64/" ~ webengineArchive, projectDir ~ "/" ~ webengineArchive, verbose);
 
             foreach (a; docArchives)
-                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_632_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
+                downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
         }
 
         override void prepare()

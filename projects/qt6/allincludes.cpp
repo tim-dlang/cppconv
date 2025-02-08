@@ -5,6 +5,7 @@
 //#include <QtCore/q20algorithm.h>
 //#include <QtCore/q20functional.h>
 //#include <QtCore/q20iterator.h>
+//#include <QtCore/q23functional.h>
 //#include <QtCore/qabstractanimation.h>
 //#include <QtCore/qabstracteventdispatcher.h>
 #include <QtCore/qabstractitemmodel.h>
@@ -75,6 +76,7 @@
 //#include <QtCore/qfilesystemwatcher.h>
 #include <QtCore/qflags.h>
 #include <QtCore/qfloat16.h>
+//#include <QtCore/qforeach.h>
 //#include <QtCore/qfunctions_vxworks.h>
 //#include <QtCore/qfuture.h>
 //#include <QtCore/qfutureinterface.h>
@@ -93,6 +95,7 @@
 #include <QtCore/qiterator.h>
 //#include <QtCore/qjnienvironment.h>
 //#include <QtCore/qjniobject.h>
+#include <QtCore/qjnitypes.h>
 //#include <QtCore/qjsonarray.h>
 //#include <QtCore/qjsondocument.h>
 //#include <QtCore/qjsonobject.h>
@@ -168,6 +171,8 @@
 #include <QtCore/qstringalgorithms.h>
 #include <QtCore/qstringbuilder.h>
 #include <QtCore/qstringconverter.h>
+//#include <QtCore/qstringconverter_base.h>
+//#include <QtCore/qstringfwd.h>
 #include <QtCore/qstringlist.h>
 #include <QtCore/qstringlistmodel.h>
 #include <QtCore/qstringliteral.h>
@@ -178,6 +183,7 @@
 //#include <QtCore/qsystemdetection.h>
 //#include <QtCore/qsystemsemaphore.h>
 #include <QtCore/qtaggedpointer.h>
+//#include <QtCore/qtconfigmacros.h>
 //#include <QtCore/qtcoreexports.h>
 //#include <QtCore/qtcoreversion.h>
 //#include <QtCore/qtcore-config.h>
@@ -218,6 +224,7 @@
 //#include <QtGui/qaccessiblebridge.h>
 //#include <QtGui/qaccessibleobject.h>
 //#include <QtGui/qaccessibleplugin.h>
+//#include <QtGui/qaccessible_base.h>
 #include <QtGui/qaction.h>
 #include <QtGui/qactiongroup.h>
 //#include <QtGui/qbackingstore.h>
@@ -493,6 +500,7 @@
 #include <QtNetwork/qsslerror.h>
 #include <QtNetwork/qsslkey.h>
 #include <QtNetwork/qsslpresharedkeyauthenticator.h>
+//#include <QtNetwork/qsslserver.h>
 #include <QtNetwork/qsslsocket.h>
 //#include <QtNetwork/qtcpserver.h>
 #include <QtNetwork/qtcpsocket.h>
@@ -512,6 +520,7 @@
 #include <QtWebEngineCore/qwebenginecontextmenurequest.h>
 #include <QtWebEngineCore/qwebenginecookiestore.h>
 #include <QtWebEngineCore/qwebenginedownloadrequest.h>
+#include <QtWebEngineCore/qwebenginefilesystemaccessrequest.h>
 #include <QtWebEngineCore/qwebenginefindtextresult.h>
 #include <QtWebEngineCore/qwebenginefullscreenrequest.h>
 #include <QtWebEngineCore/qwebenginehistory.h>
@@ -550,7 +559,7 @@
 #include <QtQml/qqmlapplicationengine.h>
 #include <QtQml/qqmlcomponent.h>
 #include <QtQml/qqmlcontext.h>
-#include <QtQml/qqmldebug.h>
+//#include <QtQml/qqmldebug.h>
 #include <QtQml/qqmlengine.h>
 #include <QtQml/qqmlerror.h>
 //#include <QtQml/qqmlexpression.h>

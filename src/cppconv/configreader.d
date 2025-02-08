@@ -28,11 +28,13 @@ struct ConfigRegex
     Regex!char regex;
     bool empty = true;
     bool isSimple;
+    bool allowPrefix;
 
-    this(string pattern, const(char)[] flags = [])
+    this(string pattern, const(char)[] flags = [], bool allowPrefix = false)
     {
         empty = false;
         this.pattern = pattern;
+        this.allowPrefix = allowPrefix;
 
         isSimple = true;
         foreach (dchar c; pattern)
@@ -44,7 +46,7 @@ struct ConfigRegex
             isSimple = false;
 
         if (!isSimple)
-            this.regex = std.regex.regex("^(?:" ~ pattern ~ ")$", flags);
+            this.regex = std.regex.regex("^(?:" ~ pattern ~ ")" ~ (allowPrefix ? "" : "$"), flags);
     }
 
     auto namedCaptures()
@@ -52,25 +54,54 @@ struct ConfigRegex
         return regex.namedCaptures;
     }
 
-    bool match(string s, ref Captures!string captures) const
+    bool match(string s, ref Captures!string captures, ref string post) const
     {
         if (isSimple)
         {
+            if (allowPrefix)
+            {
+                if (s.startsWith(pattern))
+                {
+                    post = s[pattern.length .. $];
+                    return true;
+                }
+                else
+                    return false;
+            }
             return s == pattern;
         }
         else if (!regex.empty)
         {
             captures = matchFirst(s, regex);
-            return !captures.empty;
+            if (!captures.empty)
+            {
+                post = captures.post;
+                return true;
+            }
+            else
+                return false;
         }
         else
             return false;
     }
 
+    bool match(string s, ref Captures!string captures) const
+    {
+        string post;
+        return match(s, captures, post);
+    }
+
+    bool match(string s, ref string post) const
+    {
+        Captures!string captures;
+        return match(s, captures, post);
+    }
+
     bool match(string s) const
     {
         Captures!string captures;
-        return match(s, captures);
+        string post;
+        return match(s, captures, post);
     }
 }
 
@@ -81,7 +112,7 @@ struct ConfigRegexMultiline
 
     this(string pattern)
     {
-        regex = ConfigRegex(pattern, "s");
+        regex = ConfigRegex(pattern, "s", true);
     }
 }
 

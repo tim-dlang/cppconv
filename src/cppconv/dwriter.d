@@ -6563,7 +6563,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             }
             else if (declarationExtra2.defaultInit.entries.length)
             {
-                enforce(declarationExtra2.defaultInit.entries.length == 1);
+                enforce(declarationExtra2.defaultInit.entries.length == 1, text(locationStr(d.tree.location)));
                 auto e = declarationExtra2.defaultInit.entries[0];
                 enforce(semantic.logicSystem.and(condition2, e.condition.negated)
                         .isFalse, text(d.name, " ", locationStr(d.location),
@@ -9610,16 +9610,26 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
                 {
                     if (fileHeaderReplacement.module_.match(data.currentFilename.moduleName))
                     {
-                        if (!fileHeaderReplacement.expectedLines.match(tokens[0].token.content.replace("\r",
-                                "")))
+                        string combinedComments;
+                        foreach (i, t; tokens)
+                        {
+                            if (!t.token.isToken || !t.isWhitespace)
+                                break;
+                            combinedComments ~= t.token.content;
+                            commentPrefix = i + 1;
+                        }
+
+                        string post;
+                        if (!fileHeaderReplacement.expectedLines.match(combinedComments.replace("\r", ""), post))
                         {
                             writeln("File ", data.currentFilename.moduleName,
-                                    " starts with unexpected comment:\n", tokens[0].token.content);
+                                    " starts with unexpected comment:\n", combinedComments);
+                            commentPrefix = 0;
                             break;
                         }
                         foreach (i, line; fileHeaderReplacement.lines)
                             code.write(line, i + 1 < fileHeaderReplacement.lines.length ? "\n" : "");
-                        commentPrefix = 1;
+                        code.write(post);
                         break;
                     }
                 }

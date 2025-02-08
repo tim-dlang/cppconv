@@ -233,3 +233,5 @@ template<int> struct QIntegerForSize
 #undef QT_QMLDEVTOOLS_LIB
 #undef QT_QML_BOOTSTRAPPED
 #undef QQMLLISTPROPERTY
+
+#undef Q_L1S_VIEW_IS_PRIMARY
