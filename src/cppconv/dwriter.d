@@ -8423,31 +8423,34 @@ string getFreeName(string name, DFilename filename,
         scope_ = null;
 
     size_t minNumVariants;
-    if (name in data.importedPackagesGraph.get(filename, null))
-        minNumVariants = 1;
-    void checkScope(Scope scope2)
+    if (scope_ is null || !scope_.tree.isValid || !scope_.tree.nonterminalID.nonterminalIDAmong!("ClassSpecifier", "EnumSpecifier"))
     {
-        foreach (e; scope2.extraParentScopes.entries)
-            checkScope(e.data.scope_);
-        auto w = ((scope2.parentScope is null) ? null : scope2) in data.nameDatas;
-        if (!w)
-            return;
-        auto x = filename in *w;
-        if (!x)
-            return;
-        auto y = name in *x;
-        if (!y)
-            return;
-        if (1 > minNumVariants)
+        if (name in data.importedPackagesGraph.get(filename, null))
             minNumVariants = 1;
-        if ((*y).numVariants > minNumVariants)
-            minNumVariants = (*y).numVariants;
-    }
+        void checkScope(Scope scope2)
+        {
+            foreach (e; scope2.extraParentScopes.entries)
+                checkScope(e.data.scope_);
+            auto w = ((scope2.parentScope is null) ? null : scope2) in data.nameDatas;
+            if (!w)
+                return;
+            auto x = filename in *w;
+            if (!x)
+                return;
+            auto y = name in *x;
+            if (!y)
+                return;
+            if (1 > minNumVariants)
+                minNumVariants = 1;
+            if ((*y).numVariants > minNumVariants)
+                minNumVariants = (*y).numVariants;
+        }
 
-    for (Scope scope2 = scope_ is null ? null : scope_.parentScope; scope2 !is null;
-            scope2 = scope2.parentScope)
-    {
-        checkScope(scope2);
+        for (Scope scope2 = scope_ is null ? null : scope_.parentScope; scope2 !is null;
+                scope2 = scope2.parentScope)
+        {
+            checkScope(scope2);
+        }
     }
 
     auto w = scope_ in data.nameDatas;

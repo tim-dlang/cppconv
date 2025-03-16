@@ -19,17 +19,17 @@ struct X
 	}
 	else
 	{
-    struct S__1;
+    struct S;
 	}
 	static if (!defined!"DEF")
 	{
-    	S__1* s;
+    	S* s;
 	}
 }
 
 void f(
 /+ #ifdef DEF +/
-Identity!(mixin((defined!"DEF")?q{S}:q{X.S__1}))*
+Identity!(mixin((defined!"DEF")?q{S}:q{X.S}))*
 /+ #else +/
 
 /+ #endif +/

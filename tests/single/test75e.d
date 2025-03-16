@@ -6,14 +6,14 @@ import cppconvhelpers;
 struct S{}
 struct X
 {
-	struct S__1{}
+	struct S{}
 	/+
 	struct S;
-	+/S__1* s;
+	+/S* s;
 }
 
 void f(
-X.S__1*
+X.S*
  s)
 {
 	X x;

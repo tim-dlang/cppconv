@@ -12,7 +12,7 @@ alias T1 = /+ :: +/S;
 extern(C++, class) struct C
 {
 private:
-	struct S__1
+	struct S
 	{
 	}
 	alias T2 = /+ :: +/.S;

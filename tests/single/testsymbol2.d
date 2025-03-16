@@ -7,8 +7,8 @@ alias T = long;
 
 struct S
 {
-	alias T__1 = int;
+	alias T = int;
 }
 
-__gshared S.T__1 x;
+__gshared S.T x;
 
