@@ -344,6 +344,7 @@ enum DeclarationFlags
     constExpr = 0x2000,
     templateSpecialization = 0x4000,
     templateParam = 0x8000,
+    enumClass = 0x10000,
 }
 
 struct DeclarationKey

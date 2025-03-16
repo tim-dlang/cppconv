@@ -873,6 +873,15 @@ void analyzeClassSpecifier(Tree tree, ref IteratePPVersions ppVersion,
             iteratePPVersions!analyzeClassSpecifier(c, ppVersion, semantic, info);
         }
     }
+    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"EnumKey")
+    {
+        assert(info.key.length == 0, text(info.key, " ", tree.childs[0].name));
+        assert(tree.childs.length >= 1);
+        assert(tree.childs[0].nodeType == NodeType.token);
+        info.key = tree.childs[0].content;
+        if (tree.childs.length >= 2)
+            info.key ~= " " ~ tree.childs[1].content;
+    }
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassKey")
     {
         assert(info.key.length == 0, text(info.key, " ", tree.childs[0].name));

@@ -4473,7 +4473,17 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                     string declName = typeToCode(semantic.extraInfo(tree).type,
                             data, newCondition, contextScope, tree.location, [], codeType);
 
-                    if (declName != "")
+                    bool isEnumClass;
+                    QualType enumType = chooseType(e.data.type2, ppVersion, true);
+                    if (enumType.kind == TypeKind.record)
+                    {
+                        RecordType recordType = cast(RecordType) enumType.type;
+                        foreach (e2; recordType.declarationSet.entries)
+                            if (e2.data.flags & DeclarationFlags.enumClass)
+                                isEnumClass = true;
+                    }
+
+                    if (declName != "" && !isEnumClass)
                     {
                         realId.add(newCondition,
                                 declName ~ "." ~ replaceKeywords(tree.childs[0].content),

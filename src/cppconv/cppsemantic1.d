@@ -831,6 +831,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             runSemantic(semantic, c, tree, condition);
         }
 
+        bool isEnumClass;
+        Scope enumClassScope;
         bool isTemplateSpecializationHere;
         foreach (combination; iterateCombinations())
         {
@@ -855,6 +857,9 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
 
             if (wrappperInfo.flags & DeclarationFlags.friend)
                 continue;
+
+            if (classSpecifierInfo.key.among("enum class", "enum struct"))
+                isEnumClass = true;
 
             Tree parent2 = getRealParent(realParent, semantic);
             size_t parent3Index;
@@ -930,7 +935,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
             }
 
-            if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassSpecifier")
+            if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassSpecifier"
+                || (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"EnumSpecifier" && isEnumClass))
             {
                 Scope classScope;
                 if (tree !in targetScope.childScopeByTree)
@@ -945,6 +951,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                     classScope.scopeCondition = semantic.logicSystem.or(classScope.scopeCondition,
                         instanceConditionHere);
                 }
+                if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"EnumSpecifier")
+                    enumClassScope = classScope;
                 if (classSpecifierInfo.className !in targetScope.subScopes)
                     targetScope.subScopes[classSpecifierInfo.className] = [];
                 targetScope.subScopes[classSpecifierInfo.className].addOnce(
@@ -952,30 +960,33 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 classScope.className.add(ppVersion.condition,
                     classSpecifierInfo.className, semantic.logicSystem);
 
-                size_t startIndex = 0;
-                foreach (s; templateScopes)
-                    startIndex = classScope.extraParentScopes.add(ppVersion.condition,
-                        ExtraScope(ExtraScopeType.template_, s), ppVersion.logicSystem, startIndex)
-                        + 1;
-                foreach (t; classSpecifierInfo.parentTypes)
+                if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ClassSpecifier")
                 {
-                    t = chooseType(t, ppVersion, true);
-                    if (t.kind == TypeKind.record)
+                    size_t startIndex = 0;
+                    foreach (s; templateScopes)
+                        startIndex = classScope.extraParentScopes.add(ppVersion.condition,
+                            ExtraScope(ExtraScopeType.template_, s), ppVersion.logicSystem, startIndex)
+                            + 1;
+                    foreach (t; classSpecifierInfo.parentTypes)
                     {
-                        RecordType recordType = cast(RecordType) t.type;
+                        t = chooseType(t, ppVersion, true);
+                        if (t.kind == TypeKind.record)
+                        {
+                            RecordType recordType = cast(RecordType) t.type;
 
-                        Scope scope_ = scopeForRecord(recordType, ppVersion, semantic);
+                            Scope scope_ = scopeForRecord(recordType, ppVersion, semantic);
 
-                        if (scope_ !is null && scope_.tree !is tree)
-                            startIndex = classScope.extraParentScopes.add(ppVersion.condition,
-                                ExtraScope(ExtraScopeType.parentClass, scope_),
-                                ppVersion.logicSystem, startIndex) + 1;
+                            if (scope_ !is null && scope_.tree !is tree)
+                                startIndex = classScope.extraParentScopes.add(ppVersion.condition,
+                                    ExtraScope(ExtraScopeType.parentClass, scope_),
+                                    ppVersion.logicSystem, startIndex) + 1;
+                        }
                     }
+                    if (classSpecifierInfo.namespaces.length && targetScope2 !is null)
+                        startIndex = classScope.extraParentScopes.add(ppVersion.condition,
+                            ExtraScope(ExtraScopeType.namespace, targetScope2),
+                            ppVersion.logicSystem, startIndex) + 1;
                 }
-                if (classSpecifierInfo.namespaces.length && targetScope2 !is null)
-                    startIndex = classScope.extraParentScopes.add(ppVersion.condition,
-                        ExtraScope(ExtraScopeType.namespace, targetScope2),
-                        ppVersion.logicSystem, startIndex) + 1;
             }
 
             DeclarationKey dk;
@@ -992,6 +1003,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 dk.flags |= DeclarationFlags.friend;
             if (targetScope.currentlyInsideParams)
                 dk.flags |= DeclarationFlags.templateParam;
+            if (isEnumClass)
+                dk.flags |= DeclarationFlags.enumClass;
             dk.name = classSpecifierInfo.className;
             dk.scope_ = targetScope;
 
@@ -1059,9 +1072,22 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             }
         }
 
-        foreach (ref c; tree.childs[headChilds .. $])
+        if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"EnumSpecifier" && enumClassScope !is null)
         {
-            runSemantic(semantic, c, tree, condition);
+            SemanticRunInfo semanticRun = semantic;
+            semanticRun.currentScope = enumClassScope;
+
+            foreach (ref c; tree.childs[headChilds .. $])
+            {
+                runSemantic(semanticRun, c, tree, condition);
+            }
+        }
+        else
+        {
+            foreach (ref c; tree.childs[headChilds .. $])
+            {
+                runSemantic(semantic, c, tree, condition);
+            }
         }
     }, (MatchNonterminals!("OriginalNamespaceDefinition")) {
         string name = tree.childs[2].content;
