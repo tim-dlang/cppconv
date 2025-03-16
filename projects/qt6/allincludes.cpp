@@ -667,3 +667,21 @@
 //#include <QtMultimediaWidgets/qtmultimediawidgetsglobal.h>
 //#include <QtMultimediaWidgets/qtmultimediawidgetsversion.h>
 #include <QtMultimediaWidgets/qvideowidget.h>
+
+// QtPdf
+#include <QtPdf/qpdfbookmarkmodel.h>
+#include <QtPdf/qpdfdocument.h>
+#include <QtPdf/qpdfdocumentrenderoptions.h>
+#include <QtPdf/qpdflink.h>
+#include <QtPdf/qpdfpagenavigator.h>
+#include <QtPdf/qpdfpagerenderer.h>
+#include <QtPdf/qpdfsearchmodel.h>
+#include <QtPdf/qpdfselection.h>
+//#include <QtPdf/qtpdfglobal.h>
+//#include <QtPdf/qtpdfversion.h>
+//#include <QtPdf/qtpdf-config.h>
+
+// QtPdfWidgets
+#include <QtPdfWidgets/qpdfview.h>
+//#include <QtPdfWidgets/qtpdfwidgetsglobal.h>
+//#include <QtPdfWidgets/qtpdfwidgetsversion.h>

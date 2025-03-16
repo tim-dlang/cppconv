@@ -30,6 +30,7 @@
         {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>.*)/q(?P<M>.*).h"}, "moduleName": "qt.\\L%P.%M"},
         {"match": {"filename": "qt[0-9]*/orig/qtwebengine/Qt(?P<P>.*)/qt?webengine(?P<M>.*).h"}, "moduleName": "qt.webengine.\\L%M", "extraPrefix": "\\L%P"},
         {"match": {"filename": "qt[0-9]*/orig/qtmultimedia/Qt(?P<P>.*)/q(?P<M>.*).h"}, "moduleName": "qt.multimedia.\\L%M", "extraPrefix": "\\L%P"},
+        {"match": {"filename": "qt[0-9]*/orig/qtpdf/Qt(?P<P>.*)/qt?pdf(?P<M>.*).h"}, "moduleName": "qt.pdf.\\L%M", "extraPrefix": "\\L%P"},
         {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>Qml)/qt?qml(?P<M>..*).h"}, "moduleName": "qt.\\L%P.\\L%M"},
         {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>Quick.*)/qt?quick(?P<M>.*).h"}, "moduleName": "qt.\\L%P.\\L%M"},
 

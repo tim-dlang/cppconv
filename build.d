@@ -503,6 +503,7 @@ int main(string[] args)
         string[] baseArchives;
         string webengineArchive;
         string multimediaArchive;
+        string pdfArchive;
         string[] docArchives;
         this()
         {
@@ -514,6 +515,7 @@ int main(string[] args)
                 ];
             webengineArchive = "6.4.2-0-202212131055qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             multimediaArchive = "6.4.2-0-202212131055qtmultimedia-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
+            pdfArchive = "6.4.2-0-202212131055qtpdf-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             docArchives = [
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtcore-documentation.7z",
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtgui-documentation.7z",
@@ -524,6 +526,7 @@ int main(string[] args)
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtquickcontrols-documentation.7z",
                 "qt.qt6.642.doc.qtwebengine/6.4.2-0-202212131055qtwebengine-documentation.7z",
                 "qt.qt6.642.doc.qtmultimedia/6.4.2-0-202212131055qtmultimedia-documentation.7z",
+                "qt.qt6.642.doc.qtpdf/6.4.2-0-202212131055qtpdf-documentation.7z",
                 ];
             archiveExtracted = "6.4.2";
             sourceFiles = ["qt6/allincludes.cpp"];
@@ -543,6 +546,9 @@ int main(string[] args)
                 "-Iqt6/orig/qtmultimedia",
                 "-Iqt6/orig/qtmultimedia/QtMultimedia",
                 "-Iqt6/orig/qtmultimedia/QtMultimediaWidgets",
+                "-Iqt6/orig/qtpdf",
+                "-Iqt6/orig/qtpdf/QtPdf",
+                "-Iqt6/orig/qtpdf/QtPdfWidgets",
                 "-Igcc-rt/orig/include-cxx",
                 "-Igcc-rt/orig/include-cxx/platform-generic",
                 "-include", "common/prefixinclude.h",
@@ -559,6 +565,7 @@ int main(string[] args)
 
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642/qt.qt6.642.addons.qtwebengine.gcc_64/" ~ webengineArchive, projectDir ~ "/" ~ webengineArchive, verbose);
             downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642/qt.qt6.642.addons.qtmultimedia.gcc_64/" ~ multimediaArchive, projectDir ~ "/" ~ multimediaArchive, verbose);
+            downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642/qt.qt6.642.addons.qtpdf.gcc_64/" ~ pdfArchive, projectDir ~ "/" ~ pdfArchive, verbose);
 
             foreach (a; docArchives)
                 downloadFile("https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/qt6_642_src_doc_examples/" ~ a, projectDir ~ "/" ~ baseName(a), verbose);
@@ -575,6 +582,9 @@ int main(string[] args)
 
             runCommand(["7z", "x", multimediaArchive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
             rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtmultimedia"));
+
+            runCommand(["7z", "x", pdfArchive, archiveExtracted ~ "/gcc_64/include/"], verbose, projectDir);
+            rename(buildPath(projectDir, archiveExtracted ~ "/gcc_64/include/"), buildPath(projectDir, "tmp-orig/qtpdf"));
 
             foreach (a; docArchives)
                 runCommand(["7z", "x", baseName(a), "Docs/"], verbose, projectDir);

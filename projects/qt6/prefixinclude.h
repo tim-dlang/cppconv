@@ -235,3 +235,6 @@ template<int> struct QIntegerForSize
 #undef QQMLLISTPROPERTY
 
 #undef Q_L1S_VIEW_IS_PRIMARY
+
+#undef Q_PDF_EXPORT
+#undef Q_PDF_WIDGETS_EXPORT
