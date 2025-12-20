@@ -6864,8 +6864,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             if (isStruct(parentClassTree, data))
             {
                 code.writeln("@disable this(this);");
-                if (d.tree.nameOrContent == "FunctionDefinitionMember"
-                        && d.tree.childs.length == 4 && d.tree.childs[2].nameOrContent == "delete")
+                if (d.tree.nonterminalID == nonterminalIDFor!"FunctionDefinitionMember"
+                        && d.tree.childs.length == 4 && d.tree.childs[2].content == "delete")
                     commentWholeDecl = true;
             }
             else if (!hasFunctionBody)
@@ -7086,6 +7086,12 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             }
         }
 
+        if (d.tree.nonterminalID == nonterminalIDFor!"FunctionDefinitionMember"
+                && d.tree.childs.length == 4 && d.tree.childs[2].content == "delete")
+        {
+            codeTmp.write("@disable ");
+        }
+
         codeTmp.write(addedAttributes);
 
         if (parentClassTree.isValid && (forwardDecl2.flags & DeclarationFlags.static_) != 0)
@@ -7192,8 +7198,14 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             codeTmp.write(declList[0].codeAfter);
         codeTmp.write(operatorTemplateConstraint);
 
-        if (d.tree.nameOrContent.startsWith("FunctionDefinition")
-                && d.tree.childs.length == 4 && d.tree.childs[2].nameOrContent == "0")
+        if (d.tree.nonterminalID == nonterminalIDFor!"FunctionDefinitionMember"
+                && d.tree.childs.length == 4 && d.tree.childs[2].content == "0")
+        {
+            skipToken(code, data, d.tree.childs[1], false, true);
+            skipToken(code, data, d.tree.childs[2], false, true);
+        }
+        if (d.tree.nonterminalID == nonterminalIDFor!"FunctionDefinitionMember"
+                && d.tree.childs.length == 4 && d.tree.childs[2].content == "delete")
         {
             skipToken(code, data, d.tree.childs[1], false, true);
             skipToken(code, data, d.tree.childs[2], false, true);
