@@ -6749,6 +6749,11 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                     operatorFunctionName = "opBinary(string op)";
                     operatorTemplateConstraint = " if (op == \"" ~ op ~ "\")";
                 }
+                if (op == "="
+                        && functionType.parameters.length == 1 && parentClassTree.isValid)
+                {
+                    operatorFunctionName = "opAssign";
+                }
                 if (op.among("&=", "|=", "+=", "-=")
                         && functionType.parameters.length == 1 && parentClassTree.isValid)
                 {

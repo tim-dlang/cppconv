@@ -34,5 +34,5 @@ public:
 private:
 	/+ Q_DISABLE_COPY_MOVE(C) +/
 @disable this(this);
-/+@disable this(ref const(C));+//+@disable ref C operator =(ref const(C));+/}
+/+@disable this(ref const(C));+/@disable ref C opAssign(ref const(C));}
 
