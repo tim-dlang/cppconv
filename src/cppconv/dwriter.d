@@ -3492,7 +3492,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     else if (tree.name.startsWith("SimpleDeclaration") || tree.name.startsWith("MemberDeclaration")
             || tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
                 "FunctionDefinitionGlobal", "MemberDeclaration" /*, "ParameterDeclaration", "ParameterDeclarationAbstract"*/ ,
-                "Condition", "AliasDeclaration"))
+                "Condition", "AliasDeclaration",
+                "ForRangeDeclaration", "ExceptionDeclaration"))
     {
         bool hasDecls;
         foreach (d; semantic.extraInfo(tree).declarations)
@@ -5070,6 +5071,26 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             }
         }
     }
+    else if (tree.nonterminalID == nonterminalIDFor!"IterationStatementHead" && tree.childs.length == 6)
+    {
+        foreach (i, c; tree.childs)
+        {
+            if (i == 0)
+            {
+                assert(c.content == "for");
+                skipToken(code, data, c);
+                code.write("foreach");
+            }
+            else if (i == 3)
+            {
+                assert(c.content == ":");
+                skipToken(code, data, c, false, true);
+                code.write(";");
+            }
+            else
+                parseTreeToDCode(code, data, c, condition, currentScope);
+        }
+    }
     else
     {
         foreach (c; tree.childs)
@@ -6325,7 +6346,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             if (d.tree.nonterminalID.nonterminalIDAmong!("SimpleDeclaration1",
                     "SimpleDeclaration3", "MemberDeclaration1",
-                    "ParameterDeclaration", "Condition"))
+                    "ParameterDeclaration", "Condition",
+                    "ForRangeDeclaration", "ExceptionDeclaration"))
             {
                 collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
                         afterTypeInDeclSeq, d.tree.childs[0], condition2, data, currentScope);
@@ -6486,7 +6508,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             if (d.tree.nonterminalID.nonterminalIDAmong!("SimpleDeclaration1",
                     "SimpleDeclaration3", "MemberDeclaration1",
-                    "ParameterDeclaration", "Condition"))
+                    "ParameterDeclaration", "Condition",
+                    "ForRangeDeclaration", "ExceptionDeclaration"))
             {
                 collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
                         afterTypeInDeclSeq, d.tree.childs[0], condition2, data, currentScope);
@@ -6684,13 +6707,13 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             nextEndToken = d.tree.childs[$ - 1];
         if (nextEndToken.isValid)
             skipToken(code, data, nextEndToken);
-        if (d.tree.name != "Condition" && d.tree.name != "ParameterDeclaration")
+        if (!d.tree.nonterminalID.nonterminalIDAmong!("Condition", "ParameterDeclaration", "ForRangeDeclaration", "ExceptionDeclaration"))
             code.write(";");
         if (nextEndToken.isValid && data.sourceTokenManager.tokensLeft.data.length > 0)
             writeComments(code, data,
                     data.sourceTokenManager.collectTokensUntilLineEnd(nextEndToken.location.end,
                         condition2));
-        else if (d.tree.name != "Condition" && d.tree.name != "ParameterDeclaration")
+        else if (!d.tree.nonterminalID.nonterminalIDAmong!("Condition", "ParameterDeclaration", "ForRangeDeclaration", "ExceptionDeclaration"))
             code.writeln();
     }
     else if (d.type == DeclarationType.varOrFunc
@@ -7009,7 +7032,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             if (d.tree.nonterminalID.nonterminalIDAmong!("SimpleDeclaration1",
                     "SimpleDeclaration3", "MemberDeclaration1",
-                    "ParameterDeclaration", "Condition"))
+                    "ParameterDeclaration", "Condition",
+                    "ForRangeDeclaration", "ExceptionDeclaration"))
             {
                 collectDeclSeqTokens(*codeTmp, codeType, codeAfterDeclSeq,
                         afterTypeInDeclSeq, d.tree.childs[0], condition2, data, currentScope);

@@ -463,7 +463,7 @@ ForInitStatement
     | <EmptyStatement
     ;
 ForRangeDeclaration
-    = AttributeSpecifierSeq TypeSpecifierSeq Declarator
+    = declSeq:DeclSpecifierSeq declarators:Declarator
     ;
 ForRangeInitializer
     = Expression
@@ -1410,8 +1410,8 @@ CatchHead
     = "catch" "(" ExceptionDeclaration ")"
     ;
 ExceptionDeclaration
-    = AttributeSpecifierSeq TypeSpecifierSeq Declarator
-    | AttributeSpecifierSeq TypeSpecifierSeq AbstractDeclarator?
+    = declSeq:DeclSpecifierSeq declarators:Declarator
+    | declSeq:DeclSpecifierSeq declarators:AbstractDeclarator?
     | "..."
     ;
 ThrowExpression

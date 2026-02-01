@@ -366,7 +366,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
     alias Funcs = AliasSeq!((MatchNonterminals!("SimpleDeclaration*",
             "MemberDeclaration*", "FunctionDefinitionMember",
             "FunctionDefinitionGlobal", "ParameterDeclaration",
-            "ParameterDeclarationAbstract", "Condition")) {
+            "ParameterDeclarationAbstract", "Condition",
+            "ForRangeDeclaration", "ExceptionDeclaration")) {
         foreach (i, ref c; tree.childs)
         {
             runSemantic(semantic, c, tree, condition);
@@ -471,7 +472,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
     }, (MatchNonterminals!("*Declarator", "FunctionDeclaratorTrailing"),
             MatchRealParentNonterminals!("SimpleDeclaration*",
             "MemberDeclaration*", "FunctionDefinitionHead",
-            "ParameterDeclaration", "ParameterDeclarationAbstract", "Condition")) {
+            "ParameterDeclaration", "ParameterDeclarationAbstract", "Condition",
+            "ForRangeDeclaration", "ExceptionDeclaration")) {
         foreach (k, ref c; tree.childs)
         {
             if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"InitDeclarator" && k == 1)
@@ -886,7 +888,8 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 && parent2.nonterminalID.nonterminalIDAmong!("SimpleDeclaration1", "MemberDeclaration1",
                     "UnaryExpression", "CastExpressionHead",
                     "ParameterDeclarationAbstract", "ParameterDeclaration",
-                    "Condition", "MemberDeclaration2")
+                    "Condition", "MemberDeclaration2",
+                    "ForRangeDeclaration", "ExceptionDeclaration")
                 && (!parent3.isValid || parent3Index != 2 || parent3.nonterminalID != ParserWrapper.nonterminalIDFor!"TemplateDeclaration")
                 && classSpecifierInfo.className && (!semantic.isCPlusPlus
                     || !parent2.nonterminalID.nonterminalIDAmong!("SimpleDeclaration3", "MemberDeclaration2")))
