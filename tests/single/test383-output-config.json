@@ -1,0 +1,6 @@
+{
+    "allowParameterImplicitCastsFilenamePatterns": ["test383.cpp"],
+    "classSuffixCode": [
+        {"match": {"name": "C"}, "code": "static void f(const char *s) { auto tmp = S(s); f(tmp); }"}
+    ]
+}

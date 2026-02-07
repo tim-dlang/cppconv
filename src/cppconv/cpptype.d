@@ -997,7 +997,7 @@ bool isTemplateParamType(Type type)
 }
 
 bool needsCast(QualType toType, QualType fromType, ref IteratePPVersions ppVersion,
-        Semantic semantic)
+        Semantic semantic, bool allowImplicitCast = false)
 {
     toType = chooseType(toType, ppVersion, true);
     fromType = chooseType(fromType, ppVersion, true);
@@ -1080,6 +1080,12 @@ bool needsCast(QualType toType, QualType fromType, ref IteratePPVersions ppVersi
             if (toInfo.sizeOrder < fromInfo.sizeOrder)
                 return true;
         }
+    }
+
+    if (toType.kind == TypeKind.record && !isPossiblyEnumType(toType)
+        && allowImplicitCast && isImplicitConversionPossible(toType, fromType, ppVersion, semantic))
+    {
+        return false;
     }
 
     if (fromType.kind != toType.kind)

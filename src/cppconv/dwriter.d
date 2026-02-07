@@ -2376,6 +2376,30 @@ LocationX locationBeforeUsedMacro(Tree tree, DWriterData data, bool force)
     return loc;
 }
 
+bool inParameterList(T)(T tree, DWriterData data)
+{
+    auto semantic = data.semantic;
+    if (!tree.isValid)
+        return false;
+    size_t indexInParent;
+    Tree parent = getRealParent(tree, semantic, &indexInParent);
+    if (!parent.isValid)
+        return false;
+    if (parent.nonterminalID == nonterminalIDFor!"InitializerClause")
+    {
+        size_t indexInParent2;
+        Tree parent2 = getRealParent(parent, semantic, &indexInParent2);
+        if (parent2.isValid && parent2.nonterminalID == nonterminalIDFor!"PostfixExpression")
+            return true;
+        return false;
+    }
+    if (parent.nonterminalID == nonterminalIDFor!"ConditionalExpression" && indexInParent > 0)
+        return inParameterList(parent, data);
+    if (parent.nonterminalID == nonterminalIDFor!"PrimaryExpression" && parent.childs.length == 3 && indexInParent == 1)
+        return inParameterList(parent, data);
+    return false;
+}
+
 void calcNeedsCast(T)(ref immutable(Formula)* needsCastCondition, ref immutable(Formula)* needsCastStaticArrayCondition,
         DWriterData data, T tree, immutable(Formula)* condition,
         Scope currentScope, ConditionalCodeWrapper* wholeExpressionWrapper)
@@ -2485,7 +2509,11 @@ void calcNeedsCast(T)(ref immutable(Formula)* needsCastCondition, ref immutable(
                         semantic.extraInfo2(tree).constantValue.conditionAll))
             continue;
 
-        if (needsCast(toType, fromType, ppVersion, semantic))
+        bool allowImplicitCast = false;
+        if (inParameterList(tree, data) && data.options.allowParameterImplicitCastsFilenamePatterns.match(tree.location.context.filename))
+            allowImplicitCast = true;
+
+        if (needsCast(toType, fromType, ppVersion, semantic, allowImplicitCast))
         {
             if (toType.kind == TypeKind.array && (cast(ArrayType) toType.type)
                     .declarator.isValid && !(cast(ArrayType) toType.type)
