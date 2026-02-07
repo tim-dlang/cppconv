@@ -143,6 +143,7 @@ struct DCodeOptions
     CodePattern[] classSuffixCode;
     ManglingPattern[] defaultMangling;
     FileHeaderReplacement[] fileHeaderReplacement;
+    ConfigRegex allowParameterImplicitCastsFilenamePatterns;
 }
 
 class DWriterData
@@ -5120,9 +5121,7 @@ Declaration getDummyDeclaration(Tree tree, DWriterData data, Semantic semantic)
 bool isRValueParameter(Tree c, DWriterData data)
 {
     auto semantic = data.semantic;
-    if (!(c.location.context.filename.startsWith("qt/orig/qt")
-            || c.location.context.filename.startsWith("qt5/orig/qt")
-            || c.location.context.filename.startsWith("qt6/orig/qt")))
+    if (data.options.allowParameterImplicitCastsFilenamePatterns.match(c.location.context.filename))
         return false;
     if (c.name != "InitializerClause")
         return false;

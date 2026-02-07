@@ -5,6 +5,7 @@
     "importedSymbol": "dqtimported",
     "builtinCppTypes": true,
     "includeDeclFilenamePatterns": ["qt[0-9]*/orig/.*"],
+    "allowParameterImplicitCastsFilenamePatterns": ["(?!qt[0-9]*/orig/qt).*"],
     "arrayLikeTypes": [
         "QString",
         "QStringList",
