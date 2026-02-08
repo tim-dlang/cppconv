@@ -1,0 +1,6 @@
+{
+    "defaultMangling": [
+        {"module": "testinclude109a", "mangling": "D"},
+        {"module": "testinclude109b", "mangling": "C++"}
+    ]
+}

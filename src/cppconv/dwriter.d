@@ -7185,8 +7185,34 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         if (parentClassTree.isValid && (forwardDecl2.flags & DeclarationFlags.static_) == 0
                 && isClass(parentClassTree, data) && !isConstructor)
         {
+            string parentClassMangling;
+            if (data.currentClassDeclaration !is null)
+            {
+                Scope classScope = data.currentClassDeclaration.scope_.childScopeByTree[data.currentClassDeclaration.tree];
+                foreach (e; classScope.extraParentScopes.entries)
+                {
+                    if (e.data.type != ExtraScopeType.parentClass)
+                        continue;
+                    if (semantic.logicSystem.and(e.condition, condition).isFalse)
+                        continue;
+                    Tree parent1 = getRealParent(e.data.scope_.tree, data.semantic);
+                    if (!parent1.isValid)
+                        continue;
+                    Tree parent2 = getRealParent(parent1, data.semantic);
+                    if (!parent2.isValid)
+                        continue;
+                    foreach (d2; data.semantic.extraInfo(parent2).declarations)
+                    {
+                        if (d2.tree !is e.data.scope_.tree)
+                            continue;
+                        parentClassMangling = getDefaultMangling(data, getDeclarationFilename(d2, data));
+                    }
+                }
+            }
             if (forwardDecl2.flags & DeclarationFlags.override_)
             {
+                if (!isDestructor && getDefaultMangling(data, data.currentFilename) == "D" && parentClassMangling == "C++")
+                    codeTmp.write("extern(C++) ");
                 if (forwardDecl2.flags & DeclarationFlags.final_)
                 {
                     codeTmp.write("final ");
