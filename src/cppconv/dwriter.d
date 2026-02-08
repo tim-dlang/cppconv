@@ -3522,7 +3522,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             || tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
                 "FunctionDefinitionGlobal", "MemberDeclaration" /*, "ParameterDeclaration", "ParameterDeclarationAbstract"*/ ,
                 "Condition", "AliasDeclaration",
-                "ForRangeDeclaration", "ExceptionDeclaration"))
+                "ForRangeDeclaration", "ExceptionDeclaration", "LambdaExpression"))
     {
         bool hasDecls;
         foreach (d; semantic.extraInfo(tree).declarations)
@@ -5120,6 +5120,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 parseTreeToDCode(code, data, c, condition, currentScope);
         }
     }
+    else if (tree.nonterminalID == nonterminalIDFor!"LambdaIntroducer")
+    {
+    }
     else
     {
         foreach (c; tree.childs)
@@ -5784,12 +5787,17 @@ void findParams(Tree t, immutable(Formula)* condition3,
         }
     }
     else if (t.nonterminalID.nonterminalIDAmong!("FunctionDeclarator",
-            "FunctionAbstractDeclarator"))
+            "FunctionDeclaratorTrailing", "FunctionAbstractDeclarator"))
     {
         info.functionDeclarator = t;
         findParams(t.childs[1], condition3, info, data, currentScope);
         findParams(t.childByName("virtSpec"), condition3, info, data, currentScope);
         //parseTreeToDCode(code, data, t.childs[1], condition2, currentScope);
+    }
+    else if (t.nonterminalID.nonterminalIDAmong!("LambdaDeclarator"))
+    {
+        info.functionDeclarator = t;
+        findParams(t.childs[1], condition3, info, data, currentScope);
     }
     else if (t.nonterminalID.nonterminalIDAmong!("ParameterDeclaration",
             "ParameterDeclarationAbstract"))
@@ -5830,19 +5838,20 @@ void findParams(Tree t, immutable(Formula)* condition3,
             }
         }
     }
-    else if (t.nonterminalID == nonterminalIDFor!"ParametersAndQualifiers")
+    else if (t.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
     {
         if (currentScope !is null && t in currentScope.childScopeByTree)
             currentScope = currentScope.childScopeByTree[t];
 
         findParams(t.childs[0], condition3, info, data, currentScope);
 
-        if (t.childs[$ - 1].isValid)
+        Tree qualifiersSeq = t.childByName("qualifiersSeq");
+        if (qualifiersSeq.isValid)
         {
-            if (t.childs[$ - 1].nodeType == NodeType.array)
-                info.attributeTrees ~= t.childs[$ - 1].childs;
+            if (qualifiersSeq.nodeType == NodeType.array)
+                info.attributeTrees ~= qualifiersSeq.childs;
             else
-                info.attributeTrees ~= t;
+                info.attributeTrees ~= qualifiersSeq;
         }
     }
     else if (t.nonterminalID == nonterminalIDFor!"Parameters")
@@ -6489,7 +6498,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
     }
     else if (d.type == DeclarationType.varOrFunc
             && !d.tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
-                "FunctionDefinitionGlobal") && (d.flags & DeclarationFlags.function_) == 0)
+                "FunctionDefinitionGlobal", "LambdaExpression") && (d.flags & DeclarationFlags.function_) == 0)
     {
         Tree findPrevSeperator(Tree t)
         {
@@ -6745,10 +6754,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
     }
     else if (d.type == DeclarationType.varOrFunc
             && (d.tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
-                "FunctionDefinitionGlobal") || (d.flags & DeclarationFlags.function_) != 0))
+                "FunctionDefinitionGlobal", "LambdaExpression") || (d.flags & DeclarationFlags.function_) != 0))
     {
         DeclarationFlags combinedFlags = d.flags;
-        bool hasFunctionBody = d.tree.name.startsWith("FunctionDefinition");
+        bool hasFunctionBody = d.tree.name.startsWith("FunctionDefinition") || d.tree.nonterminalID.nonterminalIDAmong!("LambdaExpression");
         if (hasFunctionBody && d.tree.childs.length == 4 && d.tree.childs[2].content == "delete")
             hasFunctionBody = false;
         if (d.scope_ !is semantic.rootScope)
@@ -7033,6 +7042,12 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             }
         }
 
+        if (d.tree.nonterminalID.nonterminalIDAmong!("LambdaExpression")
+            && d.tree.childs[0].nonterminalID.nonterminalIDAmong!("LambdaDeclarator"))
+        {
+            writeComments(code, data, d.tree.childs[0].childs[0].end);
+        }
+
         bool hasRealDecl;
         if (d.scope_ !is semantic.rootScope && d.realDeclaration.conditionAll !is null
                 && !logicSystem.and(d.condition, d.realDeclaration.conditionAll).isFalse)
@@ -7089,7 +7104,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                     writeComments(codeAfterDeclSeq, data, d.tree.childs[0].childs[1].start);
                 }
             }
-            else if (d.tree.nonterminalID.nonterminalIDAmong!("SimpleDeclaration2"))
+            else if (d.tree.nonterminalID.nonterminalIDAmong!("SimpleDeclaration2", "LambdaExpression"))
             {
             }
             else
@@ -7190,7 +7205,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         if (declList2.length)
         {
             assert(declList2[0].tree.nonterminalID.nonterminalIDAmong!("FunctionDeclarator",
-                    "FunctionDeclaratorTrailing"), text(declList2[0].tree.name,
+                    "FunctionDeclaratorTrailing", "LambdaDeclarator"), text(declList2[0].tree.name,
                     " ", locationStr(declList2[0].tree.start)));
             declList2 = declList2[1 .. $];
         }
@@ -7199,6 +7214,9 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             //assert(declList2.length == 0, text(locationStr(d.tree.location), " ", declList2));
             //codeTmp.write(codeAfterDeclSeq.data);
+        }
+        else if (d.tree.nonterminalID.nonterminalIDAmong!("LambdaExpression"))
+        {
         }
         else if (d.name == "operator cast")
         {
@@ -7284,7 +7302,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
 
         code.customIndent = origCustomIndent;
         if (d.tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
-                "FunctionDefinitionGlobal"))
+                "FunctionDefinitionGlobal", "LambdaExpression"))
             parseTreeToDCode(code, data, d.tree.childs[$ - 1], condition2, currentScope);
         else if (hasRealDecl)
             skipToken(code, data, d.tree.childs[$ - 1]);

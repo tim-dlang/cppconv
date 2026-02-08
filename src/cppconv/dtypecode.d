@@ -483,31 +483,36 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
             codeBefore.write("]");
         }
         else if (declarator.nonterminalID.nonterminalIDAmong!("FunctionDeclarator",
-                "FunctionAbstractDeclarator"))
+                "FunctionDeclaratorTrailing", "FunctionAbstractDeclarator",
+                "LambdaDeclarator"))
         {
-            Tree c = declarator.childByName("innerDeclarator");
-            if (c.isValid)
+            if (declarator.hasChildWithName("innerDeclarator"))
             {
-                if (data.sourceTokenManager.tokensLeft.data.length > 0)
-                    writeComments(codeBefore, data,
-                            data.sourceTokenManager.collectTokens(c.start));
-                visitDeclarator(c);
+                Tree c = declarator.childByName("innerDeclarator");
+                if (c.isValid)
+                {
+                    if (data.sourceTokenManager.tokensLeft.data.length > 0)
+                        writeComments(codeBefore, data,
+                                data.sourceTokenManager.collectTokens(c.start));
+                    visitDeclarator(c);
+                }
             }
-            if (declarator.childs[1].nonterminalID == CONDITION_TREE_NONTERMINAL_ID
-                || declarator.childs[1].childs[0].nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
+            Tree parameters = declarator.childByName("parameters");
+            if (parameters.isValid && (parameters.nonterminalID == CONDITION_TREE_NONTERMINAL_ID
+                || parameters.childs[0].nonterminalID == CONDITION_TREE_NONTERMINAL_ID))
             {
                 codeAfter.write("/+TODO: ParametersAndQualifiers ConditionTree+/");
             }
-            else
+            else if (parameters.isValid)
             {
-                assert(declarator.childs[1].nonterminalID == nonterminalIDFor!"ParametersAndQualifiers",
+                assert(parameters.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"),
                         locationStr(declarator.location));
-                assert(declarator.childs[1].childs[0].nonterminalID == nonterminalIDFor!"Parameters",
+                assert(parameters.childs[0].nonterminalID == nonterminalIDFor!"Parameters",
                         locationStr(declarator.location));
-                Tree paramsTree = declarator.childs[1].childs[0].childs[1];
+                Tree paramsTree = parameters.childs[0].childs[1];
                 assert(!paramsTree.isValid
                         || paramsTree.nodeType == NodeType.array);
-                skipToken(codeBefore, data, declarator.childs[1].childs[0].childs[0]); // (
+                skipToken(codeBefore, data, parameters.childs[0].childs[0]); // (
 
                 FunctionDeclaratorInfo functionDeclaratorInfo;
                 findParams(declarator, condition, functionDeclaratorInfo, data, currentScope);
@@ -536,7 +541,7 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                     }
                     codeMiddle.write("...");
                 }
-                skipToken(codeMiddle, data, declarator.childs[1].childs[0].childs[2]); // )
+                skipToken(codeMiddle, data, parameters.childs[0].childs[2]); // )
 
                 if (functionDeclaratorInfo.attributeTrees.length)
                 {
@@ -670,7 +675,7 @@ string translateBuiltin(string name, bool builtinCppTypes)
     }
 }
 
-void translateBuiltinAll(ref ConditionMap!string codeType, ref ConditionMap!string realId, immutable(Formula)* condition, bool isConst, DWriterData data)
+void translateBuiltinAll(ref ConditionMap!string codeType, ref ConditionMap!string realId, immutable(Formula)* condition, bool isConst, DWriterData data, LocationX start)
 {
     auto semantic = data.semantic;
     auto logicSystem = semantic.logicSystem;
@@ -681,7 +686,7 @@ void translateBuiltinAll(ref ConditionMap!string codeType, ref ConditionMap!stri
             string name = e.data;
             if (name.startsWith("$builtin_"))
             {
-                name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_")), data.options.builtinCppTypes);
+                name = translateBuiltin(normalizeBuiltinTypeParts(name[9 .. $].split("$builtin_"), start), data.options.builtinCppTypes);
             }
             if (isConst && name == "auto")
                 name = ""; // const is enough
@@ -733,7 +738,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         CodeWriter code;
         code.write("UnknownType!q{");
         ConditionMap!string realId;
-        translateBuiltinAll(codeType, realId, condition, false, data);
+        translateBuiltinAll(codeType, realId, condition, false, data, currentLoc.start);
         if (realId.entries.length)
             code.write(idMapToCode(realId, condition, data));
 
@@ -1009,7 +1014,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             realId.add(condition, translation, semantic.logicSystem);
         else
             realId.add(condition, type.name, semantic.logicSystem);
-        translateBuiltinAll(codeType, realId, condition, isConst, data);
+        translateBuiltinAll(codeType, realId, condition, isConst, data, currentLoc.start);
         realId.removeFalseEntries();
 
         if (realId.entries.length == 0)

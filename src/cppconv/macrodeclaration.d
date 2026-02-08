@@ -647,7 +647,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
             }
 
             ConditionMap!string realId;
-            translateBuiltinAll(codeType, realId, instanceCondition, false, data);
+            translateBuiltinAll(codeType, realId, instanceCondition, false, data, usedTrees[0].start);
             realId.removeFalseEntries();
             code.write(idMapToCode(realId, instanceCondition, data));
             code.write(codeAfterDeclSeq.data);

@@ -66,7 +66,7 @@ NestedNameSpecifierHead
 
 // Section expr.prim.lambda
 LambdaExpression
-    = LambdaIntroducer LambdaDeclarator? CompoundStatement
+    = declarators:LambdaDeclarator LambdaBody
     ;
 LambdaIntroducer
     = "[" LambdaCapture? "]"
@@ -98,7 +98,16 @@ InitCapture
     | "&" Identifier Initializer
     ;
 LambdaDeclarator
-    = Parameters "mutable"? ExceptionSpecification? AttributeSpecifierSeq TrailingReturnType?
+    = LambdaIntroducer parameters:LambdaParametersAndQualifiers?
+    ;
+LambdaParametersAndQualifiers
+    = Parameters "mutable"? qualifiersSeq:LambdaQualifiersSeq TrailingReturnType?
+    ;
+LambdaQualifiersSeq @array
+    = ExceptionSpecification? AttributeSpecifierSeq
+    ;
+LambdaBody
+    = CompoundStatement
     ;
 
 // Section expr.prim.fold
@@ -968,7 +977,7 @@ ArrayDeclarator
     = innerDeclarator:NoptrDeclarator "[" ConstantExpression? AttributeSpecifierSeq "]" AttributeSpecifierSeq
     ;
 ParametersAndQualifiers
-    = Parameters QualifiersSeq
+    = Parameters qualifiersSeq:QualifiersSeq
     ;
 Parameters
     = "(" ParameterDeclarationClause ")"

@@ -372,7 +372,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         {
             runSemantic(semantic, c, tree, condition);
         }
-    }, (MatchNonterminals!("ParametersAndQualifiers")) {
+    }, (MatchNonterminals!("ParametersAndQualifiers", "LambdaParametersAndQualifiers")) {
         SemanticRunInfo semanticRun = semantic;
         Scope parameterScope;
         if (tree !in semantic.currentScope.childScopeByTree)
@@ -392,7 +392,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             IteratePPVersions ppVersion = IteratePPVersions(combination, semantic.logicSystem,
                 condition, semantic.instanceCondition, semantic.mergedTreeDatas);
 
-            if (!realParent.isValid || realParent.name != "FunctionDeclarator")
+            if (!realParent.isValid || !realParent.nonterminalID.nonterminalIDAmong!("FunctionDeclarator", "FunctionDeclaratorTrailing"))
                 continue;
             Tree declarator = realParent;
             while (declarator.isValid && declarator.hasChildWithName("innerDeclarator"))
@@ -473,7 +473,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             MatchRealParentNonterminals!("SimpleDeclaration*",
             "MemberDeclaration*", "FunctionDefinitionHead",
             "ParameterDeclaration", "ParameterDeclarationAbstract", "Condition",
-            "ForRangeDeclaration", "ExceptionDeclaration")) {
+            "ForRangeDeclaration", "ExceptionDeclaration", "LambdaExpression")) {
         foreach (k, ref c; tree.childs)
         {
             if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"InitDeclarator" && k == 1)
@@ -722,10 +722,14 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
             }
 
-            if (realParent.nonterminalID == nonterminalIDFor!"FunctionDefinitionHead")
+            if (realParent.nonterminalID.nonterminalIDAmong!("FunctionDefinitionHead", "LambdaExpression"))
             {
-                Tree functionDefinition = getRealParent(realParent, semantic);
-                assert(functionDefinition.name.startsWith("FunctionDefinition"));
+                Tree functionDefinition = realParent;
+                if (realParent.nonterminalID.nonterminalIDAmong!("FunctionDefinitionHead"))
+                {
+                    functionDefinition = getRealParent(realParent, semantic);
+                    assert(functionDefinition.name.startsWith("FunctionDefinition"));
+                }
                 Scope functionScope;
                 if (functionDefinition !in targetScope.childScopeByTree)
                 {
@@ -1230,7 +1234,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 runSemantic(semantic, c, tree, condition);
             }
         }
-    }, (MatchNonterminals!("FunctionBody")) {
+    }, (MatchNonterminals!("FunctionBody", "LambdaBody")) {
         /*foreach (i;0..indent)
             write(" ");
         writeln("init func scope ", cast(void*)tree, " ", cast(void*)semantic.scopeByTree[tree]);*/

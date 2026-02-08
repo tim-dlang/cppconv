@@ -418,7 +418,7 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
         if (tree.content == "...")
             info.isVariadic = true;
     }
-    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers")
+    else if (tree.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
     {
         iteratePPVersions!collectParameters(tree.childs[0], ppVersion, semantic, info, hasDefault);
         iteratePPVersions!collectParameters(tree.childs[1], ppVersion, semantic, info, hasDefault);
@@ -505,7 +505,7 @@ void analyzeDeclarator(Tree tree, ref IteratePPVersions ppVersion,
         iteratePPVersions!analyzeDeclarator(tree.childs[ppVersion.combination.next(cast(uint)$)],
                 ppVersion, semantic, info, type);
     }
-    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers")
+    else if (tree.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
     {
         info.anyIsFunction = true;
         info.parameterScope = semantic.currentScope.childScopeByTree[tree];
@@ -642,7 +642,7 @@ void analyzeDeclarator(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"NameIdentifier")
     {
         assert(info.name.length == 0, text(locationStr(tree.location), " ",
-                info.name, " ", tree.childs[0].name));
+                info.name, " ", tree.childs[0].content));
         assert(tree.childs.length == 1);
         assert(tree.childs[0].nodeType == NodeType.token);
         if (info.inNestedNameSpecifier)
@@ -1079,7 +1079,7 @@ void analyzeSimpleDeclaration(Tree tree, immutable(Formula)* condition,
     {
         assert(false);
     }
-    else if (tree.name.endsWith("FunctionBody"))
+    else if (tree.nonterminalID.nonterminalIDAmong!("FunctionBody", "LambdaBody"))
     {
         if (ppVersion.combination.prefixDone)
             return;
@@ -1286,6 +1286,7 @@ void checkValidParam(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.name.startsWith("NoptrDeclarator") || tree.name.startsWith("PtrDeclarator")
             || tree.name.startsWith("FunctionDeclarator")
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParametersAndQualifiers"
+            || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"LambdaParametersAndQualifiers"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"Parameters"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclaration"
             || tree.nonterminalID == ParserWrapper.nonterminalIDFor!"ParameterDeclarationAbstract"
@@ -1413,7 +1414,7 @@ Tree getRealParent(Tree tree, Semantic semantic, size_t* indexInParent = null)
     return realParent;
 }
 
-string normalizeBuiltinTypeParts(string[] parts)
+string normalizeBuiltinTypeParts(string[] parts, LocationX start)
 {
     bool isUnsigned;
     bool isSigned;
@@ -1424,13 +1425,13 @@ string normalizeBuiltinTypeParts(string[] parts)
         if (part == "unsigned")
         {
             isUnsigned = true;
-            assert(!isSigned);
+            assert(!isSigned, locationStr(start));
             //isSigned = false;
         }
         else if (part == "signed")
         {
             //isUnsigned = false;
-            assert(!isUnsigned);
+            assert(!isUnsigned, locationStr(start));
             isSigned = true;
         }
         else if (part == "short")
@@ -1451,7 +1452,7 @@ string normalizeBuiltinTypeParts(string[] parts)
                 part = part[0 .. $ - 2];
             if (baseType.length && baseType == part)
                 continue;
-            assert(baseType.length == 0, text(parts));
+            assert(baseType.length == 0, text(parts, " ", locationStr(start)));
             baseType = part;
         }
     }
@@ -1461,7 +1462,7 @@ string normalizeBuiltinTypeParts(string[] parts)
         t ~= "unsigned_";
     if (isSigned && baseType == "char")
         t ~= "signed_";
-    assert(numShort == 0 || numLong == 0);
+    assert(numShort == 0 || numLong == 0, locationStr(start));
     foreach (k; 0 .. numShort)
         t ~= "short_";
     foreach (k; 0 .. numLong)
@@ -1469,7 +1470,7 @@ string normalizeBuiltinTypeParts(string[] parts)
     if (baseType.length == 0 || baseType == "int")
     {
         if (baseType.length == 0)
-            assert(numShort > 0 || numLong > 0 || isSigned || isUnsigned);
+            assert(numShort > 0 || numLong > 0 || isSigned || isUnsigned, locationStr(start));
         if (t.length == 0)
             t = "int";
         else
@@ -1477,9 +1478,9 @@ string normalizeBuiltinTypeParts(string[] parts)
     }
     else
     {
-        assert(numShort == 0);
+        assert(numShort == 0, locationStr(start));
         assert(numLong == 0 || baseType == "double",
-                text(parts));
+                text(parts, " ", locationStr(start)));
         t ~= baseType;
     }
     return t;
@@ -1495,7 +1496,7 @@ QualType getDeclSpecType(Semantic semantic, ref SimpleDeclarationInfo info)
     }
     else if (info.builtinTypeParts.length)
     {
-        string t = normalizeBuiltinTypeParts(info.builtinTypeParts);
+        string t = normalizeBuiltinTypeParts(info.builtinTypeParts, info.start);
         type = QualType(semantic.getBuiltinType(t), info.qualifiers);
     }
     return type;
@@ -2472,7 +2473,7 @@ string fullyQualifiedName(Semantic semantic, Declaration d)
                 app.put(name2 ~ "::");
             else if(s.tree.nonterminalID == nonterminalIDFor!"TemplateDeclaration")
                 app.put("template param::");
-            else if(s.tree.nonterminalID == nonterminalIDFor!"ParametersAndQualifiers")
+            else if(s.tree.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
                 app.put("function param::");
         }
         else if (s.parentScope is null)
