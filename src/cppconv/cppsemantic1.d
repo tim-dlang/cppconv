@@ -820,6 +820,79 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         d.type2 = combineTypes(d.type2, declaredType, oldCondition, condition, semantic);
         d.declaredType = combineTypes(d.declaredType, declaredType,
             oldCondition, condition, semantic);
+    }, (MatchProductions!((p, nonterminalName,
+            symbolNames) => nonterminalName == "UsingDeclarator")) {
+        // "typename"? NestedNameSpecifier UnqualifiedId
+
+        runSemantic(semantic, tree.childs[1], tree, condition);
+        semantic.extraInfo(tree.childs[2]).contextType = semantic.extraInfo(tree.childs[1]).type;
+        runSemantic(semantic, tree.childs[2], tree, condition);
+        updateType(extraInfoHere.type, semantic.extraInfo(tree.childs[2]).type);
+
+        immutable(Formula)* conditionIsType = semantic.logicSystem.false_;
+        immutable(Formula)* conditionIsNonType = semantic.logicSystem.false_;
+        foreach (e; semantic.extraInfo(tree.childs[2]).referenced.entries)
+        {
+            foreach (e2; e.data.entries)
+            {
+                if (e2.data.type == DeclarationType.type)
+                    conditionIsType = semantic.logicSystem.or(conditionIsType, semantic.logicSystem.and(e.condition, e2.condition));
+                else
+                    conditionIsNonType = semantic.logicSystem.or(conditionIsNonType, semantic.logicSystem.and(e.condition, e2.condition));
+            }
+        }
+
+        foreach (combination; iterateCombinations())
+        {
+            IteratePPVersions ppVersion = IteratePPVersions(combination, semantic.logicSystem,
+                condition, semantic.instanceCondition, semantic.mergedTreeDatas);
+            auto nameTree = ppVersion.chooseTree(tree.childs[2]);
+            auto t = chooseType(semantic.extraInfo(tree.childs[2]).type, ppVersion, true);
+            if (!nameTree.nonterminalID.nonterminalIDAmong!("NameIdentifier"))
+                continue;
+
+            Scope targetScope = semantic.currentScope;
+            Scope[] templateScopes;
+            while (targetScope.tree.isValid
+                && targetScope.tree.nonterminalID == ParserWrapper.nonterminalIDFor!"TemplateDeclaration"
+                && !targetScope.currentlyInsideParams)
+            {
+                templateScopes ~= targetScope;
+                targetScope = targetScope.parentScope;
+            }
+
+            Tree declarationTree = realParent;
+            assert(declarationTree.isValid);
+            assert(declarationTree.nonterminalID == nonterminalIDFor!"UsingDeclaration");
+
+            DeclarationKey dk;
+
+            if (isInCorrectVersion(ppVersion, conditionIsType))
+                dk.type = DeclarationType.type;
+            else if (isInCorrectVersion(ppVersion, conditionIsNonType))
+                dk.type = DeclarationType.varOrFunc;
+            else
+                continue;
+
+            dk.tree = declarationTree;
+            dk.declaratorTree = tree;
+            dk.name = nameTree.childs[0].content;
+            dk.scope_ = targetScope;
+
+            immutable(Formula)* oldCondition = semantic.logicSystem.false_;
+            Declaration d = addOrUpdateDeclaration(dk, declarationTree, ppVersion.condition, true,
+                targetScope, semantic, true, &oldCondition);
+
+            d.location = nameTree.location;
+
+            QualType nextType = extraInfoHere.type;
+            TypedefType typedefType = semantic.getTypedefType(d.declarationSet, [], nextType);
+            QualType declaredType = QualType(typedefType, Qualifiers.none);
+
+            d.type2 = combineTypes(d.type2, declaredType, oldCondition, condition, semantic);
+            d.declaredType = combineTypes(d.declaredType, declaredType,
+                oldCondition, condition, semantic);
+        }
     }, (MatchNonterminals!("ClassSpecifier", "ElaboratedTypeSpecifier",
             "EnumSpecifier", "TypeParameter")) {
         bool oldCollectingDelayedSemantics = semantic.collectingDelayedSemantics;
@@ -1329,7 +1402,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
         Tree parent2 = realParent;
         size_t indexInParent2 = indexInRealParent;
         while (parent2.isValid && ((parent2.nonterminalID == nonterminalIDFor!"SimpleTemplateId" && indexInParent2 == 0)
-            || parent2.nonterminalID.nonterminalIDAmong!("SimpleTemplateId", "UnqualifiedId", "QualifiedId", "SimpleTypeSpecifierNoKeyword")
+            || parent2.nonterminalID.nonterminalIDAmong!("SimpleTemplateId", "UnqualifiedId", "QualifiedId", "SimpleTypeSpecifierNoKeyword", "UsingDeclarator")
             || (parent2.nonterminalID == nonterminalIDFor!"PostfixExpression"
                 && parent2.childs[1].nodeType == NodeType.token
                 && parent2.childs[1].content.among(".", "->")

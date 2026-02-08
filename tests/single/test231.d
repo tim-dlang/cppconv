@@ -14,6 +14,6 @@ extern(C++, class) struct B
     public A base0;
     alias base0 this;
 public:
-	/+ using A::f; +/
+	alias f = A.f;
 }
 

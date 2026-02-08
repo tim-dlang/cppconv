@@ -3521,7 +3521,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     else if (tree.name.startsWith("SimpleDeclaration") || tree.name.startsWith("MemberDeclaration")
             || tree.nonterminalID.nonterminalIDAmong!("FunctionDefinitionMember",
                 "FunctionDefinitionGlobal", "MemberDeclaration" /*, "ParameterDeclaration", "ParameterDeclarationAbstract"*/ ,
-                "Condition", "AliasDeclaration",
+                "Condition", "AliasDeclaration", "UsingDeclaration",
                 "ForRangeDeclaration", "ExceptionDeclaration", "LambdaExpression"))
     {
         bool hasDecls;
@@ -4601,9 +4601,6 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         {
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
-    }
-    else if (tree.nonterminalID == nonterminalIDFor!"UsingDeclaration")
-    {
     }
     else if (tree.nonterminalID == nonterminalIDFor!"EnumKey")
     {
@@ -6434,6 +6431,16 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         parseTreeToDCode(code, data, d.tree.childs[$ - 2], condition2, currentScope);
         parseTreeToDCode(code, data, d.tree.childs[$ - 1], condition2, currentScope); // ;
     }
+    else if ((d.type == DeclarationType.varOrFunc || d.type == DeclarationType.type) && d.tree.nonterminalID.nonterminalIDAmong!("UsingDeclaration"))
+    {
+        string usedName = chooseDeclarationName(d, data);
+        skipToken(code, data, d.tree.childs[0]);
+        code.write("alias ");
+        code.write(usedName);
+        code.write(" =");
+        parseTreeToDCode(code, data, d.declaratorTree, condition2, currentScope);
+        code.write(";");
+    }
     else if (d.bitFieldInfo.entries.length)
     {
         if (data.sourceTokenManager.tokensLeft.data.length)
@@ -7845,8 +7852,12 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
         }
     }
 
+    Scope realScopeNoNamespace = realScope;
+    while (realScopeNoNamespace !is null && realScopeNoNamespace.parentScope !is null && !realScopeNoNamespace.tree.isValid) // Skip over namespaces
+        realScopeNoNamespace = realScopeNoNamespace.parentScope;
+
     bool hasConflictingName = false;
-    if (realScope !is null && realScope.parentScope is null && d.type == DeclarationType.type)
+    if (realScopeNoNamespace !is null && realScopeNoNamespace.parentScope is null)
     {
         for (Scope s = currentScope; s !is null && s.parentScope !is null; s = s.parentScope)
         {
@@ -7856,7 +7867,7 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
                 foreach (e2; (*x).entries)
                 {
                     if (e2.data.type != DeclarationType.forwardScope && e2.data !is d
-                            && (s !is realScope || e2.data.type != DeclarationType.type))
+                            && s !is realScope)
                     {
                         hasConflictingName = true;
                     }
@@ -7915,7 +7926,7 @@ string declarationNameToCode(Declaration d, DWriterData data, Scope currentScope
     }
 
     Scope extraScope = realScope;
-    while (extraScope !is null && !extraScope.tree.isValid) // Skip over namespaces
+    while (extraScope !is null && extraScope.parentScope !is null && !extraScope.tree.isValid) // Skip over namespaces
         extraScope = extraScope.parentScope;
     if (extraScope !is null && !isParentScopeOf(extraScope, currentScope, true))
     {
@@ -8284,8 +8295,6 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
             MacroDeclarationInstance currentMacroInstance, bool outsideFunction, bool outsideMixin)
     {
         if (!tree.isValid)
-            return;
-        if (tree.nameOrContent == "UsingDeclaration")
             return;
         if (tree.nameOrContent == "FunctionBody")
             outsideFunction = false;
