@@ -8096,7 +8096,7 @@ bool isDeclarationBlacklistedImpl(DWriterData data, Declaration d)
     if (type.kind == TypeKind.function_)
     {
         auto functionType = cast(FunctionType) type.type;
-        if (functionType.isRValueRef)
+        if (functionType.functionQualifiers & FunctionQualifiers.rValueRef)
             return true;
         foreach (p; functionType.parameters)
         {

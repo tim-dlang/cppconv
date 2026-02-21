@@ -1516,7 +1516,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                     {
                         if (parameterExprs.length < functionType.neededParameters)
                             return false;
-                        if (!functionType.isVariadic
+                        if (!(functionType.functionQualifiers & FunctionQualifiers.variadic)
                             && parameterExprs.length > functionType.parameters.length)
                             return false;
                         int typeMatch = 1000;
@@ -1631,7 +1631,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 if (hasParameterExprs && !conditionFunction.isFalse)
                 {
                     QualType type2 = QualType(semantic.getFunctionType(functionResultType,
-                        functionParameters, false, false, false, false, functionParameters.length));
+                        functionParameters, FunctionQualifiers.none, functionParameters.length));
                     if (isInCorrectVersion(ppVersion, conditionNonType.negated))
                         type2.qualifiers |= Qualifiers.noThis;
                     combinedType = combineTypes(combinedType, type2, null,

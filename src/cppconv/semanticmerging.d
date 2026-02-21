@@ -275,6 +275,8 @@ struct MergeFilesData2
                     code ~= "type2." ~ name ~ ", ";
                 else static if (is(T2 == size_t))
                     code ~= "type2." ~ name ~ ", ";
+                else static if (is(T2 == FunctionQualifiers))
+                    code ~= "type2." ~ name ~ ", ";
                 else static if (is(T2 == immutable(Formula*)[]))
                     code ~= "/*rebuiltFormulas*/(type2." ~ name ~ "), ";
                 else static if (is(T2 == Scope))

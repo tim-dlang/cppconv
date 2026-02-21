@@ -389,10 +389,7 @@ struct ParameterInfo
 {
     QualType[] parameters;
     Tree[] parameterTrees;
-    bool isVariadic;
-    bool isConst;
-    bool isRef;
-    bool isRValueRef;
+    FunctionQualifiers functionQualifiers;
     size_t neededParameters;
 }
 
@@ -416,7 +413,7 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.nodeType == NodeType.token)
     {
         if (tree.content == "...")
-            info.isVariadic = true;
+            info.functionQualifiers |= FunctionQualifiers.variadic;
     }
     else if (tree.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
     {
@@ -444,14 +441,14 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
     else if (tree.name.endsWith("CvQualifier"))
     {
         if (tree.childs[0].content == "const")
-            info.isConst = true;
+            info.functionQualifiers |= FunctionQualifiers.const_;
     }
     else if (tree.name.endsWith("RefQualifier"))
     {
         if (tree.childs[0].content == "&&")
-            info.isRValueRef = true;
+            info.functionQualifiers |= FunctionQualifiers.rValueRef;
         if (tree.childs[0].content == "&")
-            info.isRef = true;
+            info.functionQualifiers |= FunctionQualifiers.ref_;
     }
 }
 
@@ -595,9 +592,8 @@ void analyzeDeclarator(Tree tree, ref IteratePPVersions ppVersion,
             }
 
             FunctionType functionType = semantic.getFunctionType(resultType,
-                    parameterInfo.parameters, parameterInfo.isVariadic,
-                    parameterInfo.isConst, parameterInfo.isRef,
-                    parameterInfo.isRValueRef, parameterInfo.neededParameters);
+                    parameterInfo.parameters, parameterInfo.functionQualifiers,
+                    parameterInfo.neededParameters);
             QualType type2 = QualType(functionType, Qualifiers.none);
             if (combinedType.type is null)
                 combinedType = type2;

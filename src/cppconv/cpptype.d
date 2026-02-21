@@ -197,14 +197,20 @@ class TypedefType : RecordType
     }
 }
 
+enum FunctionQualifiers
+{
+    none = 0,
+    variadic = 1,
+    const_ = 2,
+    ref_ = 4,
+    rValueRef = 8,
+}
+
 class FunctionType : Type
 {
     QualType resultType;
     QualType[] parameters;
-    bool isVariadic;
-    bool isConst;
-    bool isRef;
-    bool isRValueRef;
+    FunctionQualifiers functionQualifiers;
     size_t neededParameters;
     this()
     {
@@ -386,7 +392,7 @@ string typeToString(const QualType type)
     if (type.kind == TypeKind.function_)
     {
         FunctionType ftype = cast(FunctionType) type.type;
-        if (ftype.isVariadic)
+        if (ftype.functionQualifiers & FunctionQualifiers.variadic)
             line ~= ", ...";
     }
     if (type.kind == TypeKind.array)
@@ -398,11 +404,11 @@ string typeToString(const QualType type)
     if (type.kind == TypeKind.function_)
     {
         FunctionType ftype = cast(FunctionType) type.type;
-        if (ftype.isConst)
+        if (ftype.functionQualifiers & FunctionQualifiers.const_)
             line ~= " const";
-        if (ftype.isRef)
+        if (ftype.functionQualifiers & FunctionQualifiers.ref_)
             line ~= " &";
-        if (ftype.isRValueRef)
+        if (ftype.functionQualifiers & FunctionQualifiers.rValueRef)
             line ~= " &&";
     }
     return line;
@@ -687,8 +693,8 @@ QualType filterType(QualType type, immutable(Formula)* condition,
     {
         auto functionType = cast(FunctionType) type.type;
         return QualType(semantic.getFunctionType(filterType(functionType.resultType, condition, semantic, flags),
-                filterChilds(functionType.parameters), functionType.isVariadic, functionType.isConst,
-                functionType.isRef, functionType.isRValueRef, functionType.parameters.length),
+                filterChilds(functionType.parameters), functionType.functionQualifiers,
+                functionType.parameters.length),
                 type.qualifiers);
     }
 
@@ -1135,7 +1141,7 @@ bool needsCastPointee(QualType toType, QualType fromType,
         auto fromType2 = cast(FunctionType) fromType.type;
         auto toType2 = cast(FunctionType) toType.type;
         return fromType2.resultType !is toType2.resultType || fromType2.parameters != toType2.parameters
-            || fromType2.isConst != toType2.isConst || fromType2.isVariadic != toType2.isVariadic;
+            || fromType2.functionQualifiers != toType2.functionQualifiers;
     }
 
     if (fromType.kind == TypeKind.record && toType.kind == TypeKind.record)
@@ -1197,7 +1203,7 @@ void getImplicitConstructTypes(QualType t, ref Appender!(QualType[]) types,
                     if (ftype.kind == TypeKind.function_)
                     {
                         auto functionType = cast(FunctionType) ftype.type;
-                        if (functionType.parameters.length == 1 && !functionType.isVariadic)
+                        if (functionType.parameters.length == 1 && !(functionType.functionQualifiers & FunctionQualifiers.variadic))
                         {
                             QualType ptype = chooseType(functionType.parameters[0], ppVersion, true);
                             if (ptype.kind == TypeKind.reference)
@@ -1374,15 +1380,12 @@ QualType createCommonType(QualType t1, QualType t2,
             parameters[i] = createCommonType(functionType1.parameters[i],
                     functionType2.parameters[i], ppVersion, semantic, isResult);
 
-        bool isVariadic = functionType1.isVariadic || functionType2.isVariadic;
-        bool isConst = functionType1.isConst || functionType2.isConst;
-        bool isRef = functionType1.isRef || functionType2.isRef;
-        bool isRValueRef = functionType1.isRValueRef || functionType2.isRValueRef;
+        FunctionQualifiers functionQualifiers = functionType1.functionQualifiers | functionType2.functionQualifiers;
         size_t neededParameters = min(functionType1.neededParameters,
                 functionType2.neededParameters);
 
-        auto r = semantic.getFunctionType(resultType, parameters, isVariadic,
-                isConst, isRef, isRValueRef, neededParameters);
+        auto r = semantic.getFunctionType(resultType, parameters, functionQualifiers,
+                neededParameters);
         return QualType(r, combineQualifiers(t1x.qualifiers, t2x.qualifiers));
     }
 

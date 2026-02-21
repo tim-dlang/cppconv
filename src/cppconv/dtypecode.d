@@ -995,7 +995,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             }
         }
         code.write(")");
-        if (ftype.isConst)
+        if (ftype.functionQualifiers & FunctionQualifiers.const_)
             code.write(" const");
         if (mangling.among("C++", "C"))
             code.write(")");
