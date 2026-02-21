@@ -237,7 +237,7 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
                 code2.write("mixin(");
                 macroSuffix = ")" ~ macroSuffix;
             }
-            parseTreeToCodeTerminal!Tree(code2, name);
+            parseTreeToCodeTerminal(code2, name);
 
             assert(instance.locationContextInfo.locationContext.name == "^");
             assert(instance.locationContextInfo.locationContext.prev.name
@@ -245,7 +245,7 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
             bool allowComments = instance.locationContextInfo.locationContext.prev.prev.prev.name == ""
                 || instance.locationContextInfo.locationContext.prev.prev.prev is data.sourceTokenManager.tokensContext;
 
-            parseTreeToCodeTerminal!Tree(code2, macroSuffix);
+            parseTreeToCodeTerminal(code2, macroSuffix);
             if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
                 data.sourceTokenManager.collectTokens(tree.location.end);
         }

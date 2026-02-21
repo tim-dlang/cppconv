@@ -247,7 +247,7 @@ string getDefaultMangling(DWriterData data, DFilename filename)
     return "D";
 }
 
-void parseTreeToCodeTerminal(T)(ref CodeWriter code, string name)
+void parseTreeToCodeTerminal(ref CodeWriter code, string name)
 {
     if (name.startsWith("@#"))
     {
@@ -495,7 +495,7 @@ struct ConditionalCodeWrapper
         if (!alwaysUseMixin && conditionMapPrefix.entries.length == 1
                 && conditionMapSuffix.entries.length == 1)
         {
-            parseTreeToCodeTerminal!Tree(code, conditionMapPrefix.entries[0].data);
+            parseTreeToCodeTerminal(code, conditionMapPrefix.entries[0].data);
         }
         else
         {
@@ -549,7 +549,7 @@ struct ConditionalCodeWrapper
         if (!alwaysUseMixin && conditionMapPrefix.entries.length == 1
                 && conditionMapSuffix.entries.length == 1)
         {
-            parseTreeToCodeTerminal!Tree(code, conditionMapSuffix.entries[0].data);
+            parseTreeToCodeTerminal(code, conditionMapSuffix.entries[0].data);
         }
         else
         {
@@ -1591,7 +1591,7 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
             writeComments(code, data, tree.start);
             data.sourceTokenManager.collectTokens(tree.end);
         }
-        parseTreeToCodeTerminal!T(code, data.options.macroReplacements[commonMacro]);
+        parseTreeToCodeTerminal(code, data.options.macroReplacements[commonMacro]);
         return;
     }
 
@@ -2707,7 +2707,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 code.write("mixin(");
                 macroSuffix = ")" ~ macroSuffix;
             }
-            parseTreeToCodeTerminal!T(code, name);
+            parseTreeToCodeTerminal(code, name);
 
             assert(instance.locationContextInfo.locationContext.name == "^");
             assert(instance.locationContextInfo.locationContext.prev.name
@@ -2754,14 +2754,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             if (instance.macroDeclaration.type == DeclarationType.macro_
                     && instance.macroDeclaration.definition.nonterminalID == preprocNonterminalIDFor!"FuncDefine")
             {
-                parseTreeToCodeTerminal!T(code, (instance.macroTranslation.among(MacroTranslation.mixin_,
+                parseTreeToCodeTerminal(code, (instance.macroTranslation.among(MacroTranslation.mixin_,
                         MacroTranslation.builtin)) ? "(" : "!(");
                 bool first = true;
 
                 foreach (paramName; instance.paramNames)
                 {
                     if (!first)
-                        parseTreeToCodeTerminal!T(code, ",");
+                        parseTreeToCodeTerminal(code, ",");
                     first = false;
 
                     if (data.options.addDeclComments)
@@ -2862,14 +2862,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                         code.write(codeSuffix);
                     }
                 }
-                parseTreeToCodeTerminal!T(code, ")");
+                parseTreeToCodeTerminal(code, ")");
             }
-            parseTreeToCodeTerminal!T(code, macroSuffix);
+            parseTreeToCodeTerminal(code, macroSuffix);
             if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
                 data.sourceTokenManager.collectTokens(tree.location.end);
             if (instance.macroTranslation == MacroTranslation.mixin_
                     && (tree.name.endsWith("Statement") || (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))
-                parseTreeToCodeTerminal!T(code, ";");
+                parseTreeToCodeTerminal(code, ";");
             else
                 data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
         }
@@ -2885,7 +2885,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             writeComments(code, data, locationBeforeUsedMacro(tree, data, true));
             data.sourceTokenManager.collectTokens(tree.end);
         }
-        parseTreeToCodeTerminal!T(code, macroReplacement);
+        parseTreeToCodeTerminal(code, macroReplacement);
         return;
     }
 
@@ -2903,7 +2903,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         string name = tree.content.strip;
         if (name == "::")
             name = ".";
-        parseTreeToCodeTerminal!T(code, name);
+        parseTreeToCodeTerminal(code, name);
 
         if (data.sourceTokenManager.tokensLeft.data.length > 0)
             data.sourceTokenManager.collectTokens(tree.end);
@@ -2958,8 +2958,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                     "IfStatement", "ElseIfStatement", "ElseStatement", "SwitchStatement",
                     "DoWhileStatement"))
         {
-            parseTreeToCodeTerminal!T(code, "{");
-            parseTreeToCodeTerminal!T(code, "}");
+            parseTreeToCodeTerminal(code, "{");
+            parseTreeToCodeTerminal(code, "}");
             skipToken(code, data, tree.childs[0]);
         }
         else
@@ -3104,8 +3104,8 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         if (semantic.logicSystem.and(conditionIsStatementEndUnreachable.negated, condition).isFalse)
         {
-            parseTreeToCodeTerminal!T(code, "assert(false)");
-            parseTreeToCodeTerminal!T(code, ";");
+            parseTreeToCodeTerminal(code, "assert(false)");
+            parseTreeToCodeTerminal(code, ";");
             code.writeln();
         }
         else if (!semantic.logicSystem.and(conditionIsStatementEndUnreachable, condition).isFalse)
@@ -3285,7 +3285,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             parseTreeToDCode(code, data, c, condition, currentScope);
         }
 
-        parseTreeToCodeTerminal!T(code, ";");
+        parseTreeToCodeTerminal(code, ";");
         //code.writeln();
     }
     else if (auto match = tree.matchTreePattern!q{
@@ -3399,7 +3399,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         if (!tree.childs[1].content.among("case", "default"))
         {
             parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, replaceKeywords(tree.childs[1].content));
+            parseTreeToCodeTerminal(code, replaceKeywords(tree.childs[1].content));
             skipToken(code, data, tree.childs[1]);
             foreach (c; tree.childs[2 .. $])
             {
@@ -3573,7 +3573,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     }
     else if (tree.nonterminalID == nonterminalIDFor!"CastExpression")
     {
-        parseTreeToCodeTerminal!T(code, "cast");
+        parseTreeToCodeTerminal(code, "cast");
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
 
         string suffix;
@@ -3610,9 +3610,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 TypeKind.pointer, TypeKind.condition))
             code.write(")");
         if (tree.childs[0].content == "sizeof")
-            parseTreeToCodeTerminal!T(code, ".sizeof");
+            parseTreeToCodeTerminal(code, ".sizeof");
         else
-            parseTreeToCodeTerminal!T(code, ".alignof");
+            parseTreeToCodeTerminal(code, ".alignof");
     }
     else if (auto match = tree.matchTreePattern!q{
             UnaryExpression("sizeof", *)
@@ -3695,10 +3695,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         skipToken(code, data, tree.childs[3]);
 
-        parseTreeToCodeTerminal!T(code, ".");
+        parseTreeToCodeTerminal(code, ".");
         skipToken(code, data, tree.childs[4]);
-        parseTreeToCodeTerminal!T(code, tree.childs[4].content);
-        parseTreeToCodeTerminal!T(code, ".offsetof");
+        parseTreeToCodeTerminal(code, tree.childs[4].content);
+        parseTreeToCodeTerminal(code, ".offsetof");
         skipToken(code, data, tree.childs[5]);
     }
     else if (auto match = tree.matchTreePattern!q{
@@ -3720,7 +3720,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     else if (tree.nonterminalID == nonterminalIDFor!"UnaryExpression"
             && tree.childs[0].nameOrContent.startsWith("__builtin_va_"))
     {
-        parseTreeToCodeTerminal!T(code, tree.childs[0].content["__builtin_".length .. $]);
+        parseTreeToCodeTerminal(code, tree.childs[0].content["__builtin_".length .. $]);
         skipToken(code, data, tree.childs[0]);
 
         foreach (c; tree.childs[1 .. $])
@@ -3738,7 +3738,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             string t = tree.childs[0].content;
             while (t.length >= 2 && t.startsWith("0"))
                 t = t[1 .. $];
-            parseTreeToCodeTerminal!T(code, "octal!" ~ t.replace("l", "L"));
+            parseTreeToCodeTerminal(code, "octal!" ~ t.replace("l", "L"));
         }
         else
         {
@@ -3747,7 +3747,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 value = value[0 .. $ - 1];
             if (value.endsWith("i64"))
                 value = value[0 .. $ - 3] ~ "L";
-            parseTreeToCodeTerminal!T(code, value);
+            parseTreeToCodeTerminal(code, value);
         }
         skipToken(code, data, tree.childs[0]);
     }
@@ -3755,10 +3755,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     {
         string value = tree.childs[0].content;
         if (value.startsWith("L'"))
-            parseTreeToCodeTerminal!T(code, value[1 .. $]);
+            parseTreeToCodeTerminal(code, value[1 .. $]);
         else
         {
-            parseTreeToCodeTerminal!T(code, value);
+            parseTreeToCodeTerminal(code, value);
         }
         skipToken(code, data, tree.childs[0]);
     }
@@ -3777,15 +3777,15 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         if (value.length >= 4 && value[$ - 4] == '\\' && value[$ - 3] == 'x' && value[$ - 1] == '"')
             value = value[0 .. $ - 2] ~ "0" ~ value[$ - 2 .. $];
         if (value.startsWith("L\""))
-            parseTreeToCodeTerminal!T(code, "wchar_literal!" ~ value[1 .. $]);
+            parseTreeToCodeTerminal(code, "wchar_literal!" ~ value[1 .. $]);
         else if (value.startsWith("u8\""))
-            parseTreeToCodeTerminal!T(code, value[2 .. $]);
+            parseTreeToCodeTerminal(code, value[2 .. $]);
         else if (value.startsWith("u\""))
-            parseTreeToCodeTerminal!T(code, value[1 .. $] ~ "w");
+            parseTreeToCodeTerminal(code, value[1 .. $] ~ "w");
         else if (value.startsWith("U\""))
-            parseTreeToCodeTerminal!T(code, value[1 .. $] ~ "d");
+            parseTreeToCodeTerminal(code, value[1 .. $] ~ "d");
         else
-            parseTreeToCodeTerminal!T(code, value);
+            parseTreeToCodeTerminal(code, value);
         skipToken(code, data, tree.childs[0]);
         data.afterStringLiteral = true;
     }
@@ -4075,21 +4075,21 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         if (nonExpr.isValid && (nonExpr.nameOrContent != "IterationStatementHead"
                 || nonExpr.matchTreePattern!q{IterationStatementHead("while", ...)}))
         {
-            parseTreeToCodeTerminal!T(code, "()");
-            parseTreeToCodeTerminal!T(code, "{");
+            parseTreeToCodeTerminal(code, "()");
+            parseTreeToCodeTerminal(code, "{");
             parseTreeToDCode(code, data, tree.childs[0], condition, currentScope, TreeToCodeFlags.inStatementExpression);
-            parseTreeToCodeTerminal!T(code, ";");
+            parseTreeToCodeTerminal(code, ";");
             code.writeln();
             skipToken(code, data, tree.childs[1]);
-            parseTreeToCodeTerminal!T(code, "return");
+            parseTreeToCodeTerminal(code, "return");
             writeComments(code, data, tree.childs[2].start);
             if (code.data.length && !code.data[$ - 1].inCharSet!" \t")
                 code.write(" ");
             parseTreeToDCode(code, data, tree.childs[2], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, ";");
+            parseTreeToCodeTerminal(code, ";");
             code.writeln();
-            parseTreeToCodeTerminal!T(code, "}");
-            parseTreeToCodeTerminal!T(code, "()");
+            parseTreeToCodeTerminal(code, "}");
+            parseTreeToCodeTerminal(code, "()");
         }
         else
         {
@@ -4114,17 +4114,17 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                     && parent2.nonterminalID.nonterminalIDAmong!("RelationalExpression",
                     "EqualityExpression")))
         {
-            parseTreeToCodeTerminal!T(code, "()");
-            parseTreeToCodeTerminal!T(code, "{");
-            parseTreeToCodeTerminal!T(code, "return ");
+            parseTreeToCodeTerminal(code, "()");
+            parseTreeToCodeTerminal(code, "{");
+            parseTreeToCodeTerminal(code, "return ");
             foreach (c; tree.childs)
             {
                 parseTreeToDCode(code, data, c, condition, currentScope);
             }
-            parseTreeToCodeTerminal!T(code, ";");
+            parseTreeToCodeTerminal(code, ";");
             code.writeln();
-            parseTreeToCodeTerminal!T(code, "}");
-            parseTreeToCodeTerminal!T(code, "()");
+            parseTreeToCodeTerminal(code, "}");
+            parseTreeToCodeTerminal(code, "()");
         }
         else if (semantic.extraInfo2(tree).acessingBitField
                 && tree.childs[1].childs[0].content != "=")
@@ -4133,14 +4133,14 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             assert(accessor.nonterminalID == nonterminalIDFor!"PostfixExpression");
             assert(accessor.childs.length == 3 || accessor.childs.length == 4);
             parseTreeToDCode(code, data, accessor.childs[0], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, ".fallbackAssignExpression!(q{");
+            parseTreeToCodeTerminal(code, ".fallbackAssignExpression!(q{");
             skipToken(code, data, accessor.childs[1]);
             parseTreeToDCode(code, data, accessor.childs[$ - 1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "}, q{");
+            parseTreeToCodeTerminal(code, "}, q{");
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "})(");
+            parseTreeToCodeTerminal(code, "})(");
             parseTreeToDCode(code, data, tree.childs[2], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, ")");
+            parseTreeToCodeTerminal(code, ")");
         }
         else if (tree.childs[1].childs[0].content == "+=")
         {
@@ -4183,13 +4183,13 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             assert(accessor.nonterminalID == nonterminalIDFor!"PostfixExpression");
             assert(accessor.childs.length == 3 || accessor.childs.length == 4);
             parseTreeToDCode(code, data, accessor.childs[0], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, ".fallbackPostfixExpression!(q{");
+            parseTreeToCodeTerminal(code, ".fallbackPostfixExpression!(q{");
             skipToken(code, data, accessor.childs[1]);
             parseTreeToDCode(code, data, accessor.childs[$ - 1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "}, q{");
+            parseTreeToCodeTerminal(code, "}, q{");
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "})(");
-            parseTreeToCodeTerminal!T(code, ")");
+            parseTreeToCodeTerminal(code, "})(");
+            parseTreeToCodeTerminal(code, ")");
         }
         else
         {
@@ -4209,12 +4209,12 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             skipToken(code, data, tree.childs[0]);
             parseTreeToDCode(code, data, accessor.childs[0], condition, currentScope);
             skipToken(code, data, accessor.childs[1]);
-            parseTreeToCodeTerminal!T(code, ".fallbackUnaryExpression!(q{");
+            parseTreeToCodeTerminal(code, ".fallbackUnaryExpression!(q{");
             parseTreeToDCode(code, data, accessor.childs[$ - 1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "}, q{");
-            parseTreeToCodeTerminal!T(code, tree.childs[0].content);
-            parseTreeToCodeTerminal!T(code, "})(");
-            parseTreeToCodeTerminal!T(code, ")");
+            parseTreeToCodeTerminal(code, "}, q{");
+            parseTreeToCodeTerminal(code, tree.childs[0].content);
+            parseTreeToCodeTerminal(code, "})(");
+            parseTreeToCodeTerminal(code, ")");
         }
         else
         {
@@ -4445,7 +4445,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     {
         parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
         skipToken(code, data, tree.childs[1]);
-        parseTreeToCodeTerminal!T(code, replaceKeywords(tree.childs[1].content));
+        parseTreeToCodeTerminal(code, replaceKeywords(tree.childs[1].content));
     }
     else if (auto match = tree.matchTreePattern!q{
             PrimaryExpression("(", *, ")")
@@ -4466,10 +4466,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 && parent.childs[0].nameOrContent != "typeid" && parent.childs[0] is tree
                 && tree.childs[1].nonterminalID.nonterminalIDAmong!("PostfixExpression", "NameIdentifier"))
         {
-            parseTreeToCodeTerminal!T(code, "/*(*/");
+            parseTreeToCodeTerminal(code, "/*(*/");
             skipToken(code, data, tree.childs[0]);
             parseTreeToDCode(code, data, tree.childs[1], condition, currentScope);
-            parseTreeToCodeTerminal!T(code, "/*)*/");
+            parseTreeToCodeTerminal(code, "/*)*/");
             skipToken(code, data, tree.childs[2]);
         }
         else
@@ -4560,11 +4560,11 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         if (realId.entries.length == 0)
         {
-            parseTreeToCodeTerminal!T(code, replaceKeywords(tree.childs[0].content));
+            parseTreeToCodeTerminal(code, replaceKeywords(tree.childs[0].content));
         }
         else if (realId.entries.length == 1)
         {
-            parseTreeToCodeTerminal!T(code, realId.entries[0].data);
+            parseTreeToCodeTerminal(code, realId.entries[0].data);
         }
         else
         {
@@ -5051,7 +5051,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         {
             skipToken(code, data, tree.childs[1]);
             if (tree.childs[1].content == "==")
-                parseTreeToCodeTerminal!T(code, "is");
+                parseTreeToCodeTerminal(code, "is");
             else if (tree.childs[1].content == "!=")
                 code.write("!is");
             else
@@ -5874,7 +5874,7 @@ void writeParam(ref CodeWriter code, ref ParamData p, ref bool needsComma,
         skipToken(code, data, t);
 
     if (needsComma)
-        parseTreeToCodeTerminal!Tree(code, ",");
+        parseTreeToCodeTerminal(code, ",");
 
     Tree declSeq = d2.tree.childs[0];
 
@@ -7297,10 +7297,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
 
         if (declList.length)
             codeTmp.write(declList[0].codeBefore);
-        parseTreeToCodeTerminal!Tree(*codeTmp, "(");
+        parseTreeToCodeTerminal(*codeTmp, "(");
         if (declList.length)
             codeTmp.write(declList[0].codeMiddle);
-        parseTreeToCodeTerminal!Tree(*codeTmp, ")");
+        parseTreeToCodeTerminal(*codeTmp, ")");
         if (declList.length)
             codeTmp.write(declList[0].codeAfter);
         codeTmp.write(operatorTemplateConstraint);

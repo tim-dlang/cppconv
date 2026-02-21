@@ -19,7 +19,7 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-void parseTreeToCodeTerminal(T)(ref CodeWriter code, string name)
+void parseTreeToCodeTerminal(ref CodeWriter code, string name)
 {
     if (name == "{")
     {
@@ -75,7 +75,7 @@ void parseTreeToCode(T)(ref CodeWriter code, T tree, LogicSystem logicSystem,
             return;
         }
         string name = tree.content.strip;
-        parseTreeToCodeTerminal!T(code, name);
+        parseTreeToCodeTerminal(code, name);
         if (name == ";")
             code.writeln();
     }
