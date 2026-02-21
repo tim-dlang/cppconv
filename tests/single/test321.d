@@ -10,7 +10,7 @@ extern(C++, "std")
       extern(D) static immutable _Tp                  value = __v;
       alias value_type = _Tp;
       alias type = integral_constant!(_Tp, __v);
-      /+auto opCast(T : value_type)() const/+ noexcept+/ { return value; }+/
+      /+auto opCast(T : value_type)() const nothrow { return value; }+/
     }
   alias true_type = integral_constant!(bool, true);
   alias false_type = integral_constant!(bool, false);

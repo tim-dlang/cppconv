@@ -549,8 +549,15 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                     foreach (t; functionDeclaratorInfo.attributeTrees)
                     {
                         bool needComment = true;
+                        string replacement;
                         if (t.nameOrContent == "CvQualifier" && t.childs[0].nameOrContent == "const")
                             needComment = false;
+                        else if (t.nonterminalID == nonterminalIDFor!"NoexceptSpecification" && t.childs.length == 1)
+                        {
+                            needComment = false;
+                            replacement = "nothrow";
+                            skipToken(codeAfter, data, t.childs[0]);
+                        }
                         else if (t.nonterminalID == nonterminalIDFor!"NoexceptSpecification"
                                 && t.childs.length > 1)
                         {
@@ -573,7 +580,10 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
                             codeAfter.write("+/");
                             inComment = false;
                         }
-                        parseTreeToDCode(codeAfter, data, t, condition, currentScope);
+                        if (replacement.length)
+                            parseTreeToCodeTerminal(codeAfter, replacement);
+                        else
+                            parseTreeToDCode(codeAfter, data, t, condition, currentScope);
                     }
                     if (inComment)
                     {

@@ -8,7 +8,7 @@ import cppconvhelpers;
 inline bool f() noexcept;
 } +/
 
-bool f()/+ noexcept+/
+bool f() nothrow
 {
     return true;
 }

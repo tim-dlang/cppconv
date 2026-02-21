@@ -7,7 +7,7 @@ import cppconvhelpers;
 
 extern(C++, class) struct QChar {
 public:
-    this(short rc)/+ noexcept+/
+    this(short rc) nothrow
     {
         this.ucs = ushort(rc);
     } // implicit

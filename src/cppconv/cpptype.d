@@ -204,6 +204,7 @@ enum FunctionQualifiers
     const_ = 2,
     ref_ = 4,
     rValueRef = 8,
+    noExcept = 16
 }
 
 class FunctionType : Type
@@ -406,6 +407,8 @@ string typeToString(const QualType type)
         FunctionType ftype = cast(FunctionType) type.type;
         if (ftype.functionQualifiers & FunctionQualifiers.const_)
             line ~= " const";
+        if (ftype.functionQualifiers & FunctionQualifiers.noExcept)
+            line ~= " noexcept";
         if (ftype.functionQualifiers & FunctionQualifiers.ref_)
             line ~= " &";
         if (ftype.functionQualifiers & FunctionQualifiers.rValueRef)

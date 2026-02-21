@@ -15,7 +15,7 @@ extern(C++, "Qt") {
 extern(C++, class) struct QDeadlineTimer
 {
 public:
-    /+ Qt:: +/TimerType timerType() const/+ noexcept+/
+    /+ Qt:: +/TimerType timerType() const nothrow
     { return cast(/+ Qt:: +/TimerType) (type & 0xff); }
 
 private:

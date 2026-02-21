@@ -450,6 +450,10 @@ void collectParameters(Tree tree, ref IteratePPVersions ppVersion,
         if (tree.childs[0].content == "&")
             info.functionQualifiers |= FunctionQualifiers.ref_;
     }
+    else if (tree.nonterminalID == ParserWrapper.nonterminalIDFor!"NoexceptSpecification" && tree.childs.length == 1)
+    {
+        info.functionQualifiers |= FunctionQualifiers.noExcept;
+    }
 }
 
 void collectParameterExprs(Tree tree, ref IteratePPVersions ppVersion,
