@@ -6480,7 +6480,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 if (data.currentClassDeclaration !is null
                         && isClass(data.currentClassDeclaration.tree, data))
                     code.write("final ");
-                code.writeln(typeCode, " ", replaceKeywords(d.name), "() const");
+                code.writeln(typeCode, " ", replaceKeywords(d.name), "() const nothrow");
                 code.writeln("{").incIndent;
                 code.writeln("return (", e.data.dataName, " >> ",
                         e.data.firstBit, ") & 0x",
@@ -6489,7 +6489,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 if (data.currentClassDeclaration !is null
                         && isClass(data.currentClassDeclaration.tree, data))
                     code.write("final ");
-                code.writeln(typeCode, " ", replaceKeywords(d.name), "(", typeCode, " value)");
+                code.writeln(typeCode, " ", replaceKeywords(d.name), "(", typeCode, " value) nothrow");
                 code.writeln("{").incIndent;
                 code.writeln(e.data.dataName, " = (", e.data.dataName,
                         " & ~0x", toChars!16(((ulong(1) << e.data.length) - 1) << e.data.firstBit),

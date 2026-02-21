@@ -9,38 +9,38 @@ struct git_revwalk {
 			did_hide: 1,
 			did_push: 1; +/
 	ubyte bitfieldData_walking;
-	uint walking() const
+	uint walking() const nothrow
 	{
     	return (bitfieldData_walking >> 0) & 0x1;
 	}
-	uint walking(uint value)
+	uint walking(uint value) nothrow
 	{
     	bitfieldData_walking = (bitfieldData_walking & ~0x1) | ((value & 0x1) << 0);
     	return value;
 	}
-uint first_parent() const
+uint first_parent() const nothrow
 {
     return (bitfieldData_walking >> 1) & 0x1;
 }
-uint first_parent(uint value)
+uint first_parent(uint value) nothrow
 {
     bitfieldData_walking = (bitfieldData_walking & ~0x2) | ((value & 0x1) << 1);
     return value;
 }
-uint did_hide() const
+uint did_hide() const nothrow
 {
     return (bitfieldData_walking >> 2) & 0x1;
 }
-uint did_hide(uint value)
+uint did_hide(uint value) nothrow
 {
     bitfieldData_walking = (bitfieldData_walking & ~0x4) | ((value & 0x1) << 2);
     return value;
 }
-uint did_push() const
+uint did_push() const nothrow
 {
     return (bitfieldData_walking >> 3) & 0x1;
 }
-uint did_push(uint value)
+uint did_push(uint value) nothrow
 {
     bitfieldData_walking = (bitfieldData_walking & ~0x8) | ((value & 0x1) << 3);
     return value;
