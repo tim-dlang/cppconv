@@ -21,6 +21,8 @@ void g()
     void function(int) nothrow fp2;
     void function(int)[2] fp3;
     void function(int) nothrow[2] fp4;
+    const(void function(int) nothrow ) fp5 = &f2;
+    const(void function(int) nothrow )[2] fp6 = [&f2, &f2];
 
     fp1 = &f1;
     fp2 = &f2;

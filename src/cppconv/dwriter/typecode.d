@@ -987,6 +987,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         Tree declarator;
         DeclaratorData[] nextDeclList;
         string codeMiddle;
+        string codeAfter;
         if (declList.length)
         {
             assert(declList[0].tree.nonterminalID.nonterminalIDAmong!("FunctionDeclarator",
@@ -994,7 +995,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             declarator = declList[0].tree;
             codeBeforeDeclarator ~= declList[0].codeBefore;
             codeMiddle ~= declList[0].codeMiddle;
-            suffix = declList[0].codeAfter ~ suffix;
+            codeAfter = declList[0].codeAfter;
             nextDeclList = declList[1 .. $];
         }
 
@@ -1022,8 +1023,11 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             }
         }
         code.write(")");
-        if (ftype.functionQualifiers & FunctionQualifiers.const_)
+        code.write(codeAfter);
+        if ((ftype.functionQualifiers & FunctionQualifiers.const_) && !codeAfter.canFind("const"))
             code.write(" const");
+        if ((ftype.functionQualifiers & FunctionQualifiers.noExcept) && !codeAfter.canFind("nothrow"))
+            code.write(" nothrow");
         if (mangling.among("C++", "C"))
             code.write(")");
         code.write(suffix);

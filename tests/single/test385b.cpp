@@ -1,15 +1,6 @@
 void f1(int);
 void f2(int) noexcept;
 
-class C
-{
-public:
-    void f1();
-    void f2() noexcept;
-    void f3() const;
-    void f4() const noexcept;
-};
-
 void g()
 {
     void (*fp1)(int);

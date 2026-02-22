@@ -379,18 +379,30 @@ template buildStaticArray(string type, size_t size, string elements)
 
 template ExternCFunc(F) if (isSomeFunction!F)
 {
-    static if (variadicFunctionStyle!F == Variadic.c)
-        alias ExternCFunc = extern(C) ReturnType!F function(ParameterTypeTuple!F, ...);
-    else
-        alias ExternCFunc = extern(C) ReturnType!F function(ParameterTypeTuple!F);
+    mixin(() {
+        string r = "alias ExternCPPFunc = extern(C) ReturnType!F function(ParameterTypeTuple!F";
+        static if (variadicFunctionStyle!F == Variadic.c)
+            r ~= ", ...";
+        r ~= ")";
+        foreach (a; __traits(getFunctionAttributes, F))
+            r ~= " " ~ a;
+        r ~= ";";
+        return r;
+    }());
 }
 
 template ExternCPPFunc(F) if (isSomeFunction!F)
 {
-    static if (variadicFunctionStyle!F == Variadic.c)
-        alias ExternCPPFunc = extern(C++) ReturnType!F function(ParameterTypeTuple!F, ...);
-    else
-        alias ExternCPPFunc = extern(C++) ReturnType!F function(ParameterTypeTuple!F);
+    mixin(() {
+        string r = "alias ExternCPPFunc = extern(C++) ReturnType!F function(ParameterTypeTuple!F";
+        static if (variadicFunctionStyle!F == Variadic.c)
+            r ~= ", ...";
+        r ~= ")";
+        foreach (a; __traits(getFunctionAttributes, F))
+            r ~= " " ~ a;
+        r ~= ";";
+        return r;
+    }());
 }
 
 template AliasSeq(T...)

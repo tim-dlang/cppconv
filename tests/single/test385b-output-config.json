@@ -1,0 +1,5 @@
+{
+    "defaultMangling": [
+        {"module": ".*", "mangling": "C++"}
+    ]
+}
