@@ -631,7 +631,8 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
 enum TypeToCodeFlags
 {
     none,
-    insideSkippedPointer = 1
+    insideSkippedPointer = 1,
+    insideConst = 2
 }
 
 string translateBuiltin(string name, bool builtinCppTypes)
@@ -779,8 +780,10 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
 
     string r;
 
+    TypeToCodeFlags nextFlags = flags & ~TypeToCodeFlags.insideSkippedPointer;
+
     string suffix;
-    if (type.qualifiers & Qualifiers.const_)
+    if ((type.qualifiers & Qualifiers.const_) && !(flags & TypeToCodeFlags.insideConst))
     {
         if (type.kind == TypeKind.builtin && type.name == "auto")
         {
@@ -793,6 +796,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             r ~= "const(";
             suffix = ")";
+            nextFlags |= TypeToCodeFlags.insideConst;
         }
     }
 
@@ -803,7 +807,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             return typeToCode(QualType(ctype.types[0].type,
                     ctype.types[0].qualifiers | type.qualifiers), data,
                     semantic.logicSystem.and(condition, ctype.conditions[0]),
-                    currentScope, currentLoc, declList, codeType, TypeToCodeFlags.none);
+                    currentScope, currentLoc, declList, codeType, flags);
 
         ConditionMap!string typeCode;
 
@@ -815,7 +819,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
                     ctype.conditions[i]), typeToCode(QualType(ctype.types[i].type,
                     ctype.types[i].qualifiers | type.qualifiers), data,
                     semantic.logicSystem.and(condition, ctype.conditions[i]),
-                    currentScope, currentLoc, declList, codeType, TypeToCodeFlags.none),
+                    currentScope, currentLoc, declList, codeType, nextFlags),
                     semantic.logicSystem);
         }
 
@@ -868,7 +872,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             typeCode.add(isFunc, typeToCode(pointerType.next, data,
                     semantic.logicSystem.and(isFunc, condition), currentScope, currentLoc, nextDeclList,
-                    codeType, TypeToCodeFlags.insideSkippedPointer) ~ codeBeforeDeclarator,
+                    codeType, nextFlags | TypeToCodeFlags.insideSkippedPointer) ~ codeBeforeDeclarator,
                     semantic.logicSystem);
         }
         immutable(Formula)* isClass = typeIsClass(pointerType.next, data);
@@ -876,14 +880,14 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             typeCode.add(isClass, typeToCode(pointerType.next, data,
                     semantic.logicSystem.and(isClass, condition), currentScope, currentLoc, nextDeclList,
-                    codeType, TypeToCodeFlags.insideSkippedPointer) ~ codeBeforeDeclarator,
+                    codeType, nextFlags | TypeToCodeFlags.insideSkippedPointer) ~ codeBeforeDeclarator,
                     semantic.logicSystem);
         }
         immutable(Formula)* isOther = semantic.logicSystem.and(condition,
                 typeCode.conditionAll.negated);
         typeCode.add(isOther, typeToCode(pointerType.next, data,
                 semantic.logicSystem.and(isOther, condition), currentScope,
-                currentLoc, nextDeclList, codeType, TypeToCodeFlags.none) ~ codeBeforeDeclarator ~ "*",
+                currentLoc, nextDeclList, codeType, nextFlags) ~ codeBeforeDeclarator ~ "*",
                 semantic.logicSystem);
 
         typeCode.removeFalseEntries();
@@ -909,7 +913,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         }
 
         string innerCode = "ref " ~ typeToCode(pointerType.next, data, condition, currentScope,
-                currentLoc, nextDeclList, codeType, TypeToCodeFlags.none);
+                currentLoc, nextDeclList, codeType, nextFlags);
 
         return r ~ innerCode ~ codeBeforeDeclarator ~ suffix;
     }
@@ -930,7 +934,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         }
 
         string innerCode = typeToCode(pointerType.next, data, condition,
-                currentScope, currentLoc, nextDeclList, codeType, TypeToCodeFlags.none) ~ " && ";
+                currentScope, currentLoc, nextDeclList, codeType, nextFlags) ~ " && ";
 
         return r ~ innerCode ~ codeBeforeDeclarator ~ suffix;
     }
@@ -951,7 +955,7 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         }
 
         string innerCode = typeToCode(arrayType.next, data, condition,
-                currentScope, currentLoc, nextDeclList, codeType, TypeToCodeFlags.none);
+                currentScope, currentLoc, nextDeclList, codeType, nextFlags);
 
         if (declarator.isValid)
             assert(declarator is arrayType.declarator);

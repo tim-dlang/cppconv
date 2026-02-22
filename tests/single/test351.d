@@ -8,7 +8,7 @@ import cppconvhelpers;
 /*1b*/ __gshared const(uint) /*1c*/  /*1d*/ i1 /*1e*/ = /*1f*/ 1;
 
 /*2a*/ 
-/*2b*/ __gshared const(Identity!(mixin((defined!"DEF")?q{const(uint)}:q{const(ulong)}))) /*2c*/
+/*2b*/ __gshared const(Identity!(mixin((defined!"DEF")?q{uint}:q{ulong}))) /*2c*/
 /+ #ifdef DEF +/
 /*2d*/  /*2e*/
 /+ #endif
@@ -19,14 +19,14 @@ import cppconvhelpers;
 /*2i*/ i2 /*2j*/ = /*2k*/ 2;
 
 /*3a*/ 
-/*3b*/ __gshared const(const(ulong)) /*3c*/
+/*3b*/ __gshared const(ulong) /*3c*/
 /+ #ifdef DEF +/
 /*3d*/  /*3e*/
 /+ #endif +/
 /*3f*/  /*3g*/ i3 /*3h*/ = /*3i*/ 3;
 
 /*4a*/ 
-/*4b*/ __gshared const(const(ulong)) /*4c*/  /*4d*/
+/*4b*/ __gshared const(ulong) /*4c*/  /*4d*/
 /+ #ifdef DEF +/
 /*4e*/  /*4f*/
 /+ #endif +/
