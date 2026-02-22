@@ -13,7 +13,6 @@ import cppconv.cppparserwrapper;
 import cppconv.cppsemantic;
 import cppconv.cpptype;
 import cppconv.filecache;
-import cppconv.mergedfile;
 import cppconv.runcppcommon;
 import cppconv.treematching;
 import cppconv.utils;

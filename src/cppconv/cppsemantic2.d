@@ -11,7 +11,6 @@ import cppconv.cppdeclaration;
 import cppconv.cppparserwrapper;
 import cppconv.cppsemantic;
 import cppconv.cpptype;
-import cppconv.mergedfile;
 import cppconv.preproc;
 import cppconv.runcppcommon;
 import cppconv.treematching;

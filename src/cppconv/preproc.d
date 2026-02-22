@@ -20,7 +20,6 @@ import dparsergen.core.grammarinfo;
 import dparsergen.core.nodetype;
 import std.algorithm;
 import std.conv;
-import std.exception;
 import std.regex;
 import std.stdio;
 

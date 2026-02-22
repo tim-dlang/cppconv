@@ -4,16 +4,18 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-module cppconv.dtypecode;
+module cppconv.dwriter.typecode;
 import cppconv.common;
 import cppconv.conditiontree;
 import cppconv.cppdeclaration;
 import cppconv.cppsemantic;
 import cppconv.cpptype;
-import cppconv.dwriter;
+import cppconv.dwriter.declarationcode;
+import cppconv.dwriter.dwriter;
+import cppconv.dwriter.macrodeclaration;
+import cppconv.dwriter.conditioncode;
+import cppconv.dwriter.treecode;
 import cppconv.locationstack;
-import cppconv.logic;
-import cppconv.macrodeclaration;
 import cppconv.preproc;
 import cppconv.sourcetokens;
 import cppconv.utils;

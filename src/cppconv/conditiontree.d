@@ -598,7 +598,6 @@ string recreateMergedName(const CppParseTree tree)
         }
         childNames ~= name;
     }
-    import std.algorithm;
     sort(childNames);
     r ~= "(";
     r ~= childNames.join(" | ");

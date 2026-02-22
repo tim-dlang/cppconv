@@ -4,24 +4,19 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-module cppconv.macrodeclaration;
+module cppconv.dwriter.macrodeclaration;
 import cppconv.common;
 import cppconv.conditiontree;
-import cppconv.configreader;
 import cppconv.cppdeclaration;
 import cppconv.cppsemantic;
-import cppconv.cpptype;
-import cppconv.declarationpattern;
-import cppconv.dtypecode;
-import cppconv.dwriter;
+import cppconv.dwriter.dwriter;
+import cppconv.dwriter.typecode;
+import cppconv.dwriter.treecode;
 import cppconv.filecache;
-import cppconv.logic;
 import cppconv.mergedfile;
-import cppconv.preproc;
 import cppconv.preprocparserwrapper;
 import cppconv.runcppcommon;
 import cppconv.sourcetokens;
-import cppconv.treemerging;
 import cppconv.utils;
 import dparsergen.core.nodetype;
 import dparsergen.core.utils;
@@ -29,11 +24,7 @@ import cppconv.codewriter;
 import std.algorithm;
 import std.array;
 import std.conv;
-import std.exception;
-import std.file;
-import std.path;
 import std.stdio;
-import std.string;
 import std.typecons;
 
 enum MacroTranslation

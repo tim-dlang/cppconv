@@ -6,7 +6,6 @@
 
 module cppconv.cppconv;
 import cppconv.common;
-import cppconv.conditiontree;
 import cppconv.configreader;
 import cppconv.cppdeclaration;
 import cppconv.cppparallelparser;
@@ -16,10 +15,9 @@ import cppconv.cppsemantic2;
 import cppconv.cppsemantic;
 import cppconv.cpptree;
 import cppconv.cpptype;
-import cppconv.dwriter;
+import cppconv.dwriter.dwriter;
 import cppconv.ecs;
 import cppconv.filecache;
-import cppconv.logic;
 import cppconv.mergedfile;
 import cppconv.preproc;
 import cppconv.preprocparserwrapper;
@@ -32,7 +30,6 @@ import dparsergen.core.grammarinfo;
 import dparsergen.core.nodetype;
 import dparsergen.core.parseexception;
 import dparsergen.core.utils;
-import cppconv.codewriter;
 import std.algorithm;
 import std.array;
 import std.conv;
@@ -40,9 +37,7 @@ import std.datetime;
 import std.exception;
 import std.file;
 import std.path;
-import std.regex;
 import std.stdio;
-import std.typecons;
 
 alias TypedefType = cppconv.cppsemantic.TypedefType;
 alias nonterminalIDAmong = ParserWrapper.nonterminalIDAmong;

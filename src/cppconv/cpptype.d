@@ -11,7 +11,6 @@ import cppconv.cppdeclaration;
 import cppconv.cppsemantic;
 import cppconv.logic;
 import cppconv.mergedfile;
-import cppconv.runcppcommon;
 import cppconv.utils;
 import dparsergen.core.utils;
 import std.algorithm;

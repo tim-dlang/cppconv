@@ -11,7 +11,6 @@ import cppconv.cpptype;
 import cppconv.mergedfile;
 import cppconv.runcppcommon;
 import std.algorithm;
-import std.array;
 import std.stdio;
 
 class DeclarationSet

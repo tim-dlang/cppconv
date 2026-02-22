@@ -15,11 +15,8 @@ import cppconv.locationstack;
 import cppconv.logic;
 import cppconv.treemerging;
 import cppconv.utils;
-import dparsergen.core.nodetype;
 import std.algorithm;
 import std.array;
-import std.conv;
-import std.datetime;
 import std.stdio;
 
 alias Tree = CppParseTree;
