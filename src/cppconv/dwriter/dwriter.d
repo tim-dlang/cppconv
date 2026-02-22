@@ -142,6 +142,7 @@ struct DCodeOptions
     ManglingPattern[] defaultMangling;
     FileHeaderReplacement[] fileHeaderReplacement;
     ConfigRegex allowParameterImplicitCastsFilenamePatterns;
+    ConfigRegex transitiveConstFilenamePatterns;
 }
 
 class DWriterData

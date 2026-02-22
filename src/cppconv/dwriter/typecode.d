@@ -450,6 +450,14 @@ DeclaratorData[] declaratorList(Tree declarator, immutable(Formula)* condition,
             if (declarator.childs[0].childs[0].nameOrContent.among("*", "&"))
             {
                 skipToken(codeBefore, data, declarator.childs[0].childs[0]);
+                if (declarator.childs[0].childs.length >= 3)
+                {
+                    foreach (c2; declarator.childs[0].childs[$ - 1].childs)
+                        if (c2.nonterminalID == nonterminalIDFor!"CvQualifier")
+                        {
+                            skipToken(codeBefore, data, c2.childs[0]);
+                        }
+                }
                 if (c.isValid && data.sourceTokenManager.tokensLeft.data.length > 0)
                     writeComments(codeAfter, data, data.sourceTokenManager.collectTokens(c.start));
             }
@@ -778,6 +786,9 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
         {
             r ~= "const";
         }
+        else if (hasMutableIndirection(type, semantic)
+                && !data.options.transitiveConstFilenamePatterns.match(currentLoc.context.rootFilename))
+            r ~= "/*const*/";
         else
         {
             r ~= "const(";

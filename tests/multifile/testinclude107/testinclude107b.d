@@ -11,7 +11,7 @@ static if (defined!"DEF2")
 
 static if (defined!"DEF2")
 {
-void f2(const(X)* x, const(Identity!(mixin((defined!"DEF")?q{const(S)}:q{const(uint)})))* s)
+void f2(/*const*/X* x, const(Identity!(mixin((defined!"DEF")?q{const(S)}:q{const(uint)})))* s)
 {
 }
 }

@@ -1529,6 +1529,82 @@ bool isConst(QualType type)
     return false;
 }
 
+bool hasMutableIndirection(QualType type, Semantic semantic)
+{
+    if (type.type is null)
+        return false;
+
+    if (type.kind == TypeKind.function_)
+        return false;
+
+    if ((type.qualifiers & Qualifiers.const_) == 0)
+        return true;
+
+    if (type.kind == TypeKind.builtin)
+        return false;
+
+    if (type in semantic.hasMutableIndirectionCache)
+        return semantic.hasMutableIndirectionCache[type];
+    semantic.hasMutableIndirectionCache[type] = true; // prevent endless recursion
+
+    bool r;
+    if (type.kind == TypeKind.condition)
+    {
+        auto ctype = cast(ConditionType) type.type;
+        foreach (i; 0 .. ctype.types.length)
+        {
+            if (hasMutableIndirection(ctype.types[i].withExtraQualifiers(type.qualifiers),
+                    semantic))
+                r = true;
+        }
+    }
+    else if (type.kind.among(TypeKind.pointer, TypeKind.reference, TypeKind.rValueReference))
+    {
+        auto next = type.type.allNext()[0];
+        r = hasMutableIndirection(next, semantic);
+    }
+    else if (type.kind.among(TypeKind.array))
+    {
+        auto next = type.type.allNext()[0];
+        r = hasMutableIndirection(next.withExtraQualifiers(type.qualifiers), semantic);
+    }
+    else if (type.kind == TypeKind.typedef_)
+    {
+        r = hasMutableIndirection((cast(TypedefType) type.type)
+                .realType.withExtraQualifiers(type.qualifiers), semantic);
+    }
+    else if (type.kind.among(TypeKind.record))
+    {
+        auto recordType = cast(RecordType) type.type;
+        foreach (e; recordType.declarationSet.entries)
+        {
+            auto d = e.data;
+
+            if (d.tree.isValid && d.tree in d.scope_.childScopeByTree)
+                foreach (ds2; d.scope_.childScopeByTree[d.tree].symbols)
+                {
+                    foreach (e2; ds2.entries)
+                    {
+                        auto d2 = e2.data;
+                        if ((d2.flags & DeclarationFlags.static_) != 0)
+                            continue;
+                        if ((d2.flags & DeclarationFlags.function_) != 0)
+                            continue;
+                        if (hasMutableIndirection(d2.type2.withExtraQualifiers(type.qualifiers),
+                                semantic))
+                            r = true;
+                    }
+                }
+        }
+    }
+    else if (type.kind == TypeKind.namespace)
+        return false;
+    else
+        assert(false);
+    semantic.hasMutableIndirectionCache[type] = r;
+    return r;
+}
+
 Type recordTypeFromType(ref IteratePPVersions ppVersion, Semantic semantic, QualType contextType)
 {
     Type recordType;

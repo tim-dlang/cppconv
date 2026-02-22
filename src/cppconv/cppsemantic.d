@@ -495,6 +495,34 @@ void collectParameterExprs(Tree tree, ref IteratePPVersions ppVersion,
     }
 }
 
+void analyzeCvQualifierSeq(Tree tree, ref IteratePPVersions ppVersion,
+        ref SemanticRunInfo semantic, ref Qualifiers qualifiers)
+{
+    if (tree.nodeType == NodeType.token)
+    {
+    }
+    else if (tree.nodeType == NodeType.array)
+    {
+        foreach (c; tree.childs)
+        {
+            iteratePPVersions!analyzeCvQualifierSeq(c,
+                    ppVersion, semantic, qualifiers);
+        }
+    }
+    else if (tree.nodeType == NodeType.merged)
+    {
+        iteratePPVersions!analyzeCvQualifierSeq(tree.childs[ppVersion.combination.next(cast(uint)$)],
+                ppVersion, semantic, qualifiers);
+    }
+    else if (tree.nonterminalID.nonterminalIDAmong!("CvQualifier"))
+    {
+        if (tree.childs[0].content == "const")
+            qualifiers |= Qualifiers.const_;
+        if (tree.childs[0].content == "volatile")
+            qualifiers |= Qualifiers.volatile_;
+    }
+}
+
 void analyzeDeclarator(Tree tree, ref IteratePPVersions ppVersion,
         ref SemanticRunInfo semantic, ref DeclaratorInfo info, QualType type)
 {
@@ -542,6 +570,11 @@ void analyzeDeclarator(Tree tree, ref IteratePPVersions ppVersion,
         else
             pointerType = semantic.getPointerType(type);
         QualType type2 = QualType(pointerType, Qualifiers.none);
+        if (tree.childs[0].childs.length >= 3)
+        {
+            iteratePPVersions!analyzeCvQualifierSeq(tree.childs[0].childs[$ - 1],
+                    ppVersion, semantic, type2.qualifiers);
+        }
         Tree innerDeclarator = tree.childByName("innerDeclarator");
         if (!innerDeclarator.isValid)
             info.type = type2;

@@ -5,7 +5,7 @@ import cppconvhelpers;
 
 /+ #define NULL 0 +/
 enum NULL = null;
-extern(D) static __gshared /+ const(char)*/+ const +/ [0]  +/ auto git_generated_prefixes = mixin(buildStaticArray!(q{const(char)*}, q{
+extern(D) static __gshared /+ const(const(char)* )[0]  +/ auto git_generated_prefixes = mixin(buildStaticArray!(q{const(const(char)*)}, q{
 	"Signed-off-by: ".ptr,
 	"(cherry picked from commit ".ptr,
 	NULL}))

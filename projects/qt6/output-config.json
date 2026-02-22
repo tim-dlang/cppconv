@@ -6,6 +6,7 @@
     "builtinCppTypes": true,
     "includeDeclFilenamePatterns": ["qt[0-9]*/orig/.*"],
     "allowParameterImplicitCastsFilenamePatterns": ["(?!qt[0-9]*/orig/qt).*"],
+    "transitiveConstFilenamePatterns": ["qt.*"],
     "arrayLikeTypes": [
         "QString",
         "QStringList",
