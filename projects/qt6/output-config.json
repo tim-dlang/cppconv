@@ -78,6 +78,7 @@
         {"match": "QtPrivate::ResultStoreBase", "kind": "struct"},
     ],
     "blacklist": [
+        ".*::accessibleRoot",
         ".*::arrow_operator_result",
         ".*::call",
         "__CFArray",

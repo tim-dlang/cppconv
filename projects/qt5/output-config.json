@@ -81,6 +81,7 @@
         {"match": "QPicture", "kind": "struct"},
     ],
     "blacklist": [
+        ".*::accessibleRoot",
         "__CFArray",
         "CFArrayRef",
         "__CFBoolean",

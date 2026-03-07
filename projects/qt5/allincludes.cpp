@@ -203,7 +203,7 @@
 //#include <QtGui/qaccessiblebridge.h>
 //#include <QtGui/qaccessibleobject.h>
 //#include <QtGui/qaccessibleplugin.h>
-//#include <QtGui/qbackingstore.h>
+#include <QtGui/qbackingstore.h>
 #include <QtGui/qbitmap.h>
 #include <QtGui/qbrush.h>
 #include <QtGui/qclipboard.h>
@@ -309,8 +309,8 @@
 #include <QtGui/qstandarditemmodel.h>
 #include <QtGui/qstatictext.h>
 #include <QtGui/qstylehints.h>
-//#include <QtGui/qsurface.h>
-//#include <QtGui/qsurfaceformat.h>
+#include <QtGui/qsurface.h>
+#include <QtGui/qsurfaceformat.h>
 #include <QtGui/qsyntaxhighlighter.h>
 //#include <QtGui/qtestsupport_gui.h>
 #include <QtGui/qtextcursor.h>
@@ -335,7 +335,7 @@
 //#include <QtGui/qvulkanfunctions.h>
 //#include <QtGui/qvulkaninstance.h>
 //#include <QtGui/qvulkanwindow.h>
-//#include <QtGui/qwindow.h>
+#include <QtGui/qwindow.h>
 #include <QtGui/qwindowdefs.h>
 #include <QtGui/qwindowdefs_win.h>
 
