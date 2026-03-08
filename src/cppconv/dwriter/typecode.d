@@ -288,7 +288,7 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, condition);
+                    semantic.logicSystem, condition, null, semantic.mergedTreeDatas);
             CodeWriter code2;
             bool needsValueClass;
             collectDeclSeqTokensImpl(code2, tree, ppVersion, data,

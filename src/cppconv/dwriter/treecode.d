@@ -974,7 +974,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 writeComments(code, data, data.sourceTokenManager.collectTokens(t.location.end));
                 writeComments(code, data,
                         data.sourceTokenManager.collectTokensUntilLineEnd(t.location.end,
-                            condition));
+                            condition2));
             }
 
             code.incIndent;
@@ -1576,7 +1576,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                     parseTreeToDCode(code, data, t, condition2, currentScope);
                     writeComments(code, data, data.sourceTokenManager.collectTokens(t.location.end));
                     writeComments(code, data,
-                            data.sourceTokenManager.collectTokensUntilLineEnd(t.location.end, condition));
+                            data.sourceTokenManager.collectTokensUntilLineEnd(t.location.end, condition2));
                     code.decIndent;
                 }
 
@@ -1843,7 +1843,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, condition);
+                    semantic.logicSystem, condition, null, semantic.mergedTreeDatas);
             auto t = chooseType(semantic.extraInfo(tree.childs[0]).type, ppVersion, true);
             if (t.type !is null && t.kind == TypeKind.array)
             {
@@ -2032,7 +2032,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             foreach (combination; iterateCombinations())
             {
                 IteratePPVersions ppVersion = IteratePPVersions(combination,
-                        semantic.logicSystem, logicSystem.and(e.condition, e.data.condition));
+                        semantic.logicSystem, logicSystem.and(e.condition, e.data.condition), null, semantic.mergedTreeDatas);
 
                 Scope contextScope = getContextScope(tree, ppVersion, semantic, currentScope);
 

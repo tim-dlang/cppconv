@@ -466,7 +466,7 @@ void writeParam(ref CodeWriter code, ref ParamData p, ref bool needsComma,
     foreach (combination; iterateCombinations())
     {
         IteratePPVersions ppVersion = IteratePPVersions(combination,
-                semantic.logicSystem, semantic.logicSystem.and(condition2, condition4));
+                semantic.logicSystem, semantic.logicSystem.and(condition2, condition4), null, semantic.mergedTreeDatas);
         auto t = chooseType(d2.type2, ppVersion, true);
         if (t.kind == TypeKind.reference)
         {
@@ -1141,7 +1141,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, condition);
+                    semantic.logicSystem, condition, null, semantic.mergedTreeDatas);
             auto t = chooseType(d.type2, ppVersion, true);
 
             if (t.type !is null && t.kind == TypeKind.array)
@@ -1425,7 +1425,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, semantic.logicSystem.and(d.condition, condition));
+                    semantic.logicSystem, semantic.logicSystem.and(d.condition, condition), null, semantic.mergedTreeDatas);
             QualType t = chooseType(d.type2, ppVersion, false);
             if (t.kind != TypeKind.function_)
                 continue;
@@ -2069,7 +2069,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         outer: foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, semantic.logicSystem.true_);
+                    semantic.logicSystem, semantic.logicSystem.true_, null, semantic.mergedTreeDatas);
             if (d.tree in d.scope_.childScopeByTree)
             {
                 Scope classScope = d.scope_.childScopeByTree[d.tree];
