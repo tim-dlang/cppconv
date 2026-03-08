@@ -313,9 +313,10 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                         {
                             if (y.usedName == paramName.usedName)
                             {
-                                x = y;
+                                if (x is null || !y.hasParamExpansion)
+                                    x = y;
                             }
-                            if (y.instanceCode != paramInstances[0].instanceCode)
+                            else
                                 allCodesSame = false;
                         }
                         if (!allCodesSame)

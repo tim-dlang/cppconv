@@ -3274,8 +3274,9 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
     data.macroReplacement = null;
     foreach (ref mergedFile; mergedFiles)
     {
+        bool[immutable(LocationContext)*] applyMacroInstancesDone;
         applyMacroInstances(data, mergedSemantic,
-                mergedFile.locationContextInfoMap.getLocationContextInfo(null));
+                mergedFile.locationContextInfoMap.getLocationContextInfo(null), applyMacroInstancesDone);
     }
 
     File outfile;

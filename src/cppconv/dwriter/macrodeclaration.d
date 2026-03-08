@@ -431,8 +431,80 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
     }
 }
 
-void generateMacroCode(DWriterData data, Semantic mergedSemantic, LocationContextInfo locationContextInfo, MacroDeclarationInstance instance)
+void selectMacroParamNames(DWriterData data, Semantic mergedSemantic, MacroDeclarationInstance instance)
 {
+    // Select names for macro parameters
+    if (instance.macroDeclaration.type == DeclarationType.macro_ && instance.params.length)
+    {
+        foreach (n, p; instance.params)
+        {
+            string nonStringifiedName;
+            bool canReplaceStringifiedParam = true;
+            foreach (instance2; p.instances)
+            {
+                auto key = text(instance2.macroTranslation, " ", instance2.instanceCode);
+                if (instance2.hasMacroConcat)
+                    canReplaceStringifiedParam = false;
+                if (instance2.hasParamExpansion)
+                    continue;
+                if (key in instance2.macroDeclaration.nameByCode)
+                {
+                    instance2.usedName = instance2.macroDeclaration.nameByCode[key];
+                }
+                else
+                {
+                    string name2;
+                    if (instance2.macroDeclaration.nameByCode.length)
+                        name2 = text(instance2.macroDeclaration.name, "__",
+                                instance2.macroDeclaration.nameByCode.length + 2);
+                    else
+                        name2 = replaceKeywords(instance2.macroDeclaration.name);
+                    instance2.macroDeclaration.nameByCode[key] = name2;
+                    instance2.usedName = name2;
+                }
+                nonStringifiedName = instance2.usedName;
+            }
+            if (p.nameByCode.length != 1)
+                canReplaceStringifiedParam = false;
+            foreach (instance2; p.instances)
+            {
+                auto key = text(instance2.macroTranslation, " ", instance2.instanceCode);
+                if (!instance2.hasParamExpansion)
+                    continue;
+                if (canReplaceStringifiedParam)
+                {
+                    /* Reuse other parameter name for stringified parameter
+                       This is a special case for macros like this:
+                       #define F(code) if (code) printf(#code);
+                       The parameter could be different when translated to D,
+                       but stringified macro parameters are often for
+                       debugging and we can use the translated string, so
+                       no extra version of the parameter is necessary. */
+                    instance2.usedName = nonStringifiedName;
+                }
+                else if (key in instance2.macroDeclaration.nameByCode)
+                {
+                    instance2.usedName = instance2.macroDeclaration.nameByCode[key];
+                }
+                else
+                {
+                    string name2;
+                    if (instance2.macroDeclaration.nameByCode.length)
+                        name2 = text(instance2.macroDeclaration.name, "__",
+                                instance2.macroDeclaration.nameByCode.length + 2);
+                    else
+                        name2 = replaceKeywords(instance2.macroDeclaration.name);
+                    instance2.macroDeclaration.nameByCode[key] = name2;
+                    instance2.usedName = name2;
+                }
+            }
+        }
+    }
+}
+
+void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarationInstance instance)
+{
+    LocationContextInfo locationContextInfo = instance.locationContextInfo;
     auto locationContext = locationContextInfo.locationContext;
 
     static Appender!(SourceToken[]) sourceTokens;
@@ -716,25 +788,6 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, LocationContex
             instance.usedName = name2;
         }
     }
-    else if (instance.macroDeclaration.type == DeclarationType.macroParam)
-    {
-        auto key = text(instance.macroTranslation, " ", instance.instanceCode);
-        if (key in instance.macroDeclaration.nameByCode)
-        {
-            instance.usedName = instance.macroDeclaration.nameByCode[key];
-        }
-        else
-        {
-            string name2;
-            if (instance.macroDeclaration.nameByCode.length)
-                name2 = text(instance.macroDeclaration.name, "__",
-                        instance.macroDeclaration.nameByCode.length + 2);
-            else
-                name2 = replaceKeywords(instance.macroDeclaration.name);
-            instance.macroDeclaration.nameByCode[key] = name2;
-            instance.usedName = name2;
-        }
-    }
 
     foreach (ps; instance.params)
         foreach (p; ps.instances)
@@ -748,12 +801,60 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, LocationContex
 }
 
 void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
-        LocationContextInfo locationContextInfo)
+        LocationContextInfo locationContextInfo, ref bool[immutable(LocationContext)*] done)
 {
+    if (locationContextInfo.locationContext in done)
+    {
+        assert(done[locationContextInfo.locationContext], text(locationStr(locationContextInfo.locationContext)));
+        return;
+    }
+
+    done[locationContextInfo.locationContext] = false;
+    scope(exit)
+        done[locationContextInfo.locationContext] = true;
+
+    // Handle macro parameters earlier
+    if (locationContextInfo.locationContext in data.macroInstanceByLocation)
+    {
+        foreach (instanceEntry; data
+                .macroInstanceByLocation[locationContextInfo.locationContext].entries)
+        {
+            MacroDeclarationInstance instance = instanceEntry.data;
+
+            if (instance.macroTranslation == MacroTranslation.none)
+                continue;
+
+            if (instance.macroDeclaration.type == DeclarationType.macro_ && instance.params.length)
+            {
+                foreach (n, p; instance.params)
+                {
+                    foreach (instance2; p.instances)
+                    {
+                        applyMacroInstances(data, mergedSemantic, instance2.locationContextInfo, done);
+                    }
+                }
+            }
+        }
+
+        foreach (instanceEntry; data
+                .macroInstanceByLocation[locationContextInfo.locationContext].entries)
+        {
+            MacroDeclarationInstance instance = instanceEntry.data;
+
+            if (instance.macroTranslation == MacroTranslation.none)
+                continue;
+
+            if (instance.macroDeclaration.type == DeclarationType.macro_ && instance.params.length)
+            {
+                selectMacroParamNames(data, mergedSemantic, instance);
+            }
+        }
+    }
+
     for (LocationContextInfo child = locationContextInfo.firstChild; child !is null;
             child = child.next)
     {
-        applyMacroInstances(data, mergedSemantic, child);
+        applyMacroInstances(data, mergedSemantic, child, done);
     }
 
     if (locationContextInfo.locationContext !in data.macroInstanceByLocation)
@@ -767,6 +868,6 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         if (instance.macroTranslation == MacroTranslation.none)
             continue;
 
-        generateMacroCode(data, mergedSemantic, locationContextInfo, instance);
+        generateMacroCode(data, mergedSemantic, instance);
     }
 }
