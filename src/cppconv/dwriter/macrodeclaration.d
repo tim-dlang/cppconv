@@ -431,6 +431,322 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
     }
 }
 
+void generateMacroCode(DWriterData data, Semantic mergedSemantic, LocationContextInfo locationContextInfo, MacroDeclarationInstance instance)
+{
+    auto locationContext = locationContextInfo.locationContext;
+
+    static Appender!(SourceToken[]) sourceTokens;
+
+    data.currentFilename = getDeclarationFilename(instance.macroTrees[0].location,
+            data, "" /*instance.macroDeclaration.name*/ , DeclarationFlags.none);
+    data.importGraphHere = data.importGraph.get(data.currentFilename, null);
+    data.importedPackagesGraphHere = data.importedPackagesGraph.get(data.currentFilename, null);
+    data.versionReplacementsOr = null;
+    data.afterStringLiteral = false;
+
+    auto instanceCondition = locationContextInfo.condition;
+    if (instanceCondition is null)
+        instanceCondition = mergedSemantic.logicSystem.true_;
+    immutable(Formula)* usedConditionForFile = .usedConditionForFile(data,
+            RealFilename(locationContextInfo.locationContext.rootFilename), true);
+    if (usedConditionForFile !is null)
+        instanceCondition = mergedSemantic.logicSystem.and(instanceCondition,
+                usedConditionForFile);
+    CodeWriter code;
+    code.indentStr = data.options.indent;
+    code.incIndent;
+
+    assert(data.sourceTokenManager.tokensLeft.data.length == 0);
+    LocationRangeX locRange;
+    MacroDeclarationInstance instance2;
+    MacroDeclaration macroDeclaration2;
+    if (instance.macroDeclaration.type == DeclarationType.macroParam)
+    {
+        if (instance.macroDeclaration.type == DeclarationType.macroParam
+                && instance.hasParamExpansion)
+        {
+            LocationContextInfo info = instance.locationContextInfo;
+            while (info.locationContext.name != "#")
+                info = info.parent;
+
+            locRange = info.sourceTokens.childs[1].location;
+        }
+        else if (locationContext.parentLocation.context.filename.length)
+        {
+            locRange.setStartLength(LocationX(locationContext.parentLocation.start.loc,
+                    locationContext), locationContext.parentLocation.inputLength);
+            assert(locationContext.filename == locationContext.parentLocation.context.filename);
+        }
+
+        if (locRange.context !is null)
+        {
+            immutable(LocationContext)* locationContextMacro = macroFromParam(
+                    locationContext.prev);
+            locationContextMacro = locationContextMacro.prev.prev.prev;
+
+            if (locationContextMacro.name.length)
+            {
+                immutable(LocationContext)* locationContext2 = data.locationContextMap.getLocationContext(
+                        immutable(LocationContext)(null, LocationN.init,
+                        LocationN.LocationDiff.init, "", locationContextMacro.prev.filename));
+                LocationRangeX l = LocationRangeX(LocationX(locationContextMacro.startInPrev,
+                        locationContext2), locationContextMacro.lengthInPrev);
+
+                string macroName = locationContextMacro.prev.name;
+
+                Tuple!(string, LocationRangeX) key = tuple!(string, LocationRangeX)(macroName, l);
+
+                if (locationContextMacro in data.macroInstanceByLocation)
+                    instance2 = data.macroInstanceByLocation[locationContextMacro]
+                        .entries[0].data;
+
+                if (key in data.sourceTokenManager.macroDeclarations
+                        && instance2 !is null && instance2.macroDeclaration !is null
+                        && instance2.macroDeclaration.type == DeclarationType.macro_)
+                {
+                    macroDeclaration2 = data.sourceTokenManager.macroDeclarations[key];
+                    assert(instance2.macroDeclaration is macroDeclaration2);
+                    if (instance2.macroTranslation == MacroTranslation.none)
+                        macroDeclaration2 = null;
+                }
+            }
+        }
+        else
+        {
+            code.write(" /* TODO: strange macro */ ");
+        }
+    }
+    else
+    {
+        macroDeclaration2 = instance.macroDeclaration;
+        locRange.setStartLength(LocationX(instance.macroDeclaration.definition.location.start.loc,
+                locationContext), instance.macroDeclaration.definition.location.inputLength);
+        assert(
+                instance.macroDeclaration.definition.location.context.filename
+                == locationContext.filename);
+    }
+    if (!locationContext.isParentOf(instance.macroTrees[0].start.context))
+        locRange = LocationRangeX.init;
+    if (locRange.context !is null)
+    {
+        foreach (i; 0 .. locRange.context.contextDepth - 1)
+            data.sourceTokenManager.tokensLeft.put(SourceToken[].init);
+        SourceToken[] tokens;
+
+        if (macroDeclaration2 is null)
+        {
+            tokens = data.sourceTokenManager.sourceTokens[RealFilename(
+                        locRange.context.filename)];
+        }
+        else
+        {
+            sourceTokens.clear();
+            foreach (c; macroDeclaration2.definition.childs[$ - 2].childs)
+                if (c.content.length)
+                    sourceTokens.put(SourceToken(c, macroDeclaration2.condition, true));
+            foreach (t; macroDeclaration2.definition.childs[$ - 1].childs)
+            {
+                if (t.childs[0].content.length)
+                    sourceTokens.put(SourceToken(t.childs[0],
+                            macroDeclaration2.condition, false));
+                foreach (c; t.childs[1].childs)
+                    if (c.content.length)
+                        sourceTokens.put(SourceToken(c, macroDeclaration2.condition, true));
+            }
+            tokens = sourceTokens.data;
+        }
+        tokens = tokens[interpolationSearch!(".token.start.loc",
+                    "<")(tokens, locRange.start.loc) .. $];
+        tokens = tokens[0 .. interpolationSearch!(".token.end.loc",
+                    "<=")(tokens, locRange.end.loc)];
+
+        data.sourceTokenManager.tokensLeft.put(tokens);
+        data.sourceTokenManager.locDone = locRange.start;
+        data.sourceTokenManager.tokensContext = locRange.context;
+    }
+
+    data.sourceTokenManager.inInterpolateMixin = instance.macroDeclaration.type == DeclarationType.macro_
+        && instance.macroTranslation == MacroTranslation.mixin_
+        && instance.macroDeclaration.definition.nonterminalID
+        == preprocNonterminalIDFor!"FuncDefine";
+    data.currentMacroInstance = instance.macroDeclaration.type == DeclarationType.macroParam ? instance2 : instance;
+
+    Tree[] usedTrees = instance.macroTrees;
+    while (usedTrees.length == 1
+            && usedTrees[0].nonterminalID == nonterminalIDFor!"InitializerClause")
+        usedTrees = usedTrees[0].childs[0 .. 1];
+    instance.firstUsedTree = usedTrees[0];
+
+    TreeToCodeFlags treeToCodeFlags = TreeToCodeFlags.none;
+    if (instance.macroDeclaration.type == DeclarationType.macro_)
+        treeToCodeFlags |= TreeToCodeFlags.skipCasts;
+    if (instance.macroDeclaration.type == DeclarationType.macroParam && instance.macroTrees.length == 1
+            && instance.macroDeclaration.funcMacroInstance.macroTrees.length == 1
+            && instance.macroTrees[0] is instance.macroDeclaration
+                .funcMacroInstance.macroTrees[0])
+        treeToCodeFlags |= TreeToCodeFlags.skipCasts;
+    size_t realCodeStart;
+    size_t indexInParent;
+    Tree parent = getRealParent(usedTrees[0], mergedSemantic, &indexInParent);
+    if (instance.macroDeclaration.type == DeclarationType.macroParam
+            && instance.hasParamExpansion)
+    {
+        LocationContextInfo info = instance.locationContextInfo;
+        while (info.locationContext.name != "#")
+            info = info.parent;
+
+        foreach (t; info.sourceTokens.childs[1].childs)
+            parseTreeToDCode(code, data, t, instanceCondition, null, treeToCodeFlags);
+    }
+    else if (parent.isValid && (parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
+        || (parent.nonterminalID == nonterminalIDFor!"TypeId" && indexInParent == 0)))
+    {
+        ConditionMap!string codeType;
+        CodeWriter codeAfterDeclSeq;
+        codeAfterDeclSeq.indentStr = data.options.indent;
+        bool afterTypeInDeclSeq;
+        foreach (usedTree; usedTrees)
+        {
+            if (code.data.length == 0 && usedTree.isValid)
+            {
+                writeComments(code, data, locationBeforeUsedMacro(usedTree, data, false));
+                realCodeStart = code.data.length;
+            }
+            if (usedTree.isValid)
+            {
+                collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
+                        afterTypeInDeclSeq, usedTree, instanceCondition, data, null);
+            }
+        }
+
+        ConditionMap!string realId;
+        translateBuiltinAll(codeType, realId, instanceCondition, false, data, usedTrees[0].start);
+        realId.removeFalseEntries();
+        code.write(idMapToCode(realId, instanceCondition, data));
+        code.write(codeAfterDeclSeq.data);
+    }
+    else
+    {
+        foreach (usedTree; usedTrees)
+        {
+            if (code.data.length == 0 && usedTree.isValid)
+            {
+                writeComments(code, data, locationBeforeUsedMacro(usedTree, data, false));
+                realCodeStart = code.data.length;
+            }
+            parseTreeToDCode(code, data, usedTree, instanceCondition, null, treeToCodeFlags);
+        }
+    }
+
+    data.sourceTokenManager.inInterpolateMixin = false;
+    data.currentMacroInstance = null;
+
+    size_t realCodeEnd = code.data.length;
+    if (data.sourceTokenManager.tokensLeft.data.length)
+        writeComments(code, data, locRange.end);
+
+    data.sourceTokenManager.tokensContext = null;
+    data.sourceTokenManager.tokensLeft.shrinkTo(0);
+
+    instance.instanceCode = code.data.idup;
+    if (instance.instanceCode.startsWith(data.options.indent))
+    {
+        instance.instanceCode = instance.instanceCode[data.options.indent.length .. $];
+        if (realCodeStart)
+        {
+            assert(realCodeStart >= data.options.indent.length);
+            realCodeStart -= data.options.indent.length;
+        }
+        assert(realCodeEnd >= data.options.indent.length);
+        realCodeEnd -= data.options.indent.length;
+    }
+    instance.realCodeStart = realCodeStart;
+    instance.realCodeEnd = realCodeEnd;
+
+    if (instance.macroDeclaration.type == DeclarationType.macro_)
+    {
+        if (instance.macroDeclaration.definition.nonterminalID == preprocNonterminalIDFor!"FuncDefine")
+        {
+            size_t index;
+            foreach (i, p; instance.macroDeclaration.definition.childs[7].childs)
+            {
+                if (p.nodeType == NodeType.token || p.childs.length == 1)
+                    continue;
+                string paramName = p.childs[1].content;
+                if (paramName == "...")
+                    paramName = "__VA_ARGS__";
+
+                MacroDeclarationInstance[] paramInstances;
+                if (paramName in instance.params)
+                    paramInstances = instance.params[paramName].instances;
+                bool[string] paramAdded;
+                foreach (p2; paramInstances)
+                {
+                    if (p2.usedName !in paramAdded)
+                    {
+                        instance.paramNames ~= MacroParamName(p2.usedName,
+                                p2.macroDeclaration.name, index);
+                        paramAdded[p2.usedName] = true;
+                    }
+                }
+                if (paramInstances.length == 0)
+                {
+                    instance.paramNames ~= MacroParamName(paramName, paramName, index);
+                }
+                index++;
+            }
+        }
+    }
+
+    if (instance.macroDeclaration.type == DeclarationType.macro_)
+    {
+        auto key = text(instance.macroTranslation, " ",
+                instance.paramNames, " ", instance.instanceCode);
+        if (key in instance.macroDeclaration.nameByCode)
+        {
+            instance.usedName = instance.macroDeclaration.nameByCode[key];
+        }
+        else
+        {
+            string name2 = getFreeName(instance.macroDeclaration.name,
+                    getDeclarationFilename(instance.macroDeclaration.location,
+                        data, "" /*instance.macroDeclaration.name*/ , DeclarationFlags.none),
+                    instance.macroDeclaration.condition, data);
+            instance.macroDeclaration.nameByCode[key] = name2;
+            instance.usedName = name2;
+        }
+    }
+    else if (instance.macroDeclaration.type == DeclarationType.macroParam)
+    {
+        auto key = text(instance.macroTranslation, " ", instance.instanceCode);
+        if (key in instance.macroDeclaration.nameByCode)
+        {
+            instance.usedName = instance.macroDeclaration.nameByCode[key];
+        }
+        else
+        {
+            string name2;
+            if (instance.macroDeclaration.nameByCode.length)
+                name2 = text(instance.macroDeclaration.name, "__",
+                        instance.macroDeclaration.nameByCode.length + 2);
+            else
+                name2 = replaceKeywords(instance.macroDeclaration.name);
+            instance.macroDeclaration.nameByCode[key] = name2;
+            instance.usedName = name2;
+        }
+    }
+
+    foreach (ps; instance.params)
+        foreach (p; ps.instances)
+            foreach (t; p.macroTrees)
+                data.macroReplacement.remove(t);
+
+    foreach (usedTree; usedTrees)
+        data.macroReplacement[usedTree] = instance;
+
+    sourceTokens.clear();
+}
+
 void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         LocationContextInfo locationContextInfo)
 {
@@ -440,12 +756,8 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         applyMacroInstances(data, mergedSemantic, child);
     }
 
-    auto locationContext = locationContextInfo.locationContext;
-
     if (locationContextInfo.locationContext !in data.macroInstanceByLocation)
         return;
-
-    static Appender!(SourceToken[]) sourceTokens;
 
     foreach (instanceEntry; data
             .macroInstanceByLocation[locationContextInfo.locationContext].entries)
@@ -455,313 +767,6 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         if (instance.macroTranslation == MacroTranslation.none)
             continue;
 
-        data.currentFilename = getDeclarationFilename(instance.macroTrees[0].location,
-                data, "" /*instance.macroDeclaration.name*/ , DeclarationFlags.none);
-        data.importGraphHere = data.importGraph.get(data.currentFilename, null);
-        data.importedPackagesGraphHere = data.importedPackagesGraph.get(data.currentFilename, null);
-        data.versionReplacementsOr = null;
-        data.afterStringLiteral = false;
-
-        auto instanceCondition = locationContextInfo.condition;
-        if (instanceCondition is null)
-            instanceCondition = mergedSemantic.logicSystem.true_;
-        immutable(Formula)* usedConditionForFile = .usedConditionForFile(data,
-                RealFilename(locationContextInfo.locationContext.rootFilename), true);
-        if (usedConditionForFile !is null)
-            instanceCondition = mergedSemantic.logicSystem.and(instanceCondition,
-                    usedConditionForFile);
-        CodeWriter code;
-        code.indentStr = data.options.indent;
-        code.incIndent;
-
-        assert(data.sourceTokenManager.tokensLeft.data.length == 0);
-        LocationRangeX locRange;
-        MacroDeclarationInstance instance2;
-        MacroDeclaration macroDeclaration2;
-        if (instance.macroDeclaration.type == DeclarationType.macroParam)
-        {
-            if (instance.macroDeclaration.type == DeclarationType.macroParam
-                    && instance.hasParamExpansion)
-            {
-                LocationContextInfo info = instance.locationContextInfo;
-                while (info.locationContext.name != "#")
-                    info = info.parent;
-
-                locRange = info.sourceTokens.childs[1].location;
-            }
-            else if (locationContext.parentLocation.context.filename.length)
-            {
-                locRange.setStartLength(LocationX(locationContext.parentLocation.start.loc,
-                        locationContext), locationContext.parentLocation.inputLength);
-                assert(locationContext.filename == locationContext.parentLocation.context.filename);
-            }
-
-            if (locRange.context !is null)
-            {
-                immutable(LocationContext)* locationContextMacro = macroFromParam(
-                        locationContext.prev);
-                locationContextMacro = locationContextMacro.prev.prev.prev;
-
-                if (locationContextMacro.name.length)
-                {
-                    immutable(LocationContext)* locationContext2 = data.locationContextMap.getLocationContext(
-                            immutable(LocationContext)(null, LocationN.init,
-                            LocationN.LocationDiff.init, "", locationContextMacro.prev.filename));
-                    LocationRangeX l = LocationRangeX(LocationX(locationContextMacro.startInPrev,
-                            locationContext2), locationContextMacro.lengthInPrev);
-
-                    string macroName = locationContextMacro.prev.name;
-
-                    Tuple!(string, LocationRangeX) key = tuple!(string, LocationRangeX)(macroName, l);
-
-                    if (locationContextMacro in data.macroInstanceByLocation)
-                        instance2 = data.macroInstanceByLocation[locationContextMacro]
-                            .entries[0].data;
-
-                    if (key in data.sourceTokenManager.macroDeclarations
-                            && instance2 !is null && instance2.macroDeclaration !is null
-                            && instance2.macroDeclaration.type == DeclarationType.macro_)
-                    {
-                        macroDeclaration2 = data.sourceTokenManager.macroDeclarations[key];
-                        assert(instance2.macroDeclaration is macroDeclaration2);
-                        if (instance2.macroTranslation == MacroTranslation.none)
-                            macroDeclaration2 = null;
-                    }
-                }
-            }
-            else
-            {
-                code.write(" /* TODO: strange macro */ ");
-            }
-        }
-        else
-        {
-            macroDeclaration2 = instance.macroDeclaration;
-            locRange.setStartLength(LocationX(instance.macroDeclaration.definition.location.start.loc,
-                    locationContext), instance.macroDeclaration.definition.location.inputLength);
-            assert(
-                    instance.macroDeclaration.definition.location.context.filename
-                    == locationContext.filename);
-        }
-        if (!locationContext.isParentOf(instance.macroTrees[0].start.context))
-            locRange = LocationRangeX.init;
-        if (locRange.context !is null)
-        {
-            foreach (i; 0 .. locRange.context.contextDepth - 1)
-                data.sourceTokenManager.tokensLeft.put(SourceToken[].init);
-            SourceToken[] tokens;
-
-            if (macroDeclaration2 is null)
-            {
-                tokens = data.sourceTokenManager.sourceTokens[RealFilename(
-                            locRange.context.filename)];
-            }
-            else
-            {
-                sourceTokens.clear();
-                foreach (c; macroDeclaration2.definition.childs[$ - 2].childs)
-                    if (c.content.length)
-                        sourceTokens.put(SourceToken(c, macroDeclaration2.condition, true));
-                foreach (t; macroDeclaration2.definition.childs[$ - 1].childs)
-                {
-                    if (t.childs[0].content.length)
-                        sourceTokens.put(SourceToken(t.childs[0],
-                                macroDeclaration2.condition, false));
-                    foreach (c; t.childs[1].childs)
-                        if (c.content.length)
-                            sourceTokens.put(SourceToken(c, macroDeclaration2.condition, true));
-                }
-                tokens = sourceTokens.data;
-            }
-            tokens = tokens[interpolationSearch!(".token.start.loc",
-                        "<")(tokens, locRange.start.loc) .. $];
-            tokens = tokens[0 .. interpolationSearch!(".token.end.loc",
-                        "<=")(tokens, locRange.end.loc)];
-
-            data.sourceTokenManager.tokensLeft.put(tokens);
-            data.sourceTokenManager.locDone = locRange.start;
-            data.sourceTokenManager.tokensContext = locRange.context;
-        }
-
-        data.sourceTokenManager.inInterpolateMixin = instance.macroDeclaration.type == DeclarationType.macro_
-            && instance.macroTranslation == MacroTranslation.mixin_
-            && instance.macroDeclaration.definition.nonterminalID
-            == preprocNonterminalIDFor!"FuncDefine";
-        data.currentMacroInstance = instance.macroDeclaration.type == DeclarationType.macroParam ? instance2 : instance;
-
-        Tree[] usedTrees = instance.macroTrees;
-        while (usedTrees.length == 1
-                && usedTrees[0].nonterminalID == nonterminalIDFor!"InitializerClause")
-            usedTrees = usedTrees[0].childs[0 .. 1];
-        instance.firstUsedTree = usedTrees[0];
-
-        TreeToCodeFlags treeToCodeFlags = TreeToCodeFlags.none;
-        if (instance.macroDeclaration.type == DeclarationType.macro_)
-            treeToCodeFlags |= TreeToCodeFlags.skipCasts;
-        if (instance.macroDeclaration.type == DeclarationType.macroParam && instance.macroTrees.length == 1
-                && instance.macroDeclaration.funcMacroInstance.macroTrees.length == 1
-                && instance.macroTrees[0] is instance.macroDeclaration
-                    .funcMacroInstance.macroTrees[0])
-            treeToCodeFlags |= TreeToCodeFlags.skipCasts;
-        size_t realCodeStart;
-        size_t indexInParent;
-        Tree parent = getRealParent(usedTrees[0], mergedSemantic, &indexInParent);
-        if (instance.macroDeclaration.type == DeclarationType.macroParam
-                && instance.hasParamExpansion)
-        {
-            LocationContextInfo info = instance.locationContextInfo;
-            while (info.locationContext.name != "#")
-                info = info.parent;
-
-            foreach (t; info.sourceTokens.childs[1].childs)
-                parseTreeToDCode(code, data, t, instanceCondition, null, treeToCodeFlags);
-        }
-        else if (parent.isValid && (parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
-            || (parent.nonterminalID == nonterminalIDFor!"TypeId" && indexInParent == 0)))
-        {
-            ConditionMap!string codeType;
-            CodeWriter codeAfterDeclSeq;
-            codeAfterDeclSeq.indentStr = data.options.indent;
-            bool afterTypeInDeclSeq;
-            foreach (usedTree; usedTrees)
-            {
-                if (code.data.length == 0 && usedTree.isValid)
-                {
-                    writeComments(code, data, locationBeforeUsedMacro(usedTree, data, false));
-                    realCodeStart = code.data.length;
-                }
-                if (usedTree.isValid)
-                {
-                    collectDeclSeqTokens(code, codeType, codeAfterDeclSeq,
-                            afterTypeInDeclSeq, usedTree, instanceCondition, data, null);
-                }
-            }
-
-            ConditionMap!string realId;
-            translateBuiltinAll(codeType, realId, instanceCondition, false, data, usedTrees[0].start);
-            realId.removeFalseEntries();
-            code.write(idMapToCode(realId, instanceCondition, data));
-            code.write(codeAfterDeclSeq.data);
-        }
-        else
-        {
-            foreach (usedTree; usedTrees)
-            {
-                if (code.data.length == 0 && usedTree.isValid)
-                {
-                    writeComments(code, data, locationBeforeUsedMacro(usedTree, data, false));
-                    realCodeStart = code.data.length;
-                }
-                parseTreeToDCode(code, data, usedTree, instanceCondition, null, treeToCodeFlags);
-            }
-        }
-
-        data.sourceTokenManager.inInterpolateMixin = false;
-        data.currentMacroInstance = null;
-
-        size_t realCodeEnd = code.data.length;
-        if (data.sourceTokenManager.tokensLeft.data.length)
-            writeComments(code, data, locRange.end);
-
-        data.sourceTokenManager.tokensContext = null;
-        data.sourceTokenManager.tokensLeft.shrinkTo(0);
-
-        instance.instanceCode = code.data.idup;
-        if (instance.instanceCode.startsWith(data.options.indent))
-        {
-            instance.instanceCode = instance.instanceCode[data.options.indent.length .. $];
-            if (realCodeStart)
-            {
-                assert(realCodeStart >= data.options.indent.length);
-                realCodeStart -= data.options.indent.length;
-            }
-            assert(realCodeEnd >= data.options.indent.length);
-            realCodeEnd -= data.options.indent.length;
-        }
-        instance.realCodeStart = realCodeStart;
-        instance.realCodeEnd = realCodeEnd;
-
-        if (instance.macroDeclaration.type == DeclarationType.macro_)
-        {
-            if (instance.macroDeclaration.definition.nonterminalID == preprocNonterminalIDFor!"FuncDefine")
-            {
-                size_t index;
-                foreach (i, p; instance.macroDeclaration.definition.childs[7].childs)
-                {
-                    if (p.nodeType == NodeType.token || p.childs.length == 1)
-                        continue;
-                    string paramName = p.childs[1].content;
-                    if (paramName == "...")
-                        paramName = "__VA_ARGS__";
-
-                    MacroDeclarationInstance[] paramInstances;
-                    if (paramName in instance.params)
-                        paramInstances = instance.params[paramName].instances;
-                    bool[string] paramAdded;
-                    foreach (p2; paramInstances)
-                    {
-                        if (p2.usedName !in paramAdded)
-                        {
-                            instance.paramNames ~= MacroParamName(p2.usedName,
-                                    p2.macroDeclaration.name, index);
-                            paramAdded[p2.usedName] = true;
-                        }
-                    }
-                    if (paramInstances.length == 0)
-                    {
-                        instance.paramNames ~= MacroParamName(paramName, paramName, index);
-                    }
-                    index++;
-                }
-            }
-        }
-
-        if (instance.macroDeclaration.type == DeclarationType.macro_)
-        {
-            auto key = text(instance.macroTranslation, " ",
-                    instance.paramNames, " ", instance.instanceCode);
-            if (key in instance.macroDeclaration.nameByCode)
-            {
-                instance.usedName = instance.macroDeclaration.nameByCode[key];
-            }
-            else
-            {
-                string name2 = getFreeName(instance.macroDeclaration.name,
-                        getDeclarationFilename(instance.macroDeclaration.location,
-                            data, "" /*instance.macroDeclaration.name*/ , DeclarationFlags.none),
-                        instance.macroDeclaration.condition, data);
-                instance.macroDeclaration.nameByCode[key] = name2;
-                instance.usedName = name2;
-            }
-        }
-        else if (instance.macroDeclaration.type == DeclarationType.macroParam)
-        {
-            auto key = text(instance.macroTranslation, " ", instance.instanceCode);
-            if (key in instance.macroDeclaration.nameByCode)
-            {
-                instance.usedName = instance.macroDeclaration.nameByCode[key];
-            }
-            else
-            {
-                string name2;
-                if (instance.macroDeclaration.nameByCode.length)
-                    name2 = text(instance.macroDeclaration.name, "__",
-                            instance.macroDeclaration.nameByCode.length + 2);
-                else
-                    name2 = replaceKeywords(instance.macroDeclaration.name);
-                instance.macroDeclaration.nameByCode[key] = name2;
-                instance.usedName = name2;
-            }
-        }
-
-        foreach (ps; instance.params)
-            foreach (p; ps.instances)
-                foreach (t; p.macroTrees)
-                    data.macroReplacement.remove(t);
-
-        foreach (usedTree; usedTrees)
-            data.macroReplacement[usedTree] = instance;
-
-        sourceTokens.clear();
+        generateMacroCode(data, mergedSemantic, locationContextInfo, instance);
     }
 }
