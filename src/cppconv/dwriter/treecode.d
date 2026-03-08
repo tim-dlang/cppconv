@@ -1775,48 +1775,57 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
 
+        immutable(Formula)* conditionIsArray = semantic.logicSystem.false_;
         foreach (combination; iterateCombinations())
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
-                    semantic.logicSystem, condition);
-            Appender!string app;
+                    semantic.logicSystem, condition, null, semantic.mergedTreeDatas);
 
             auto t = chooseType(semantic.extraInfo(tree.childs[0]).type, ppVersion, true);
 
             if (t.kind == TypeKind.array)
-                app.put("[0]");
+                conditionIsArray = semantic.logicSystem.or(conditionIsArray, ppVersion.condition);
+        }
 
-            app.put(".");
+        bool shouldDescent(Tree tree)
+        {
+            return tree.nonterminalID == nonterminalIDFor!"SimpleTemplateId";
+        }
 
-            void buildSuffix(Tree tree, ref IteratePPVersions ppVersion)
+        codeWrapper.checkTree(tree.childs, false, &shouldDescent);
+
+        void onTree(Tree tree, immutable(Formula)* condition2)
+        {
+            if (tree.nonterminalID == nonterminalIDFor!"SimpleTemplateId")
             {
-                if (tree.nodeType == NodeType.token)
-                {
-                    if (tree.content.length)
-                    {
-                        app.put(replaceKeywords(tree.content));
-                    }
-                }
-                else
-                {
-                    foreach (c; tree.childs)
-                        iteratePPVersions!buildSuffix(c, ppVersion);
-                }
+                codeWrapper.writeTree(code, &onTree, tree.childs[0], condition2);
+                codeWrapper.writeCode(code, "!(", condition2);
+                skipToken(code, data, tree.childs[1]);
+                codeWrapper.writeTree(code, &onTree, tree.childs[2], condition2);
+                codeWrapper.writeCode(code, ")", condition2);
+                skipToken(code, data, tree.childs[3]);
+                return;
             }
-
-            foreach (c; tree.childs[2 .. $])
-                iteratePPVersions!buildSuffix(c, ppVersion);
-
-            codeWrapper.add("", app.data, ppVersion.condition);
+            parseTreeToDCode(code, data, tree, condition2, currentScope);
+            if (tree.location.context !is null)
+            {
+                writeComments(code, data, data.sourceTokenManager.collectTokens(tree.location.end));
+                writeComments(code, data,
+                        data.sourceTokenManager.collectTokensUntilLineEnd(tree.location.end,
+                            condition2));
+            }
         }
 
         codeWrapper.begin(code, condition);
-        parseTreeToDCode(code, data, tree.childs[0], condition, currentScope);
-        if (data.sourceTokenManager.tokensLeft.data.length > 0)
-            writeComments(code, data, tree.childs[1].start);
+
+        codeWrapper.writeTree(code, &onTree, tree.childs[0]);
+        if (!conditionIsArray.isFalse)
+            codeWrapper.writeString(code, "[0]", conditionIsArray);
+        skipToken(code, data, tree.childs[1]);
+        codeWrapper.writeCode(code, ".");
+        foreach (c; tree.childs[2 .. $])
+            codeWrapper.writeTree(code, &onTree, c);
         codeWrapper.end(code, condition);
-        if (data.sourceTokenManager.tokensLeft.data.length > 0)
-            writeComments(code, data, tree.end, true);
     }
     else if (auto match = tree.matchTreePattern!q{
             Designator(".", *)
@@ -2080,7 +2089,18 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
                 }
                 else
                 {
-                    string name = declarationNameToCode(e.data, data, contextScope, newCondition);
+                    string name;
+                    size_t indexInParentExpr = indexInParent;
+                    Tree parentExpr = parent;
+                    while (parentExpr.nonterminalID == nonterminalIDFor!"SimpleTemplateId")
+                        parentExpr = getRealParent(parentExpr, semantic, &indexInParentExpr);
+                    if (parentExpr.nonterminalID == nonterminalIDFor!"PostfixExpression"
+                        && parentExpr.childs[1].nodeType == NodeType.token
+                        && parentExpr.childs[1].content.among(".", "->")
+                        && indexInParentExpr == parentExpr.childs.length - 1)
+                        name = chooseDeclarationName(e.data, data);
+                    else
+                        name = declarationNameToCode(e.data, data, contextScope, newCondition);
                     if (e.data !in data.fileByDecl && realId.conditionAll !is null)
                         newCondition = logicSystem.and(newCondition, realId.conditionAll.negated);
                     realId.addReplace(newCondition, name, logicSystem);

@@ -27,8 +27,14 @@ struct S
 
 int f(S* s)
 {
-	return mixin(q{s
+	return mixin(q{s.
 }
- ~ ((defined!"DEF") ? ".x" : ".y"));
+~ (defined!"DEF" ? q{
+/+ i +/x
+}:"")
+~ (!defined!"DEF" ? q{
+y
+}:"")
+);
 }
 

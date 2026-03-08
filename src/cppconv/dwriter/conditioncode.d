@@ -153,7 +153,8 @@ struct ConditionalCodeWrapper
         return false;
     }
 
-    void checkTree(Tree tree, bool allowNonArrayPPIf)
+    void checkTree(Tree tree, bool allowNonArrayPPIf,
+        scope bool delegate(Tree) shouldDescent = null)
     in(!active)
     {
         if (allowNonArrayPPIfSet)
@@ -171,24 +172,29 @@ struct ConditionalCodeWrapper
                 alwaysUseMixin = true;
             }
         }
-        if (tree.nodeType == NodeType.array)
+        if (tree.nodeType == NodeType.array
+            || (tree.nodeType == NodeType.nonterminal && shouldDescent !is null && shouldDescent(tree)))
         {
             foreach (c; tree.childs)
-                checkTree(c, allowNonArrayPPIf);
+                checkTree(c, allowNonArrayPPIf, shouldDescent);
         }
     }
 
-    void checkTree(Tree[] trees, bool allowNonArrayPPIf)
+    void checkTree(Tree[] trees, bool allowNonArrayPPIf,
+        scope bool delegate(Tree) shouldDescent = null)
     in(!active)
     {
         foreach (c; trees)
-            checkTree(c, allowNonArrayPPIf);
+            checkTree(c, allowNonArrayPPIf, shouldDescent);
     }
 
     void changeCurrentCondition(ref CodeWriter code,
             immutable(Formula)* condition, StringType stringType)
     in(active)
     {
+        if (!alwaysUseMixin && conditionMapPrefix.entries.length == 1
+                && conditionMapSuffix.entries.length == 1)
+            return;
         if (condition !is currentCondition || stringType != currentStringType)
         {
             if (currentStringType != StringType.none)
@@ -361,8 +367,9 @@ struct ConditionalCodeWrapper
         active = false;
     }
 
-    void writeTree(ref CodeWriter code, scope void delegate(Tree,
-            immutable(Formula)*) F, Tree tree, immutable(Formula)* condition)
+    void writeTree(ref CodeWriter code,
+            scope void delegate(Tree, immutable(Formula)*) F,
+            Tree tree, immutable(Formula)* condition)
     in(active)
     {
         if (!tree.isValid)
@@ -417,10 +424,31 @@ struct ConditionalCodeWrapper
             writeTree(code, F, c);
     }
 
-    void writeString(ref CodeWriter code, string s)
+    void writeString(ref CodeWriter code, string s, immutable(Formula)* condition = null)
     in(active)
     {
-        changeCurrentCondition(code, firstCondition, StringType.string);
+        if (condition is null)
+            condition = firstCondition;
+        if (!alwaysUseMixin && conditionMapPrefix.entries.length == 1
+                && conditionMapSuffix.entries.length == 1)
+        {
+        }
+        else
+            changeCurrentCondition(code, condition, StringType.string);
+        code.write(s);
+    }
+
+    void writeCode(ref CodeWriter code, string s, immutable(Formula)* condition = null)
+    in(active)
+    {
+        if (condition is null)
+            condition = firstCondition;
+        if (!alwaysUseMixin && conditionMapPrefix.entries.length == 1
+                && conditionMapSuffix.entries.length == 1)
+        {
+        }
+        else
+            changeCurrentCondition(code, condition, StringType.code);
         code.write(s);
     }
 }

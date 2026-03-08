@@ -28,19 +28,31 @@ void function(const(char)* s) write;
 
 void f1(S* x)
 {
-	mixin(q{x
+	mixin(q{x.
 }
- ~ ((defined!"DEF") ? ".write_impl" : ".write")) = mixin((defined!"DEF") ? q{
-         & write
-     } : q{
+~ (defined!"DEF" ? q{
+/+ write +/write_impl
+}:"")
+~ (!defined!"DEF" ? q{
+write
+}:"")
+) = mixin((defined!"DEF") ? q{
+        & write
+    } : q{
         &write
-     });
+    });
 }
 
 void f2(S* x, const(char)* str)
 {
-	mixin(q{x
+	mixin(q{x.
 }
- ~ ((defined!"DEF") ? ".write_impl" : ".write"))(str);
+~ (defined!"DEF" ? q{
+/+ write +/write_impl
+}:"")
+~ (!defined!"DEF" ? q{
+write
+}:"")
+)(str);
 }
 

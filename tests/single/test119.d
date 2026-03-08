@@ -53,8 +53,14 @@ int function(git_config_backend*, git_config_level_t level, const(git_repository
 
 int git_config_file_open(git_config_backend* cfg, uint  level, const(git_repository)* repo)
 {
-	return mixin(q{cfg
+	return mixin(q{cfg.
 }
- ~ ((defined!"_WIN32") ? "._open" : ".open"))(cfg, cast(git_config_level_t) (level), repo);
+~ (defined!"_WIN32" ? q{
+/+ open +/_open
+}:"")
+~ (!defined!"_WIN32" ? q{
+open
+}:"")
+)(cfg, cast(git_config_level_t) (level), repo);
 }
 
