@@ -61,3 +61,10 @@ void f()
     a |= b;
     a ^= b;
 }
+
+#ifndef DEF
+struct S2
+{
+    S2 operator +(S2 rhs) { return S2(); }
+};
+#endif

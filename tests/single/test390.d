@@ -69,3 +69,11 @@ void f()
     a ^= b;
 }
 
+static if (!defined!"DEF")
+{
+struct S2
+{
+    S2 opBinary(string op)(S2 rhs) if (op == "+") { return S2(); }
+}
+}
+

@@ -1342,9 +1342,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                     return;
             }
             string op = d.name["operator ".length .. $];
-            if (d.type2.kind == TypeKind.function_)
+            QualType type2 = filterType(d.type2, condition, semantic);
+            if (type2.kind == TypeKind.function_)
             {
-                auto functionType = cast(FunctionType) d.type2.type;
+                auto functionType = cast(FunctionType) type2.type;
                 if (op.among("++", "--", "*", "+", "-", "~")
                         && functionType.parameters.length == 0 && parentClassTree.isValid)
                 {
