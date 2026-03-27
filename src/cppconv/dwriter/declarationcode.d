@@ -1091,16 +1091,6 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         if (prevSeparator.isValid)
             writeComments(code, data, d.declaratorTree.start);
 
-        bool closeCommentWholeDecl;
-        if (d.name.startsWith("operator "))
-        {
-            code.writeln("/+");
-            closeCommentWholeDecl = true;
-        }
-        scope (success)
-            if (closeCommentWholeDecl)
-                code.write("+/");
-
         ConditionMap!string codeType;
         CodeWriter codeAfterDeclSeq;
         codeAfterDeclSeq.indentStr = data.options.indent;
