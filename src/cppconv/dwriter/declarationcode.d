@@ -1331,10 +1331,17 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         if (forwardDecl !is null)
             combinedFlags |= forwardDecl.flags;
 
+        QualType resultType = filterType(functionResultType(d.type2, semantic), condition, semantic);
+
         string operatorFunctionName, operatorTemplateConstraint;
         bool commentWholeDecl;
         bool addExternD;
-        if (d.name.startsWith("operator "))
+        if (d.name == "operator cast")
+        {
+            if (resultType.kind != TypeKind.builtin || resultType.name != "bool")
+                commentWholeDecl = true;
+        }
+        else if (d.name.startsWith("operator "))
         {
             if (d.name == "operator =" && forwardDecl is null && !hasFunctionBody)
             {
@@ -1392,8 +1399,6 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 commentWholeDecl = true;
             }
         }
-
-        QualType resultType = functionResultType(d.type2, semantic);
 
         bool isConstructor, isDestructor;
         if (lastDeclaration !is null && lastDeclaration.type == DeclarationType.type
