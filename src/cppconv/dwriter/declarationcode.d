@@ -1355,13 +1355,13 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
             if (d.type2.kind == TypeKind.function_)
             {
                 auto functionType = cast(FunctionType) d.type2.type;
-                if (op.among("++", "--", "*")
+                if (op.among("++", "--", "*", "+", "-", "~")
                         && functionType.parameters.length == 0 && parentClassTree.isValid)
                 {
                     operatorFunctionName = "opUnary(string op)";
                     operatorTemplateConstraint = " if (op == \"" ~ op ~ "\")";
                 }
-                if (op.among("&", "|", "+", "-")
+                if (op.among("&", "|", "+", "-", "*", "/", "%", "^")
                         && functionType.parameters.length == 1 && parentClassTree.isValid)
                 {
                     if (op == "+" && lastDeclaration !is null
@@ -1378,7 +1378,7 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 {
                     operatorFunctionName = "opAssign";
                 }
-                if (op.among("&=", "|=", "+=", "-=")
+                if (op.among("&=", "|=", "+=", "-=", "*=", "/=", "%=", "^=")
                         && functionType.parameters.length == 1 && parentClassTree.isValid)
                 {
                     if (op == "+=" && lastDeclaration !is null
