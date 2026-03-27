@@ -2212,6 +2212,13 @@ void handleConflictExpression(Tree tree, ref immutable(Formula)* goodConditionSt
         handleConflictExpression(tree.childs[1], goodConditionStrict,
                 goodCondition, semantic, ConflictExpressionFlags.none);
     }
+    else if (tree.nonterminalID == nonterminalIDFor!"Condition")
+    {
+        handleConflictExpression(tree.childs[0], goodConditionStrict,
+                goodCondition, semantic, ConflictExpressionFlags.inType);
+        handleConflictExpression(tree.childs[1], goodConditionStrict,
+                goodCondition, semantic, ConflictExpressionFlags.none);
+    }
     else if (tree.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq")
     {
         handleConflictExpression(tree.childs[0], goodConditionStrict,

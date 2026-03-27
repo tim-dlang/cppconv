@@ -963,7 +963,21 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
     {
         auto codeWrapper = ConditionalCodeWrapper(condition, data);
 
-        codeWrapper.checkTree(tree.childs, false);
+        bool shouldDescent(Tree tree)
+        {
+            if (tree.nonterminalID == nonterminalIDFor!"IfStatementHead"
+                && tree.childs[2].nodeType == NodeType.merged)
+            {
+                auto mdata = &semantic.mergedTreeData(tree.childs[2]);
+                foreach (i, c; tree.childs[2].childs)
+                    if (c.nonterminalID == nonterminalIDFor!"Condition"
+                        && !mdata.conditions[i].isFalse)
+                        return true;
+            }
+            return false;
+        }
+
+        codeWrapper.checkTree(tree.childs, false, &shouldDescent);
 
         if (codeWrapper.alwaysUseMixin)
         {
@@ -971,6 +985,12 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
             void onTree(Tree t, immutable(Formula)* condition2)
             {
+                if (shouldDescent(t))
+                {
+                    foreach (c; t.childs)
+                        codeWrapper.writeTree(code, &onTree, c, condition2);
+                    return;
+                }
                 parseTreeToDCode(code, data, t, condition2, currentScope);
                 writeComments(code, data, data.sourceTokenManager.collectTokens(t.location.end));
                 writeComments(code, data,
