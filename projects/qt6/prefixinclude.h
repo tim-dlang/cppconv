@@ -200,6 +200,11 @@ template<int> struct QIntegerForSize
 #undef __cpp_lib_invoke
 #undef __has_cpp_attribute_nodiscard
 
+#undef Q_FALLTHROUGH
+#undef __has_cpp_attribute_clang_fallthrough
+#define __has_cpp_attribute_fallthrough 1
+#undef __has_cpp_attribute_gnu_fallthrough
+
 #undef QT_CRYPTOGRAPHICHASH_ONLY_SHA1
 #undef QT_SHA3_KECCAK_COMPAT
 

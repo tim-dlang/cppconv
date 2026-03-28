@@ -1246,11 +1246,76 @@ class DoubleParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
     }
 }
 
+string toIdentifierText(Tree toIdentNode, MacroParam[string] paramMap)
+{
+    string allText;
+    foreach (innerToken; toIdentNode.childs)
+    {
+        string tokenContent = innerToken.childs[0].content;
+        if (paramMap !is null && tokenContent in paramMap)
+        {
+            foreach (pt; paramMap[tokenContent].tokens)
+                allText ~= pt.t.content;
+        }
+        else
+        {
+            allText ~= tokenContent;
+        }
+    }
+    // Replace consecutive non-identifier characters with single _
+    string identifier;
+    bool lastWasSpecial = false;
+    foreach (char c; allText)
+    {
+        if (c.inCharSet!"a-zA-Z0-9_")
+        {
+            identifier ~= c;
+            lastWasSpecial = false;
+        }
+        else
+        {
+            if (!lastWasSpecial)
+                identifier ~= '_';
+            lastWasSpecial = true;
+        }
+    }
+    return identifier;
+}
+
 Tree[] parseMacroContent(Tree[] defTokens, bool insidePPExpression)
 {
     Tree[] r;
 
     defTokens = defTokens.dup;
+
+    // Collapse __cppconv_to_identifier(...) into ToIdentifier nodes
+    for (size_t i = 0; i < defTokens.length; i++)
+    {
+        if (defTokens[i].childs[0].isToken
+                && defTokens[i].childs[0].content == "__cppconv_to_identifier"
+                && i + 1 < defTokens.length
+                && defTokens[i + 1].childs[0].content == "(")
+        {
+            size_t end = i + 2;
+            size_t nesting = 1;
+            while (end < defTokens.length && defTokens[end].isValid && nesting > 0)
+            {
+                if (defTokens[end].childs[0].content == "(")
+                    nesting++;
+                else if (defTokens[end].childs[0].content == ")")
+                    nesting--;
+                end++;
+            }
+            Tree[] innerTokens = defTokens[i + 2 .. end - 1].dup;
+            Location.LocationDiff l = defTokens[end - 1].end - defTokens[i].start;
+            auto grammarInfo = getDummyGrammarInfo2("ToIdentifier");
+            Tree toIdent = Tree("ToIdentifier", grammarInfo.startNonterminalID,
+                    grammarInfo.startProductionID, NodeType.nonterminal, innerTokens);
+            toIdent.grammarInfo = grammarInfo;
+            toIdent.setStartEnd(defTokens[i].start, defTokens[i].start + l);
+            defTokens = defTokens[0 .. i] ~ toIdent ~ defTokens[end .. $];
+        }
+    }
 
     for (size_t i = 0; i < defTokens.length;)
     {
@@ -1818,6 +1883,15 @@ Tuple!(Tree, Location)[] replaceMacroConcat(ParserWrapper)(Location start, Tree 
         {
             analyzeTree(start, lhsTree);
         }
+        else if (lhsTree.name == "ToIdentifier")
+        {
+            string ident = toIdentifierText(lhsTree, paramMap);
+            Tree identToken = Tree(ident, SymbolID.max, ProductionID.max, NodeType.token, []);
+            identToken.setStartEnd(reparentLocation(lhsTree.start, start.context),
+                    reparentLocation(lhsTree.end, start.context));
+            tokenLists ~= [tuple!(Tree, Location)(identToken,
+                    reparentLocation(lhsTree.start, start.context))];
+        }
         else if (lhsTree.childs[0].content in paramMap)
         {
             Tree nameToken = lhsTree.childs[0];
@@ -1836,7 +1910,16 @@ Tuple!(Tree, Location)[] replaceMacroConcat(ParserWrapper)(Location start, Tree 
                 start.context), reparentLocation(t.childs[1].end, start.context));
         concatTokens ~= middleChild;
 
-        if (rhsTree.childs[0].content in paramMap)
+        if (rhsTree.name == "ToIdentifier")
+        {
+            string ident = toIdentifierText(rhsTree, paramMap);
+            Tree identToken = Tree(ident, SymbolID.max, ProductionID.max, NodeType.token, []);
+            identToken.setStartEnd(reparentLocation(rhsTree.start, start.context),
+                    reparentLocation(rhsTree.end, start.context));
+            tokenLists ~= [tuple!(Tree, Location)(identToken,
+                    reparentLocation(rhsTree.start, start.context))];
+        }
+        else if (rhsTree.childs[0].content in paramMap)
         {
             Tree nameToken = rhsTree.childs[0];
             tokenLists ~= mapParams(start, nameToken, paramMap, context,
@@ -1960,7 +2043,8 @@ out
 do
 {
     Tree nameToken;
-    if (token.nonterminalID == preprocNonterminalIDFor!"ParamExpansion" || token.name == "ParamConcat")
+    if (token.nonterminalID == preprocNonterminalIDFor!"ParamExpansion" || token.name == "ParamConcat"
+            || token.name == "ToIdentifier")
         nameToken = Tree.init;
     else
         nameToken = token.childs[0];
@@ -2062,6 +2146,14 @@ do
                 processDirectToken(t2[1], t2[0], context, parallelParser, condition,
                         macrosDone, i == replacedTokens.length - 1 && isNextParen, parentParser);
             }
+        }
+        else if (token.name == "ToIdentifier")
+        {
+            string ident = toIdentifierText(token, paramMap);
+            Tree newToken = Tree(ident, SymbolID.max, ProductionID.max, NodeType.token, []);
+            newToken.setStartEnd(start, start + token.inputLength);
+            processDirectToken(start, newToken, context, parallelParser, condition,
+                    macrosDone, isNextParen, parentParser);
         }
         else
         {

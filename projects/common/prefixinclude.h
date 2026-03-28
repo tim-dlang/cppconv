@@ -537,14 +537,14 @@ typedef __builtin_char32_t char32_t;
 #undef assert
 
 // https://clang.llvm.org/docs/LanguageExtensions.html
-#define __has_builtin(x) __has_builtin_ ## x
-#define __has_feature(x) __has_feature_ ## x
-#define __has_extension(x) __has_extension_ ## x
-#define __has_cpp_attribute(x) __has_cpp_attribute_ ## x
-#define __has_c_attribute(x) __has_c_attribute_ ## x
-#define __has_attribute(x) __has_attribute_ ## x
-#define __has_declspec_attribute(x) __has_declspec_attribute_ ## x
-#define __is_identifier(x) __is_identifier ## x
+#define __has_builtin(x) __has_builtin_ ## __cppconv_to_identifier(x)
+#define __has_feature(x) __has_feature_ ## __cppconv_to_identifier(x)
+#define __has_extension(x) __has_extension_ ## __cppconv_to_identifier(x)
+#define __has_cpp_attribute(x) __has_cpp_attribute_ ## __cppconv_to_identifier(x)
+#define __has_c_attribute(x) __has_c_attribute_ ## __cppconv_to_identifier(x)
+#define __has_attribute(x) __has_attribute_ ## __cppconv_to_identifier(x)
+#define __has_declspec_attribute(x) __has_declspec_attribute_ ## __cppconv_to_identifier(x)
+#define __is_identifier(x) __is_identifier_ ## __cppconv_to_identifier(x)
 
 #undef __int8
 #lockdefine __int8
