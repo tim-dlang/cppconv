@@ -32,11 +32,11 @@ void f(int level)
 		{
 		}
 	goto case;
-case 3:
+	case 3:
 		g();
 		/+ __attribute__((fallthrough)); +/
 	goto case;
-case 2:
+	case 2:
 		g();
 		static if ((defined!"DEF" || (configValue!"__has_cpp_attribute_clang_fallthrough" && defined!"__has_cpp_attribute_clang_fallthrough") || (configValue!"__has_cpp_attribute_fallthrough" && defined!"__has_cpp_attribute_fallthrough")))
 		{
@@ -46,11 +46,11 @@ case 2:
 		{
 		}
 	goto case;
-case 5:
+	case 5:
 		g();
 		/+ [[fallthrough]]; +/
 	goto default;
-default:
+	default:
 		g();
 	}
 }

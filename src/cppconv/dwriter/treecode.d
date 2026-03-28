@@ -923,10 +923,13 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
         if (!labelNeedsGoto.isFalse)
         {
+            string lastLineIndent;
+            getLastLineIndent(code, lastLineIndent);
+
             if (tree.childs[1].content == "case")
-                code.writeln("goto case;");
+                code.write("goto case;\n", lastLineIndent);
             else if (tree.childs[1].content == "default")
-                code.writeln("goto default;");
+                code.write("goto default;\n", lastLineIndent);
         }
 
         if (!tree.childs[1].content.among("case", "default"))

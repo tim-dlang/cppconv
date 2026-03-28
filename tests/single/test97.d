@@ -11,13 +11,13 @@ int f(int i)
 		case 1:
 		r *= 3;
 		goto case;
-case 2:
+		case 2:
 		r *= 4;
 		goto case;
-case 3:
+		case 3:
 		r *= 5;
 		goto default;
-default:
+		default:
 		r *= 6;
 	}
 	return r;
