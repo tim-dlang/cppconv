@@ -547,6 +547,28 @@ bool includeDeclsForFile(DWriterData data, string filename)
         || data.options.includeDeclFilenamePatterns.match(filename);
 }
 
+long getDeclarationOrder(Declaration d, DWriterData data)
+{
+    foreach_reverse (ref pattern; data.options.declarationOrder)
+    {
+        DeclarationMatch match;
+        if (isDeclarationMatch(pattern.match, match, d, data.semantic))
+        {
+            return pattern.order;
+        }
+    }
+    return 0;
+}
+
+bool cmpDeclarationLoc2(Declaration a, Declaration b, DWriterData data)
+{
+    long orderA = getDeclarationOrder(a, data);
+    long orderB = getDeclarationOrder(b, data);
+    if (orderA != orderB)
+        return orderA < orderB;
+    return cmpDeclarationLoc(a, b, data.semantic);
+}
+
 void selectDeclarations(DWriterData data)
 {
     auto semantic = data.semantic;
@@ -805,7 +827,7 @@ void selectDeclarations(DWriterData data)
 
     foreach (name, ref decls2; data.declsByFile)
     {
-        decls2.sort!((a, b) => cmpDeclarationLoc(a, b, semantic));
+        decls2.sort!((a, b) => cmpDeclarationLoc2(a, b, data));
 
         ImportInfo[string] neededImports;
         bool[string] neededPackages;

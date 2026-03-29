@@ -119,6 +119,12 @@ struct FileHeaderReplacement
     ConfigRegexMultiline expectedLines;
 }
 
+struct DeclarationOrderPattern
+{
+    DeclarationPattern match;
+    long order;
+}
+
 struct DCodeOptions
 {
     DeclarationPattern[] blacklist;
@@ -143,6 +149,7 @@ struct DCodeOptions
     FileHeaderReplacement[] fileHeaderReplacement;
     ConfigRegex allowParameterImplicitCastsFilenamePatterns;
     ConfigRegex transitiveConstFilenamePatterns;
+    DeclarationOrderPattern[] declarationOrder;
 }
 
 class DWriterData

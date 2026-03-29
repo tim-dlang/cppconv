@@ -1,0 +1,6 @@
+{
+    "includeDeclFilenamePatterns": ".*",
+    "declarationOrder": [
+        {"match": {"name": "func1"}, "order": -1}
+    ]
+}
