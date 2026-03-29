@@ -1057,8 +1057,7 @@ void calcNeedsCast(T)(ref immutable(Formula)* needsCastCondition, ref immutable(
             if (toType1.type !is null && toType1.kind == TypeKind.array)
             {
                 auto atype = cast(ArrayType) toType1.type;
-                if ((atype.declarator.isValid && !atype.declarator.childs[2].isValid)
-                        || parent3.name != "InitDeclarator")
+                if ((atype.declarator.isValid && !atype.declarator.childs[2].isValid))
                 {
                     ConditionMap!string codeType;
                     if (!combination.prefixDone && wholeExpressionWrapper !is null)
