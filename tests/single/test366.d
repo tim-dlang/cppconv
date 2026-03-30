@@ -51,16 +51,8 @@ struct X
 
 void f(X* p, Ref n)
 {
-    S* node = mixin((defined!"DEF") ? q{
-            mixin(NODE(q{n}))
-        } : q{
-        mixin(NODE(q{n}))
-        });
+    S* node = mixin(NODE(q{n}));
     uint nu = cast(uint)node.NU;
-    S* node2 = mixin((defined!"DEF") ? q{
-            mixin(NODE(q{n}))
-        } : q{
-        mixin(NODE(q{n}))
-        }) + nu;
+    S* node2 = mixin(NODE(q{n})) + nu;
 }
 

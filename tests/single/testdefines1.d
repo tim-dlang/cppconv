@@ -28,13 +28,5 @@ enum X = -1;
 __gshared int x4;
 }
 
-__gshared int test = mixin((defined!"DEF1") ? q{
-        X
-    } : ((!defined!"DEF1" && defined!"DEF2")) ? q{
-        X
-    } : ((!defined!"DEF1" && !defined!"DEF2" && defined!"DEF3")) ? q{
-        X
-    } : q{
-        X
-    });
+__gshared int test = X;
 

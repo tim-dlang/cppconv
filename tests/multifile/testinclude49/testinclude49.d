@@ -22,11 +22,5 @@ static if (!defined!"DEF" && !defined!"DEF2")
 enum X = 3;
 }
 
-__gshared int x = mixin((defined!"DEF") ? q{
-        X
-    } : ((!defined!"DEF" && defined!"DEF2")) ? q{
-        X
-    } : q{
-        X
-    });
+__gshared int x = X;
 

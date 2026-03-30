@@ -169,7 +169,7 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
     if (tree in data.macroReplacement)
     {
-        writeMacroInstance(code, data, tree, condition, currentScope, treeToCodeFlags);
+        writeMacroInstance(code, data, tree, condition, currentScope, treeToCodeFlags, true);
         return;
     }
 

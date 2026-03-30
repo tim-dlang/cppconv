@@ -61,24 +61,8 @@ extern(D) alias F = function string(string i)
 
 void g()
 {
-	static if (defined!"DEF")
-	{
-    	mixin(S);
-	}
-	else
-	{
-    mixin(S);
-	}
-
+	mixin(S);
 	int x;
-	static if (defined!"DEF")
-	{
-    	mixin(F(q{x}));
-	}
-	else
-	{
-    mixin(F(q{x}));
-	}
-
+	mixin(F(q{x}));
 }
 

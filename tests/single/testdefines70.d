@@ -32,8 +32,6 @@ void f(uint64_t value)
 {
     printf("(0x%016" ~ mixin((defined!"DEF1") ? q{
             PRIX64
-        } : ((!defined!"DEF1" && defined!"DEF2")) ? q{
-        __PRI64_PREFIX
         } : q{
         __PRI64_PREFIX
         })~ mixin((!defined!"DEF1") ? q{

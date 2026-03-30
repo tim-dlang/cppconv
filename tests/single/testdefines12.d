@@ -21,14 +21,6 @@ template f(params...) if (params.length == 1)
     enum f = (x);
 }
 
-__gshared int x = f!(mixin((defined!"DEF") ? q{
-                A
-            } : q{
-            A
-            }));
-__gshared int y = 3* f!(4+ mixin((defined!"DEF") ? q{
-                A
-            } : q{
-            A
-            })+5);
+__gshared int x = f!(A);
+__gshared int y = 3* f!(4+ A+5);
 

@@ -14,9 +14,5 @@ static if (!defined!"DEF")
 enum X = "ld";
 }
 
-__gshared const(char)* format = "text %" ~ mixin((defined!"DEF") ? q{
-        X
-    } : q{
-        X
-    }) ~ " text";
+__gshared const(char)* format = "text %" ~ X ~ " text";
 

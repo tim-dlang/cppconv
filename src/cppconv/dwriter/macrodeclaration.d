@@ -876,7 +876,7 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
 }
 
 void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immutable(Formula)* condition,
-        Scope currentScope, TreeToCodeFlags treeToCodeFlags)
+        Scope currentScope, TreeToCodeFlags treeToCodeFlags, bool consumeWhitespace)
 {
     auto semantic = data.semantic;
     size_t indexInParent;
@@ -922,7 +922,7 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
         }
         else
             code.write("$(", instance.usedName, ")");
-        if (data.sourceTokenManager.tokensLeft.data.length)
+        if (consumeWhitespace && data.sourceTokenManager.tokensLeft.data.length)
             data.sourceTokenManager.collectTokens(tree.location.end);
         data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
     }
@@ -968,7 +968,7 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
         {
             outer: do
             {
-                auto tokens = data.sourceTokenManager.collectTokens(tree.location.end);
+                auto tokens = consumeWhitespace ? data.sourceTokenManager.collectTokens(tree.location.end) : [];
                 if (tokens.length == 0 || tokens[0].isWhitespace)
                     break outer;
                 assert(!tokens[0].isWhitespace, text(locationStr(tree.start),
@@ -1112,7 +1112,7 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
             parseTreeToCodeTerminal(code, ")");
         }
         parseTreeToCodeTerminal(code, macroSuffix);
-        if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
+        if (consumeWhitespace && data.sourceTokenManager.tokensLeft.data.length && allowComments)
             data.sourceTokenManager.collectTokens(tree.location.end);
         if (instance.macroTranslation == MacroTranslation.mixin_
                 && (tree.name.endsWith("Statement") || (tree.nodeType == NodeType.merged && tree.nonterminalID == nonterminalIDFor!"Statement") || tree.nonterminalID == nonterminalIDFor!"StaticAssertDeclaration" || parent.nonterminalID == nonterminalIDFor!"ClassBody"))

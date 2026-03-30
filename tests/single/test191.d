@@ -18,16 +18,8 @@ enum TBLS = 1;
  * Generated automatically by crc32.c
  */
 
-__gshared const(ulong)[5][ (mixin((defined!"BYFOUR") ? q{
-        TBLS
-    } : q{
-        TBLS
-    }))]  crc_table =
-mixin("mixin(buildStaticArray!(q{const(ulong)[5]}, (mixin((defined!\"BYFOUR\") ? q{
-        TBLS
-    } : q{
-        TBLS
-    })), q{" ~ q{
+__gshared const(ulong)[5][ TBLS]  crc_table =
+mixin("mixin(buildStaticArray!(q{const(ulong)[5]}, TBLS, q{" ~ q{
     }
     ~ (defined!"BYFOUR" ? q{
 

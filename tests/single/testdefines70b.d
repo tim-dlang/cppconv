@@ -30,10 +30,8 @@ void printf(const(char)* fmt, ...);
 
 void f(uint64_t value)
 {
-    printf("(0x%016" ~ mixin(((!defined!"DEF1" && defined!"DEF2")) ? q{
+    printf("(0x%016" ~ mixin((!defined!"DEF1") ? q{
             __PRI64_PREFIX/+ PRIX64 +/
-        } : ((!defined!"DEF1" && !defined!"DEF2")) ? q{
-        __PRI64_PREFIX
         } : q{
         ""
         })~ mixin((!defined!"DEF1") ? q{

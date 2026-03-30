@@ -25,10 +25,6 @@ __gshared int test1 = X;
 }
 static if (!defined!"DEF")
 {
-__gshared int test2 = mixin((defined!"DEF2") ? q{
-        X
-    } : q{
-        X
-    });
+__gshared int test2 = X;
 }
 

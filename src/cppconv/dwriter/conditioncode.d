@@ -10,6 +10,7 @@ import cppconv.conditiontree;
 import cppconv.cppdeclaration;
 import cppconv.cppsemantic;
 import cppconv.dwriter.declarationcode;
+import cppconv.dwriter.macrodeclaration;
 import cppconv.dwriter.treecode;
 import cppconv.dwriter.dwriter;
 import cppconv.grammarcpp;
@@ -836,6 +837,39 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
         }
         parseTreeToCodeTerminal(code, data.options.macroReplacements[commonMacro]);
         return;
+    }
+
+    // Merge identical macro instances
+    {
+        bool afterStringLiteralBak = data.afterStringLiteral;
+        size_t outI = 0;
+        size_t[string] macroCodes;
+        foreach (i, c; childs)
+        {
+            if (childs[i] in data.macroReplacement)
+            {
+                auto instance = data.macroReplacement[childs[i]];
+
+                CodeWriter code2;
+                writeMacroInstance(code2, data, childs[i], logicSystem.and(condition, conditions[i]), currentScope, TreeToCodeFlags.none, false);
+                data.afterStringLiteral = afterStringLiteralBak;
+
+                if (code2.data in macroCodes)
+                {
+                    size_t j = macroCodes[code2.data];
+                    conditions[j] = logicSystem.or(conditions[j], conditions[i]);
+                    continue;
+                }
+
+                macroCodes[code2.data] = outI;
+            }
+
+            conditions[outI] = conditions[i];
+            childs[outI] = childs[i];
+            outI++;
+        }
+        conditions.length = outI;
+        childs.length = outI;
     }
 
     SourceToken[] tokensBefore;
