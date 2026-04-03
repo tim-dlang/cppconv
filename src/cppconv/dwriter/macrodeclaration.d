@@ -379,7 +379,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     }
                 instance.macroTranslation = MacroTranslation.builtin;
             }
-            else if (macroTrees.length > 0 && allTreesStringLiteral && allParamsStringLiterals)
+            else if (macroTrees.length > 0 && allParamsNoExpansion && allTreesStringLiteral && allParamsStringLiterals)
             {
                 foreach (ps; instance.params)
                     foreach (p; ps.instances)
@@ -903,7 +903,7 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
 
     name = qualifyName(name, instance.macroDeclaration, data, currentScope, condition);
 
-    bool possibleStringLiteral = instance.macroTranslation == MacroTranslation.enumValue || instance.hasParamExpansion;
+    bool possibleStringLiteral = (parent.isValid && parent.nonterminalID.nonterminalIDAmong!("StringLiteralSequence")) || instance.hasParamExpansion;
     if (data.afterStringLiteral && possibleStringLiteral)
         code.write("~ ");
     if (instance.macroDeclaration.type == DeclarationType.macroParam)

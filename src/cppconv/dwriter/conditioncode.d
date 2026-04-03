@@ -219,6 +219,7 @@ struct ConditionalCodeWrapper
                 simplified = removeLocationInstanceConditions(simplified,
                         data.logicSystem, data.mergedFileByName);
                 code.write("~ ");
+                data.afterStringLiteral = false;
                 if (condition !is firstCondition)
                     code.write("(", conditionToDCode(simplified, data), " ? ");
                 if (stringType == StringType.code)

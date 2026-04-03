@@ -7,3 +7,9 @@ const char *s3 = __STRING3(test3);
 #define TEST2 test4
 const char *s4 = __STRING(TEST4);
 const char *s4b = __STRING(TEST4 x);
+
+const char *line1 = __STRING(__LINE__);
+const char *line2 = __STRING2(__LINE__);
+const char *line3 = __STRING3(__LINE__);
+#define LOCATION __FILE__ ":" __STRING(__LINE__);
+const char *location1 = LOCATION;
