@@ -1814,6 +1814,18 @@ void processMacroContent(ParserWrapper)(immutable(LocationContext)* locationCont
 Tuple!(Tree, Location)[] mapParams(ParserWrapper)(Location start, Tree nameToken, MacroParam[string] paramMap,
         Context!(ParserWrapper) context, Location funcMacroLocation, immutable(Formula)* condition)
 {
+    auto startLoc = paramMap[nameToken.content].startLoc;
+    auto endLoc = paramMap[nameToken.content].endLoc;
+    bool goodParam = startLoc.context !is null && startLoc.context is endLoc.context;
+
+    assert(start.context.name.among("^", "##", "#"));
+
+    auto locationContextX1 = context.getLocationContext(immutable(LocationContext)(start.context,
+            start.context.name == "#" ? LocationN.init : nameToken.start.loc,
+            start.context.name == "#" ? LocationN.LocationDiff.init : nameToken.inputLength,
+            funcMacroLocation.context.prev.name ~ "." ~ nameToken.content,
+            goodParam ? startLoc.context.filename : ""));
+
     Tuple!(Tree, Location)[] r;
     foreach (i, t2; paramMap[nameToken.content].tokens)
     {
@@ -1821,18 +1833,9 @@ Tuple!(Tree, Location)[] mapParams(ParserWrapper)(Location start, Tree nameToken
         LocationX commonLoc2 = funcMacroLocation;
         findCommonLocationContext(commonLoc1, commonLoc2);
 
-        auto startLoc = paramMap[nameToken.content].startLoc;
-        auto endLoc = paramMap[nameToken.content].endLoc;
-        bool goodParam = startLoc.context !is null && startLoc.context is endLoc.context;
-
-        assert(start.context.name.among("^", "##"));
-        auto locationContextX1 = context.getLocationContext(immutable(LocationContext)(start.context,
-                nameToken.start.loc, nameToken.inputLength,
-                funcMacroLocation.context.prev.name ~ "." ~ nameToken.content,
-                goodParam ? startLoc.context.filename : ""));
-        auto locationContextX = context.getLocationContext(immutable(LocationContext)(locationContextX1, goodParam
-                ? startLoc.loc : LocationN.init, goodParam
-                ? (endLoc.loc - startLoc.loc) : LocationN.LocationDiff.init,
+        auto locationContextX = context.getLocationContext(immutable(LocationContext)(locationContextX1,
+                goodParam ? startLoc.loc : LocationN.init,
+                goodParam ? (endLoc.loc - startLoc.loc) : LocationN.LocationDiff.init,
                 "^", commonLoc1.context.filename));
 
         context.locationContextInfoMap.getLocationContextInfo(locationContextX)
@@ -2079,33 +2082,30 @@ do
 
             assert(start.context.name == "^");
 
-            string newText = "\"";
             ParamToken[] paramTokens;
             if (name in paramMap)
                 paramTokens = paramMap[name].tokens;
-            foreach (i, t2; paramTokens)
-            {
-                if (i && t2.t.start > paramTokens[i - 1].t.end)
-                {
-                    newText ~= " ";
-                }
-                newText ~= t2.t.content.escapeD;
-            }
-            newText ~= "\"";
-
-            Tree newToken = Tree(newText, SymbolID.max, ProductionID.max, NodeType.token, []);
 
             assert(token.start.context.filename == start.context.filename);
             auto locationContextX0 = context.getLocationContext(immutable(LocationContext)(start.context,
-                    token.start.loc, token.inputLength, "#", start.context.filename));
+                    token.start.loc, token.inputLength, "#", ""));
+
+            Tuple!(Tree, Location)[] mappedTokens;
+            if (name in paramMap)
+                mappedTokens = mapParams(Location(LocationN.init, locationContextX0), token.childs[2], paramMap, context,
+                        funcMacroLocation, condition);
 
             Tree firstChild = Tree(token.childs[0].content, SymbolID.max,
                     ProductionID.max, NodeType.token, []);
             firstChild.setStartEnd(start,
                     start + LocationN.LocationDiff.fromStr(token.childs[0].content));
             Tree[] newChilds;
-            foreach (i, t2; paramTokens)
-                newChilds ~= t2.t;
+            foreach (i, t2; mappedTokens)
+            {
+                Tree token2 = Tree(t2[0].content, SymbolID.max, ProductionID.max, NodeType.token, []);
+                token2.setStartEnd(t2[1], t2[1] + t2[0].inputLength);
+                newChilds ~= token2;
+            }
             Tree arr = createArrayTree(newChilds);
             auto grammarInfo = getDummyGrammarInfo("ParamExpansion");
             Tree sourceTokens = Tree("ParamExpansion", grammarInfo.startNonterminalID,
@@ -2116,25 +2116,24 @@ do
             context.locationContextInfoMap.getLocationContextInfo(locationContextX0)
                 .condition = condition;
 
-            auto locationContextX1 = context.getLocationContext(immutable(LocationContext)(locationContextX0,
-                    start.loc, token.inputLength, start.context.prev.name ~ "." ~ name, ""));
-            auto locationContextX = context.getLocationContext(
-                    immutable(LocationContext)(locationContextX1, LocationN.init,
-                    LocationN.LocationDiff.init, "^", funcMacroLocation.context.filename));
-
-            context.locationContextInfoMap.getLocationContextInfo(locationContextX)
-                .condition = condition;
-
-            LocationN start2, end2;
-            if (name in paramMap && paramMap[name].tokens.length)
+            LocationX lastEnd;
+            string newText = "\"";
+            foreach (i, t2; mappedTokens)
             {
-                start2 = paramMap[name].tokens[0].t.start.loc;
-                end2 = paramMap[name].tokens[$ - 1].t.end.loc;
+                if (i && t2[1] > lastEnd)
+                {
+                    newText ~= " ";
+                }
+                newText ~= t2[0].content.escapeD;
+                lastEnd = LocationX(t2[0].end.loc, t2[1].context);
             }
+            newText ~= "\"";
 
-            newToken.setStartEnd(LocationX(start2, locationContextX),
-                    LocationX(end2, locationContextX));
-            processDirectToken(LocationX(start2, locationContextX), newToken,
+            Tree newToken = Tree(newText, SymbolID.max, ProductionID.max, NodeType.token, []);
+
+            newToken.setStartEnd(Location(LocationN.init, locationContextX0),
+                Location(LocationN.init + Location.LocationDiff.fromStr(newText), locationContextX0));
+            processDirectToken(Location(LocationN.init, locationContextX0), newToken,
                     context, parallelParser, condition, macrosDone, false, parentParser);
         }
         else if (token.name == "ParamConcat")

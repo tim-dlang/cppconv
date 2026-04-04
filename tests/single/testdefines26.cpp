@@ -13,3 +13,6 @@ const char *line2 = __STRING2(__LINE__);
 const char *line3 = __STRING3(__LINE__);
 #define LOCATION __FILE__ ":" __STRING(__LINE__);
 const char *location1 = LOCATION;
+
+const char *arr1 = __STRING(arr[i]);
+const char *arr2 = __STRING2(arr[i]);

@@ -140,6 +140,20 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
         data.macroInstanceByLocation[locationContextInfo.locationContext]
             = ConditionMap!MacroDeclarationInstance.init;
 
+        LocationContextInfo locationContextInfoWithTrees = locationContextInfo;
+        if (paramName.length)
+        {
+            immutable(LocationContext)* locationContextMacro = macroFromParam(locationContext.prev);
+
+            for (LocationContextInfo loc3 = locationContextInfo; loc3.locationContext !is locationContextMacro; loc3 = loc3.parent)
+            {
+                if (loc3.locationContext.name == "#" || loc3.locationContext.name == "##")
+                {
+                    locationContextInfoWithTrees = loc3;
+                }
+            }
+        }
+
         size_t numCombinations;
         foreach (combination; iterateCombinations())
         {
@@ -156,7 +170,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                     mergedSemantic.logicSystem, firstCondition, null,
                     mergedSemantic.mergedTreeDatas);
 
-            foreach (e; locationContextInfo.trees.entries)
+            foreach (e; locationContextInfoWithTrees.trees.entries)
             {
                 isInCorrectVersion(ppVersion, e.condition);
             }
@@ -166,7 +180,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             if (paramName.length)
             {
                 if (locationContextInfo.mappedInParam
-                        && locationContextInfo.trees.entries.length == 0)
+                        && locationContextInfoWithTrees.trees.entries.length == 0)
                     continue;
 
                 immutable(LocationContext)* locationContextMacro = macroFromParam(
@@ -189,15 +203,10 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
                         instance2.params[paramName].instances ~= instance;
                         instance.macroDeclaration = instance2.params[paramName];
 
-                        immutable(LocationContext)* loc3 = locationContext;
-                        while (loc3 !is locationContextMacro)
-                        {
-                            if (loc3.name == "#")
-                                instance.hasParamExpansion = true;
-                            if (loc3.name == "##")
-                                instance.hasMacroConcat = true;
-                            loc3 = loc3.prev;
-                        }
+                        if (locationContextInfoWithTrees.locationContext.name == "#")
+                            instance.hasParamExpansion = true;
+                        if (locationContextInfoWithTrees.locationContext.name == "##")
+                            instance.hasMacroConcat = true;
                     }
                 }
             }
@@ -239,7 +248,7 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             instance.locationContextInfo = locationContextInfo;
 
             Tree[] macroTrees;
-            foreach (ref e; locationContextInfo.trees.entries)
+            foreach (ref e; locationContextInfoWithTrees.trees.entries)
             {
                 if (mergedSemantic.logicSystem.and(e.condition, instanceEntry.condition).isFalse)
                     continue;
@@ -544,16 +553,7 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     MacroDeclaration macroDeclaration2;
     if (instance.macroDeclaration.type == DeclarationType.macroParam)
     {
-        if (instance.macroDeclaration.type == DeclarationType.macroParam
-                && instance.hasParamExpansion)
-        {
-            LocationContextInfo info = instance.locationContextInfo;
-            while (info.locationContext.name != "#")
-                info = info.parent;
-
-            locRange = info.sourceTokens.childs[1].location;
-        }
-        else if (locationContext.parentLocation.context.filename.length)
+        if (locationContext.parentLocation.context.filename.length)
         {
             locRange.setStartLength(LocationX(locationContext.parentLocation.start.loc,
                     locationContext), locationContext.parentLocation.inputLength);
@@ -607,8 +607,6 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
                 instance.macroDeclaration.definition.location.context.filename
                 == locationContext.filename);
     }
-    if (!locationContext.isParentOf(instance.macroTrees[0].start.context))
-        locRange = LocationRangeX.init;
     if (locRange.context !is null)
     {
         foreach (i; 0 .. locRange.context.contextDepth - 1)
@@ -657,7 +655,28 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     while (usedTrees.length == 1
             && usedTrees[0].nonterminalID == nonterminalIDFor!"InitializerClause")
         usedTrees = usedTrees[0].childs[0 .. 1];
-    instance.firstUsedTree = usedTrees[0];
+
+    Tree[] usedTreesOrig = usedTrees;
+    bool isDirectParamExpansion;
+    if (instance.macroDeclaration.type == DeclarationType.macroParam
+                && instance.hasParamExpansion)
+    {
+        LocationContextInfo info = instance.locationContextInfo;
+        while (info.locationContext.name != "#")
+            info = info.parent;
+        usedTrees = [];
+        foreach (t; info.sourceTokens.childs[1].childs)
+        {
+            if (isParentOf(locRange.context, t.location.context))
+                usedTrees ~= t;
+        }
+        isDirectParamExpansion = info is instance.locationContextInfo.parent.parent;
+    }
+
+    if (isDirectParamExpansion)
+        instance.firstUsedTree = usedTreesOrig.length ? usedTreesOrig[0] : Tree.init;
+    else
+        instance.firstUsedTree = usedTrees.length ? usedTrees[0] : Tree.init;
 
     TreeToCodeFlags treeToCodeFlags = TreeToCodeFlags.none;
     if (instance.macroDeclaration.type == DeclarationType.macro_)
@@ -669,18 +688,8 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
         treeToCodeFlags |= TreeToCodeFlags.skipCasts;
     size_t realCodeStart;
     size_t indexInParent;
-    Tree parent = getRealParent(usedTrees[0], mergedSemantic, &indexInParent);
-    if (instance.macroDeclaration.type == DeclarationType.macroParam
-            && instance.hasParamExpansion)
-    {
-        LocationContextInfo info = instance.locationContextInfo;
-        while (info.locationContext.name != "#")
-            info = info.parent;
-
-        foreach (t; info.sourceTokens.childs[1].childs)
-            parseTreeToDCode(code, data, t, instanceCondition, null, treeToCodeFlags);
-    }
-    else if (parent.isValid && (parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
+    Tree parent = usedTrees.length ? getRealParent(usedTrees[0], mergedSemantic, &indexInParent) : Tree.init;
+    if (parent.isValid && (parent.nonterminalID == nonterminalIDFor!"DeclSpecifierSeq"
         || (parent.nonterminalID == nonterminalIDFor!"TypeId" && indexInParent == 0)))
     {
         ConditionMap!string codeType;
@@ -816,7 +825,7 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
             foreach (t; p.macroTrees)
                 data.macroReplacement.remove(t);
 
-    foreach (usedTree; usedTrees)
+    foreach (usedTree; isDirectParamExpansion ? usedTreesOrig : usedTrees)
         data.macroReplacement[usedTree] = instance;
 
     sourceTokens.clear();
