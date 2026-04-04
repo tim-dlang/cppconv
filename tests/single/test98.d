@@ -15,7 +15,7 @@ extern(D) alias __S_ISTYPE = function string(string mode, string mask)
 /+ # define S_ISLNK(mode)	 __S_ISTYPE((mode), __S_IFLNK) +/
 extern(D) alias S_ISLNK = function string(string mode)
 {
-    return	 mixin(interpolateMixin(q{mixin(imported!q{test98}.__S_ISTYPE(q{($(mode))}, q{imported!q{test98}.__S_IFLNK}))}));
+    return	 mixin(interpolateMixin(q{$(imported!q{test98}.__S_ISTYPE(q{($(mode))}, q{imported!q{test98}.__S_IFLNK}))}));
 };
 void f(int mode){
 	if (mixin(S_ISLNK(q{mode}))){}

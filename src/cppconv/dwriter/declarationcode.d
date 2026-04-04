@@ -2285,7 +2285,10 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                     else if (instance.macroTranslation == MacroTranslation.mixin_)
                         code.writeln("enum ", instance.usedName, " =",
                                 instance.instanceCode[0 .. instance.realCodeStart],
-                                "q{", instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], "};",
+                                instance.mixinMacroHasInterpolation ? "mixin(interpolateMixin(" : "",
+                                "q{", instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], "}",
+                                instance.mixinMacroHasInterpolation ? "))" : "",
+                                ";",
                                 instance.instanceCode[instance.realCodeEnd
                                     .. $].withoutTrailingWhitespace);
                     code.customIndent = newCustomIndent;

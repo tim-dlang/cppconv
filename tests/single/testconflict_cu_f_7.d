@@ -13,7 +13,7 @@ extern(D) alias bitsizeof = function string(string x)
 /+ #define MSB(x, bits) ((x) & (~0ULL << (bitsizeof(x) - (bits)))) +/
 extern(D) alias MSB = function string(string x, string bits)
 {
-    return mixin(interpolateMixin(q{(($(x)) & (~0UL << (mixin(imported!q{testconflict_cu_f_7}.bitsizeof(q{$(x)})) - ($(bits)))))}));
+    return mixin(interpolateMixin(q{(($(x)) & (~0UL << ($(imported!q{testconflict_cu_f_7}.bitsizeof(q{$(x)})) - ($(bits)))))}));
 };
 alias uintmax_t = ulong;
 

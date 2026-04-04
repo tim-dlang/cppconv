@@ -12,7 +12,7 @@ extern(D) alias major_freebsd = function string(string x)
 __gshared int i = mixin(major_freebsd(q{0x0101}));
 
 /+ #define D X + X +/
-enum D = q{mixin(imported!q{testinclude98b}.X) + mixin(imported!q{testinclude98b}.X)};
+enum D = mixin(interpolateMixin(q{$(imported!q{testinclude98b}.X) + $(imported!q{testinclude98b}.X)}));
 
 void g()
 {

@@ -226,6 +226,9 @@ class DWriterData
     }
 
     SourceTokenManager sourceTokenManager;
+
+    bool inMixinMacro;
+    bool mixinMacroHasInterpolation;
 }
 
 string packageName(string name)

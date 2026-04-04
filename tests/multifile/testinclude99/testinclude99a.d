@@ -13,6 +13,6 @@ void g()
 {
     import testinclude99b;
 
-    int z = mixin(M(q{mixin(X)}));
+    int z = mixin(M(mixin(interpolateMixin(q{$(X)}))));
 }
 

@@ -63,6 +63,7 @@ class MacroDeclarationInstance
     string instanceCode;
     size_t realCodeStart;
     size_t realCodeEnd;
+    bool mixinMacroHasInterpolation;
     string usedName;
     MacroTranslation macroTranslation;
     MacroDeclarationInstance[] extraDeps;
@@ -510,6 +511,9 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     LocationContextInfo locationContextInfo = instance.locationContextInfo;
     auto locationContext = locationContextInfo.locationContext;
 
+    assert(!data.inMixinMacro);
+    assert(!data.mixinMacroHasInterpolation);
+
     static Appender!(SourceToken[]) sourceTokens;
 
     data.currentFilename = getDeclarationFilename(instance.macroTrees[0].location,
@@ -530,6 +534,8 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     CodeWriter code;
     code.indentStr = data.options.indent;
     code.incIndent;
+
+    data.inMixinMacro = instance.macroTranslation == MacroTranslation.mixin_;
 
     assert(data.sourceTokenManager.tokensLeft.data.length == 0);
     LocationRangeX locRange;
@@ -724,6 +730,7 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     data.sourceTokenManager.tokensLeft.shrinkTo(0);
 
     instance.instanceCode = code.data.idup;
+    instance.mixinMacroHasInterpolation = data.mixinMacroHasInterpolation;
     if (instance.instanceCode.startsWith(data.options.indent))
     {
         instance.instanceCode = instance.instanceCode[data.options.indent.length .. $];
@@ -791,6 +798,9 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
             instance.usedName = name2;
         }
     }
+
+    data.inMixinMacro = false;
+    data.mixinMacroHasInterpolation = false;
 
     foreach (ps; instance.params)
         foreach (p; ps.instances)
@@ -919,9 +929,13 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
         else if (instance.hasParamExpansion)
         {
             code.write("$(stringifyMacroParameter(", instance.usedName, "))");
+            data.mixinMacroHasInterpolation = true;
         }
         else
+        {
             code.write("$(", instance.usedName, ")");
+            data.mixinMacroHasInterpolation = true;
+        }
         if (consumeWhitespace && data.sourceTokenManager.tokensLeft.data.length)
             data.sourceTokenManager.collectTokens(tree.location.end);
         data.afterStringLiteral = possibleStringLiteral; // Any macro could be a string.
@@ -950,8 +964,18 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
                 code.write("Identity!(");
                 macroSuffix = ")" ~ macroSuffix;
             }
-            code.write("mixin(");
-            macroSuffix = ")" ~ macroSuffix;
+
+            if (data.inMixinMacro)
+            {
+                code.write("$(");
+                macroSuffix = ")" ~ macroSuffix;
+                data.mixinMacroHasInterpolation = true;
+            }
+            else
+            {
+                code.write("mixin(");
+                macroSuffix = ")" ~ macroSuffix;
+            }
         }
         parseTreeToCodeTerminal(code, name);
 
@@ -1036,6 +1060,11 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
                     if (!allCodesSame)
                         code.write("/* WARNING: Parameter has been split. */");
                     code.write(x.instanceCode[0 .. x.realCodeStart]);
+                    if (!data.inMixinMacro && x.mixinMacroHasInterpolation)
+                    {
+                        codePrefix = "mixin(interpolateMixin(" ~ codePrefix;
+                        codeSuffix ~= "))";
+                    }
                     code.write(codePrefix);
                     code.write(x.instanceCode[x.realCodeStart .. x.realCodeEnd]);
                     code.write(codeSuffix);
