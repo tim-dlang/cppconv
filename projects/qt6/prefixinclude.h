@@ -166,8 +166,13 @@ template<int> struct QIntegerForSize
 #lockdefine Q_ATTRIBUTE_FORMAT_PRINTF
 
 #undef Q_CLANG_QDOC
-#define QT_NO_DEBUG
 #define QT_NO_DEBUG_STREAM
+#undef QT_DEBUG
+#undef QT_MESSAGELOGCONTEXT
+#undef QT_NO_MESSAGELOGCONTEXT
+#undef QT_NO_DEBUG_OUTPUT
+#undef QT_NO_INFO_OUTPUT
+#undef QT_NO_WARNING_OUTPUT
 
 #undef Q_COMPILER_VARIADIC_TEMPLATES
 #undef __cpp_variable_templates

@@ -247,7 +247,6 @@
         "QMediaRecorder::addMetaData",
         "QMediaRecorder::metaData",
         "QMediaRecorder::setMetaData",
-        "QMessageLogger",
         "QMetaObject::connect",
         "QMetaObject::disconnect",
         "QMetaType::hasRegisteredConverterFunction",

@@ -223,7 +223,6 @@
         "QList::MemoryLayout",
         "Q_LITTLE_ENDIAN",
         "QMapNode::destroySubTree",
-        "QMessageLogger",
         "QMetaObject::connect",
         "QMetaObject::disconnect",
         "QMetaType::debugStream",
