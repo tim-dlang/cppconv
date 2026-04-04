@@ -2270,27 +2270,41 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 else
                 {
                     code.customIndent = origCustomIndent;
+                    string innerCode = instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd];
                     if (instance.macroTranslation == MacroTranslation.enumValue)
                         code.writeln("enum ", instance.usedName, " =",
                                 instance.instanceCode[0 .. instance.realCodeStart],
-                                instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], ";",
+                                innerCode, ";",
                                 instance.instanceCode[instance.realCodeEnd
                                     .. $].withoutTrailingWhitespace);
                     else if (instance.macroTranslation == MacroTranslation.alias_)
                         code.writeln("alias ", instance.usedName, " =",
                                 instance.instanceCode[0 .. instance.realCodeStart],
-                                instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], ";",
+                                innerCode, ";",
                                 instance.instanceCode[instance.realCodeEnd
                                     .. $].withoutTrailingWhitespace);
                     else if (instance.macroTranslation == MacroTranslation.mixin_)
+                    {
+                        string codePrefix = "q{";
+                        string codeSuffix = "}";
+                        if (instance.mixinMacroHasInterpolation)
+                        {
+                            codePrefix = "mixin(interpolateMixin(" ~ codePrefix;
+                            codeSuffix ~= "))";
+                        }
+                        if (instance.canForwardMacroMixin && innerCode.startsWith("$(") && innerCode.endsWith(")"))
+                        {
+                            codePrefix = "";
+                            codeSuffix = "";
+                            innerCode = innerCode[2 .. $ - 1];
+                        }
                         code.writeln("enum ", instance.usedName, " =",
                                 instance.instanceCode[0 .. instance.realCodeStart],
-                                instance.mixinMacroHasInterpolation ? "mixin(interpolateMixin(" : "",
-                                "q{", instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], "}",
-                                instance.mixinMacroHasInterpolation ? "))" : "",
+                                codePrefix, innerCode, codeSuffix,
                                 ";",
                                 instance.instanceCode[instance.realCodeEnd
                                     .. $].withoutTrailingWhitespace);
+                    }
                     code.customIndent = newCustomIndent;
                 }
             }

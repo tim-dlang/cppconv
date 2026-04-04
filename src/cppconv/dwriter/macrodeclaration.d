@@ -64,6 +64,7 @@ class MacroDeclarationInstance
     size_t realCodeStart;
     size_t realCodeEnd;
     bool mixinMacroHasInterpolation;
+    bool canForwardMacroMixin;
     string usedName;
     MacroTranslation macroTranslation;
     MacroDeclarationInstance[] extraDeps;
@@ -708,6 +709,14 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     }
     else
     {
+        if (usedTrees.length == 1 && usedTrees[0] in data.macroReplacement)
+        {
+            auto instance3 = data.macroReplacement[usedTrees[0]];
+            if (instance3.macroDeclaration.type != DeclarationType.macroParam
+                && instance3.macroTranslation == MacroTranslation.mixin_)
+                instance.canForwardMacroMixin = true;
+        }
+
         foreach (usedTree; usedTrees)
         {
             if (code.data.length == 0 && usedTree.isValid)
@@ -1060,13 +1069,20 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
                     if (!allCodesSame)
                         code.write("/* WARNING: Parameter has been split. */");
                     code.write(x.instanceCode[0 .. x.realCodeStart]);
+                    string innerCode = x.instanceCode[x.realCodeStart .. x.realCodeEnd];
                     if (!data.inMixinMacro && x.mixinMacroHasInterpolation)
                     {
                         codePrefix = "mixin(interpolateMixin(" ~ codePrefix;
                         codeSuffix ~= "))";
                     }
+                    if (x.canForwardMacroMixin && innerCode.startsWith("$(") && innerCode.endsWith(")"))
+                    {
+                        codePrefix = "";
+                        codeSuffix = "";
+                        innerCode = innerCode[2 .. $ - 1];
+                    }
                     code.write(codePrefix);
-                    code.write(x.instanceCode[x.realCodeStart .. x.realCodeEnd]);
+                    code.write(innerCode);
                     code.write(codeSuffix);
                     code.write(x.instanceCode[x.realCodeEnd .. $]);
                 }

@@ -20,7 +20,7 @@ extern(D) alias f = function string(string x)
 };
 __gshared int i3 = mixin(f(q{5}));
 /+ #define Y f(6) +/
-enum Y = mixin(interpolateMixin(q{$(imported!q{test34}.f(q{6}))}));
+enum Y = imported!q{test34}.f(q{6});
 __gshared int i4 = mixin(Y);
 /+ #define g() X +/
 extern(D) alias g = function string()
