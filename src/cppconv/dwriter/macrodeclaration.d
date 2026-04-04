@@ -946,7 +946,10 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
         }
         else if (instance.hasParamExpansion)
         {
-            code.write("$(stringifyMacroParameter(", instance.usedName, "))");
+            if (instance.locationContextInfo.locationContext.prev.prev.name == "#")
+                code.write("$(stringifyMacroParameter(", instance.usedName, "))");
+            else
+                code.write("$(", instance.usedName, ")");
             data.mixinMacroHasInterpolation = true;
         }
         else

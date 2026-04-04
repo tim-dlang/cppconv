@@ -11,12 +11,12 @@ extern(D) alias __STRING = function string(string x)
 /+ #define __STRING2(x)	__STRING(x) +/
 extern(D) alias __STRING2 = function string(string x)
 {
-    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(stringifyMacroParameter(x))}))}));
+    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(x)}))}));
 };
 /+ #define __STRING3(x)	__STRING(x x) +/
 extern(D) alias __STRING3 = function string(string x)
 {
-    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(stringifyMacroParameter(x)) ~ $(stringifyMacroParameter(x))}))}));
+    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(x) ~ $(x)}))}));
 };
 __gshared const(char)* s1 = mixin(__STRING(q{test}));
 __gshared const(char)* s2 = mixin(__STRING2(q{test2}));

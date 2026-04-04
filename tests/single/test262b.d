@@ -14,7 +14,7 @@ extern(D) alias QT_STRINGIFY2 = function string(string x)
 /+ #define QT_STRINGIFY(x) QT_STRINGIFY2(x) +/
 extern(D) alias QT_STRINGIFY = function string(string x)
 {
-    return mixin(interpolateMixin(q{$(imported!q{test262b}.QT_STRINGIFY2(q{$(stringifyMacroParameter(x))}))}));
+    return mixin(interpolateMixin(q{$(imported!q{test262b}.QT_STRINGIFY2(q{$(x)}))}));
 };
 
 /+ # define QT_STRINGIFY_SIGNAL(a) "2" #a +/
@@ -35,7 +35,7 @@ extern(D) alias SLOT = function string(string a)
 /+ #  define SIGNAL(a)   qFlagLocation(QT_STRINGIFY_SIGNAL(a) QLOCATION) +/
 extern(D) alias SIGNAL = function string(string a)
 {
-    return   mixin(interpolateMixin(q{imported!q{test262b}.qFlagLocation($(imported!q{test262b}.QT_STRINGIFY_SIGNAL(q{$(stringifyMacroParameter(a))})) ~ imported!q{test262b}.QLOCATION)}));
+    return   mixin(interpolateMixin(q{imported!q{test262b}.qFlagLocation($(imported!q{test262b}.QT_STRINGIFY_SIGNAL(q{$(a)})) ~ imported!q{test262b}.QLOCATION)}));
 };
 }
 static if (defined!"QT_NO_DEBUG")
@@ -48,7 +48,7 @@ extern(D) alias SLOT = function string(string a)
 /+ #  define SIGNAL(a)   QT_STRINGIFY_SIGNAL(a) +/
 extern(D) alias SIGNAL = function string(string a)
 {
-    return   mixin(interpolateMixin(q{$(imported!q{test262b}.QT_STRINGIFY_SIGNAL(q{$(stringifyMacroParameter(a))}))}));
+    return   mixin(interpolateMixin(q{$(imported!q{test262b}.QT_STRINGIFY_SIGNAL(q{$(a)}))}));
 };
 }
 
