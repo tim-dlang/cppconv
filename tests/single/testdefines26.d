@@ -8,15 +8,27 @@ extern(D) alias __STRING = function string(string x)
 {
     return	mixin(interpolateMixin(q{$(stringifyMacroParameter(x))}));
 };
+extern(D) alias __STRING__1 = function string(string x)
+{
+    return	/+ # +/ mixin(interpolateMixin(q{""}));
+};
 /+ #define __STRING2(x)	__STRING(x) +/
 extern(D) alias __STRING2 = function string(string x)
 {
     return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(x)}))}));
 };
+extern(D) alias __STRING2__1 = function string(string x)
+{
+    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING__1(q{x}))}));
+};
 /+ #define __STRING3(x)	__STRING(x x) +/
 extern(D) alias __STRING3 = function string(string x)
 {
     return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING(q{$(x) ~ $(x)}))}));
+};
+extern(D) alias __STRING3__1 = function string(string x)
+{
+    return	mixin(interpolateMixin(q{$(imported!q{testdefines26}.__STRING__1(q{x x}))}));
 };
 __gshared const(char)* s1 = mixin(__STRING(q{test}));
 __gshared const(char)* s2 = mixin(__STRING2(q{test2}));
@@ -34,4 +46,8 @@ __gshared const(char)* location1 = /+ LOCATION +/__FILE__~ ":"~ mixin(__STRING(q
 
 __gshared const(char)* arr1 = mixin(__STRING(q{arr[i]}));
 __gshared const(char)* arr2 = mixin(__STRING2(q{arr[i]}));
+
+__gshared const(char)* empty1 = mixin(__STRING__1(q{}));
+__gshared const(char)* empty2 = mixin(__STRING2__1(q{}));
+__gshared const(char)* empty3  = mixin(__STRING3__1(q{}));
 

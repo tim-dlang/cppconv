@@ -248,3 +248,7 @@ template<int> struct QIntegerForSize
 
 #undef Q_PDF_EXPORT
 #undef Q_PDF_WIDGETS_EXPORT
+
+#define QT_GUI_LIB
+#define QT_WIDGETS_LIB
+#undef qPrintable

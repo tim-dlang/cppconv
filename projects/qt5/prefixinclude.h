@@ -237,3 +237,7 @@ template<int> struct QIntegerForSize
 #undef QT_QMLDEVTOOLS_LIB
 #undef QT_QML_BOOTSTRAPPED
 #undef QQMLLISTPROPERTY
+
+#define QT_GUI_LIB
+#define QT_WIDGETS_LIB
+#undef qPrintable

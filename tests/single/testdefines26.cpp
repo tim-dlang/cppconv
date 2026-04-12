@@ -16,3 +16,7 @@ const char *location1 = LOCATION;
 
 const char *arr1 = __STRING(arr[i]);
 const char *arr2 = __STRING2(arr[i]);
+
+const char *empty1 = __STRING();
+const char *empty2 = __STRING2();
+const char *empty3  = __STRING3();
