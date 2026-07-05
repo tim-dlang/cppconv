@@ -349,9 +349,7 @@ immutable(Formula)* definesFormula(DefineSets defineSets)
     }
 }
 
-immutable(Formula)* replaceDefines(immutable(Formula)* f, DefineSets defineSets,
-        immutable(Formula)*[Tree] defineConditions, immutable(Formula)*[string] unknownConditions,
-        immutable(Formula)*[string] undefConditions)
+immutable(Formula)* replaceDefines(immutable(Formula)* f, DefineSets defineSets)
 {
     LogicSystem logicSystem = defineSets.logicSystem;
     return replaceAll!((f2) {
@@ -1167,11 +1165,11 @@ immutable(Formula)* preprocIfToCondition(ParserWrapper)(Tree x, immutable(Locati
         if (x.childs[0].nonterminalID == preprocNonterminalIDFor!"PPIfDef")
             return replaceDefines(literal(text("defined(",
                     x.childs[0].childs[$ - 1].childs[0].content, ")")),
-                    defineSets, null, null, null);
+                    defineSets);
         else if (x.childs[0].nonterminalID == preprocNonterminalIDFor!"PPIfNDef")
             return replaceDefines(notLiteral(text("defined(",
                     x.childs[0].childs[$ - 1].childs[0].content, ")")),
-                    defineSets, null, null, null);
+                    defineSets);
         else if (x.childs[0].nonterminalID == preprocNonterminalIDFor!"PPIf")
             return exprToCondition!(ParserWrapper)(x.childs[0].childs[$ - 1],
                     locationContext, condition, logicSystem, defineSets);
