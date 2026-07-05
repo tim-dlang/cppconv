@@ -1669,7 +1669,7 @@ class FuncMacroParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
         r.firstCondition = firstCondition;
         r.argPrescan = argPrescan;
         foreach (p; params)
-            r.params ~= MacroParam(p.tokensBefore.dup, p.tokens.dup);
+            r.params ~= MacroParam(p.tokensBefore.dup, p.tokens.dup, p.startLoc, p.endLoc);
         return r;
     }
 
