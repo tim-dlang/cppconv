@@ -200,7 +200,7 @@ void analyzeDeclSpecifierSeq2(Tree tree, immutable(Formula)* condition,
             analyzeDeclSpecifierSeq2(tree.childs[i], condition, semantic, accessSpecifier);
         }
     }
-    else if (tree.nodeType == NodeType.nonterminal && tree.nodeType == NodeType.merged
+    else if (tree.nodeType == NodeType.nonterminal
             && tree.nonterminalID == CONDITION_TREE_NONTERMINAL_ID)
     {
         auto ctree = tree.toConditionTree;
@@ -211,6 +211,19 @@ void analyzeDeclSpecifierSeq2(Tree tree, immutable(Formula)* condition,
             auto subTreeCondition = ctree.conditions[i];
 
             analyzeDeclSpecifierSeq2(ctree.childs[i],
+                    semantic.logicSystem.and(subTreeCondition, condition),
+                    semantic, accessSpecifier);
+        }
+    }
+    else if (tree.nodeType == NodeType.merged)
+    {
+        auto mdata = &semantic.mergedTreeData(tree);
+
+        foreach (i; 0 .. tree.childs.length)
+        {
+            auto subTreeCondition = mdata.conditions[i];
+
+            analyzeDeclSpecifierSeq2(tree.childs[i],
                     semantic.logicSystem.and(subTreeCondition, condition),
                     semantic, accessSpecifier);
         }
