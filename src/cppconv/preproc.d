@@ -1211,34 +1211,14 @@ immutable(Formula)* removeLocationInstanceConditions(immutable(Formula)* f,
     {
         chosen.clear();
         immutable(Formula)* f3 = replaceAll!((f2) {
+            string name = null;
             if (f2.isAnyLiteralFormula && f2.data.name.startsWith("@includetu:"))
-            {
-                string name = f2.data.name["@includetu:".length .. $];
-
-                immutable(Formula)* last = logicSystem.true_;
-                if (name in chosen)
-                {
-                    last = chosen[name];
-                    if (logicSystem.and(last, f2).isFalse)
-                        return logicSystem.false_;
-                    if (logicSystem.and(last, f2.negated).isFalse)
-                        return logicSystem.true_;
-                }
-                if (combination.next(2) == 0)
-                {
-                    chosen[name] = logicSystem.and(last, f2);
-                    return logicSystem.true_;
-                }
-                else
-                {
-                    chosen[name] = logicSystem.and(last, f2.negated);
-                    return logicSystem.false_;
-                }
-            }
+                name = f2.data.name["@includetu:".length .. $];
             else if (f2.isAnyLiteralFormula && f2.data.name.startsWith("@includex:"))
-            {
-                string name = f2.data.name["@includex:".length .. $];
+                name = f2.data.name["@includex:".length .. $];
 
+            if (name !is null)
+            {
                 immutable(Formula)* last = logicSystem.true_;
                 if (name in chosen)
                 {
