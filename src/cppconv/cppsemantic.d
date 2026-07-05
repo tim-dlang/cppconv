@@ -2454,7 +2454,7 @@ template iterateTreeConditions(alias F)
                                 condition), semantic, allParams[3 .. $]);
                 }
             }
-            else if (tree.nodeType == NodeType.merged && tree.nodeType == NodeType.merged)
+            else if (tree.nodeType == NodeType.merged)
             {
                 auto mdata = &semantic.mergedTreeData(tree);
 
