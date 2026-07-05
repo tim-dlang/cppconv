@@ -2192,7 +2192,7 @@ bool isSimple(const FormulaX!SimpleLiteral* f)
 
 bool isSimple(const FormulaX!BoundLiteral* f)
 {
-    return (f.type == BoundLiteral.FormulaType.literal || BoundLiteral.FormulaType.notLiteral)
+    return (f.type == BoundLiteral.FormulaType.literal || f.type == BoundLiteral.FormulaType.notLiteral)
         && f.data.number == 0;
 }
 
