@@ -99,7 +99,7 @@ struct FormulaX(T)
         bool negate;
         bool empty() const
         {
-            return data.length > 0;
+            return data.length == 0;
         }
 
         F* front() const
