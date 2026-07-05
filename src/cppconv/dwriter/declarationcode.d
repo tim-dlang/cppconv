@@ -2233,8 +2233,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                                 code.writeln("enum ", p.usedName, " = params[", i, "];");
                         }
                         code.customIndent = origCustomIndent;
-                        if (instance.macroTranslation == MacroTranslation.enumValue)
-                            code.writeln("enum ", instance.usedName, " =",
+                        code.writeln(instance.macroTranslation == MacroTranslation.enumValue ? "enum " : "alias ",
+                                    instance.usedName, " =",
                                     instance.instanceCode[0 .. instance.realCodeStart],
                                     instance.instanceCode[instance.realCodeStart .. instance.realCodeEnd], ";",
                                     instance.instanceCode[instance.realCodeEnd
