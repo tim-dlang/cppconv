@@ -27,9 +27,9 @@ extern(D) alias STRINGIFY = function string(string x)
 
 __gshared const(char * ) str = mixin(STRINGIFY(
     /+ #ifdef IN_A +/
-q{    A}
-    /+ #else
-    B
-    #endif +/
+q{    A
+    /+ #else +/
+    B}
+    /+ #endif +/
 ));
 

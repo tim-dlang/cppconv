@@ -584,6 +584,7 @@ void mergeFiles(Context rootContext, ref MergedFile[] mergedFiles, MergedFile[] 
                                     rootContext.logicSystem.true_, MergeFlags.none);
                         mergedFile1.macroInstances[k].condition = rootContext.logicSystem.or(
                                 mergedFile1.macroInstances[k].condition, m.condition);
+                        mergedFile1.macroInstances[k].sourceTokens = sourceTokens2;
                     }
                     else
                     {
