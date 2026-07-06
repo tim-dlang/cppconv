@@ -61,8 +61,8 @@ class SourceTokenManager
 
     Appender!(Declaration[]) commentDeclarations;
 
-    SimpleArrayAllocator2!(SourceToken, SimpleArrayAllocatorFlags.noGC, 10 * 1024 * 1024 * 1024 - 32) sourceTokenAllocator;
-    SimpleArrayAllocator2!(SourceToken, SimpleArrayAllocatorFlags.noGC, 10 * 1024 * 1024 * 1024 - 32) sourceTokenAllocatorMacros;
+    SimpleArrayAllocator2!(SourceToken, SimpleArrayAllocatorFlags.noGC, 2L * 1024 * 1024 * 1024 - 32) sourceTokenAllocator;
+    SimpleArrayAllocator2!(SourceToken, SimpleArrayAllocatorFlags.noGC, 2L * 1024 * 1024 * 1024 - 32) sourceTokenAllocatorMacros;
 
     LocationX locDone;
     immutable(LocationContext)* currentMacroLocation;
