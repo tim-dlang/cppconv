@@ -83,6 +83,14 @@ int main(string[] args)
     for (size_t i = 1; i < args.length; i++)
     {
         string arg = args[i];
+
+        string nextArg()
+        {
+            i++;
+            enforce(i < args.length, text("missing value for ", arg));
+            return args[i];
+        }
+
         if (arg.startsWith("-"))
         {
             if (arg == "--add-decl-comments")
@@ -101,16 +109,15 @@ int main(string[] args)
                 dCodeOptions.builtinCppTypes = true;
             else if (arg == "--base-dir")
             {
-                i++;
-                chdir(args[i]);
-                writeln("--base-dir ", args[i]);
+                string value = nextArg();
+                chdir(value);
+                writeln("--base-dir ", value);
                 writeln("  origCwd ", origCwd);
                 writeln("  getcwd ", getcwd());
             }
             else if (arg == "-I")
             {
-                i++;
-                string path = movePath(args[i]);
+                string path = movePath(nextArg());
                 if (!context.ignoreMissingIncludePath)
                     enforce(std.file.exists(path) && std.file.isDir(path),
                             text("include path does not exist \"", path, "\""));
@@ -126,37 +133,31 @@ int main(string[] args)
             }
             else if (arg.startsWith("-include"))
             {
-                i++;
-                context.fileCache.alwaysIncludeFiles ~= RealFilename(movePath(args[i]));
+                context.fileCache.alwaysIncludeFiles ~= RealFilename(movePath(nextArg()));
             }
             else if (arg == "--extra-output-str")
             {
-                i++;
-                context.extraOutputStr = args[i];
+                context.extraOutputStr = nextArg();
             }
             else if (arg == "--extra-output-dir")
             {
-                i++;
-                context.extraOutputDir = absolutePath(args[i]);
+                context.extraOutputDir = absolutePath(nextArg());
             }
             else if (arg == "--spaces")
             {
-                i++;
-                dCodeOptions.indent = repeatChar!' '(to!size_t(args[i]));
+                dCodeOptions.indent = repeatChar!' '(to!size_t(nextArg()));
             }
             else if (arg == "--config-module")
             {
-                i++;
-                dCodeOptions.configModule = args[i];
+                dCodeOptions.configModule = nextArg();
             }
             else if (arg == "--helper-module")
             {
-                i++;
-                dCodeOptions.helperModule = args[i];
+                dCodeOptions.helperModule = nextArg();
             }
             else if (arg.startsWith("--condition"))
             {
-                i++;
+                string value = nextArg();
 
                 LocationX location = LocationX(LocationN(), new immutable(LocationContext)(null,
                         LocationN(), LocationN.LocationDiff(), "", "@cmdline", true));
@@ -164,12 +165,12 @@ int main(string[] args)
                 Tree tree;
                 try
                 {
-                    tree = preprocParseTokenList(args[i], location,
+                    tree = preprocParseTokenList(value, location,
                             preprocTreeAllocator, &globalStringPool);
                 }
                 catch (ParseException e)
                 {
-                    stderr.writeln("Condition ", args[i], " ============");
+                    stderr.writeln("Condition ", value, " ============");
                     throw e;
                 }
                 initialConditions ~= tree;
@@ -229,20 +230,17 @@ int main(string[] args)
             }
             else if (arg == "--output-file")
             {
-                i++;
-                outputPath = args[i];
+                outputPath = nextArg();
                 outputIsDir = false;
             }
             else if (arg == "--output-dir")
             {
-                i++;
-                outputPath = args[i];
+                outputPath = nextArg();
                 outputIsDir = true;
             }
             else if (arg.startsWith("--output-config"))
             {
-                i++;
-                dCodeOptions.readConfig(args[i]);
+                dCodeOptions.readConfig(nextArg());
             }
             else
             {
