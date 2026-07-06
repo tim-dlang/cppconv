@@ -1945,20 +1945,8 @@ Tuple!(Tree, Location)[] replaceMacroConcat(ParserWrapper)(Location start, Tree 
         string newText;
         if (tokenLists[i].length)
             newText = tokenLists[i][$ - 1][0].content;
-        size_t multiTokenIndex = size_t.max;
-        size_t multiTokenNum = 0;
-        if (tokenLists[i].length > 1 || (i && tokenLists[i].length >= 1))
-        {
-            multiTokenNum++;
-            multiTokenIndex = i;
-        }
         while (i + 1 < tokenLists.length)
         {
-            if (tokenLists[i + 1].length > 1)
-            {
-                multiTokenNum++;
-                multiTokenIndex = i + 1;
-            }
             if (tokenLists[i + 1].length)
             {
                 newText ~= tokenLists[i + 1][0][0].content;
