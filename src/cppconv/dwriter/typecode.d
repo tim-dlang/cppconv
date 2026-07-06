@@ -189,68 +189,8 @@ void collectDeclSeqTokens(ref CodeWriter code, ref ConditionMap!string codeType,
     {
         CodeWriter code2;
 
-        auto instance = data.macroReplacement[tree];
-        if (tree !is instance.firstUsedTree)
-            return;
-        bool needsParens = false;
-
-        string name = instance.usedName;
-
-        name = qualifyName(name, instance.macroDeclaration, data, currentScope, condition);
-
-        if (instance.macroDeclaration.type == DeclarationType.macroParam)
-        {
-            if (instance.macroTranslation == MacroTranslation.enumValue)
-            {
-                code2.write(instance.usedName);
-            }
-            else if (instance.macroTranslation == MacroTranslation.alias_)
-            {
-                code2.write(instance.usedName);
-            }
-            else if (instance.hasParamExpansion)
-            {
-                code2.write("$(stringifyMacroParameter(", instance.usedName, "))");
-            }
-            else
-                code2.write("$(", instance.usedName, ")");
-            if (data.sourceTokenManager.tokensLeft.data.length)
-                data.sourceTokenManager.collectTokens(tree.location.end);
-        }
-        else if (instance.macroTranslation.among(MacroTranslation.enumValue,
-                MacroTranslation.mixin_, MacroTranslation.alias_, MacroTranslation.builtin))
-        {
-            if (code2.inLine && code2.data.length
-                    && !code2.data[$ - 1].inCharSet!" \t" && !code2.data.endsWith("("))
-                code2.write(" ");
-
-            string macroSuffix;
-            if (instance.macroTranslation.among(MacroTranslation.enumValue,
-                    MacroTranslation.builtin))
-            {
-            }
-            else if (instance.macroTranslation == MacroTranslation.mixin_)
-            {
-                if (tree.nonterminalID == nonterminalIDFor!"TypeId")
-                {
-                    code2.write("Identity!(");
-                    macroSuffix = ")" ~ macroSuffix;
-                }
-                code2.write("mixin(");
-                macroSuffix = ")" ~ macroSuffix;
-            }
-            parseTreeToCodeTerminal(code2, name);
-
-            assert(instance.locationContextInfo.locationContext.name == "^");
-            assert(instance.locationContextInfo.locationContext.prev.name
-                    == instance.locationContextInfo.locationContext.prev.prev.name);
-            bool allowComments = instance.locationContextInfo.locationContext.prev.prev.prev.name == ""
-                || instance.locationContextInfo.locationContext.prev.prev.prev is data.sourceTokenManager.tokensContext;
-
-            parseTreeToCodeTerminal(code2, macroSuffix);
-            if (data.sourceTokenManager.tokensLeft.data.length && allowComments)
-                data.sourceTokenManager.collectTokens(tree.location.end);
-        }
+        writeMacroInstance(code2, data, tree, condition,
+            currentScope, TreeToCodeFlags.none, true);
 
         codeType.addCombine!((a, b) => a ~ b)(condition, code2.data.idup, logicSystem);
 
