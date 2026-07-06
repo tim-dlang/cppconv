@@ -141,6 +141,5 @@ unittest
         auto e = entityManager.addEntity(i % 5 == 0);
         int* x = &component1.get(e);
         *x = cast(int) i;
-        writeln(e, " ", *x);
     }
 }

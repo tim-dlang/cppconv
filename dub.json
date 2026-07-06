@@ -11,6 +11,7 @@
     "toolchainRequirements": {
         "frontend": ">=2.108"
     },
+    "mainSourceFile": "src/cppconv/cppconv.d",
     "sourceFiles": [
         "src/cppconv/grammarcpp.d",
         "src/cppconv/grammarcpp_lexer.d",

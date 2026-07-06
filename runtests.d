@@ -233,6 +233,8 @@ int main(string[] args)
         rmdirRecurse("test_results");
     }
 
+    runCommand(["dub", "test"]);
+
     runCommand(["dub", "build"]);
 
     string[] failedTests;
