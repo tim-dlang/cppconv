@@ -218,6 +218,7 @@ void readConfig(T)(ref T config, const JSONValue json)
                 return;
             }
         }
+        enforce(false, text("Invalid value ", value, " for ", T.stringof));
     }
     else static if (is(T == string))
     {
