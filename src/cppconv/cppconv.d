@@ -131,7 +131,7 @@ int main(string[] args)
                             text("include path does not exist \"", path, "\""));
                 context.fileCache.includeDirs ~= IncludeDir(path, context.logicSystem.true_);
             }
-            else if (arg.startsWith("-include"))
+            else if (arg == "-include")
             {
                 context.fileCache.alwaysIncludeFiles ~= RealFilename(movePath(nextArg()));
             }
@@ -155,7 +155,7 @@ int main(string[] args)
             {
                 dCodeOptions.helperModule = nextArg();
             }
-            else if (arg.startsWith("--condition"))
+            else if (arg == "--condition")
             {
                 string value = nextArg();
 
@@ -238,7 +238,7 @@ int main(string[] args)
                 outputPath = nextArg();
                 outputIsDir = true;
             }
-            else if (arg.startsWith("--output-config"))
+            else if (arg == "--output-config")
             {
                 dCodeOptions.readConfig(nextArg());
             }
