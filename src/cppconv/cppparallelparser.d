@@ -1689,40 +1689,8 @@ class FuncMacroParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
     override ParallelParser!(ParserWrapper) filterParser(LogicSystem logicSystem,
             immutable(Formula)* condition, bool preserveParsers,
             ParallelParser!(ParserWrapper) parentParser)
-    in
     {
-        assert(refCount == 1);
-    }
-    do
-    {
-        bool nextPreserveParsers = preserveParsers || refCount > 1;
-        ParallelParser!(ParserWrapper) newNext = next.filterParser(logicSystem,
-                condition, nextPreserveParsers, this);
-        if (newNext is next)
-            return this;
-
-        if (!nextPreserveParsers)
-        {
-            next = newNext;
-            return this;
-        }
-
-        auto r = new FuncMacroParallelParser(context);
-        r.next = newNext;
-        r.numOpenedParens = numOpenedParens;
-        r.paramsStarted = paramsStarted;
-        r.nameToken = nameToken;
-        r.define = define;
-        r.location = location;
-        r.macrosDone = macrosDone;
-        foreach (p; params)
-            r.params ~= MacroParam(p.tokensBefore.dup, p.tokens.dup);
-        r.next = newNext;
-        if (newNext is next) /* always false */
-            newNext.refCount++;
-        if (!preserveParsers)
-            refCount--;
-        return r;
+        return this;
     }
 
     override void dumpStates(string indent, immutable(Formula*) contextCondition, bool includeGraph)
