@@ -556,3 +556,37 @@ size_t interpolationSearch(string access, string op, T, T2)(T[] data, T2 value)
     }
     return low;
 }
+
+// Equivalent to `"0x" ~ toChars!16(((ulong(1) << numBits) - 1) << bitsShift)`,
+// but working for bigger values.
+string hexMaskCode(size_t numBits, size_t bitsShift)
+{
+    string r;
+    while (numBits || bitsShift)
+    {
+        auto numBitsHere = numBits;
+        auto bitsShiftHere = bitsShift;
+        if (bitsShiftHere > 4)
+            bitsShiftHere = 4;
+        if (numBitsHere + bitsShiftHere > 4)
+            numBitsHere = 4 - bitsShiftHere;
+        r = text(toChars!16(((ulong(1) << numBitsHere) - 1) << bitsShiftHere), r);
+        bitsShift -= bitsShiftHere;
+        numBits -= numBitsHere;
+    }
+    if (r.length == 0)
+        r = "0";
+    return "0x" ~ r;
+}
+
+unittest
+{
+    assert(hexMaskCode(0, 0) == "0x0");
+    assert(hexMaskCode(1, 0) == "0x1");
+    assert(hexMaskCode(1, 16) == "0x10000");
+    assert(hexMaskCode(8, 0) == "0xff");
+    assert(hexMaskCode(8, 4) == "0xff0");
+    assert(hexMaskCode(8, 6) == "0x3fc0");
+    assert(hexMaskCode(6, 58) == "0xfc00000000000000");
+    assert(hexMaskCode(2, 64) == "0x30000000000000000");
+}

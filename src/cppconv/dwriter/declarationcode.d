@@ -1041,8 +1041,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 code.writeln(typeCode, " ", replaceKeywords(d.name), "() const nothrow");
                 code.writeln("{").incIndent;
                 code.writeln("return (", e.data.dataName, " >> ",
-                        e.data.firstBit, ") & 0x",
-                        toChars!16((ulong(1) << e.data.length) - 1), ";");
+                        e.data.firstBit, ") & ",
+                        hexMaskCode(e.data.length, 0), ";");
                 code.decIndent.writeln("}");
                 if (data.currentClassDeclaration !is null
                         && isClass(data.currentClassDeclaration.tree, data))
@@ -1050,8 +1050,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
                 code.writeln(typeCode, " ", replaceKeywords(d.name), "(", typeCode, " value) nothrow");
                 code.writeln("{").incIndent;
                 code.writeln(e.data.dataName, " = (", e.data.dataName,
-                        " & ~0x", toChars!16(((ulong(1) << e.data.length) - 1) << e.data.firstBit),
-                        ") | ((value & 0x", toChars!16((ulong(1) << e.data.length) - 1),
+                        " & ~", hexMaskCode(e.data.length, e.data.firstBit),
+                        ") | ((value & ", hexMaskCode(e.data.length, 0),
                         ") << ", e.data.firstBit, ");");
                 code.writeln("return value;");
                 code.decIndent.writeln("}");
