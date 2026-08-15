@@ -252,3 +252,5 @@ template<int> struct QIntegerForSize
 #define QT_GUI_LIB
 #define QT_WIDGETS_LIB
 #undef qPrintable
+
+#undef QT_NO_SVGRENDERER

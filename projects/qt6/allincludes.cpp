@@ -711,3 +711,17 @@
 //#include <QtTest/qttestglobal.h>
 //#include <QtTest/qttestlib-config.h>
 //#include <QtTest/qttestversion.h>
+
+// QtSvg
+#include <QtSvg/qsvggenerator.h>
+#include <QtSvg/qsvgrenderer.h>
+//#include <QtSvg/qtsvgexports.h>
+//#include <QtSvg/qtsvgglobal.h>
+//#include <QtSvg/qtsvgversion.h>
+
+// QtSvgWidgets
+//#include <QtSvgWidgets/qgraphicssvgitem.h>
+#include <QtSvgWidgets/qsvgwidget.h>
+//#include <QtSvgWidgets/qtsvgwidgetsexports.h>
+//#include <QtSvgWidgets/qtsvgwidgetsglobal.h>
+//#include <QtSvgWidgets/qtsvgwidgetsversion.h>

@@ -512,6 +512,7 @@ int main(string[] args)
             baseArchives = [
                 "6.4.2-0-202212131055qtbase-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
                 "6.4.2-0-202212131055qtdeclarative-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
+                "6.4.2-0-202212131055qtsvg-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z",
                 ];
             webengineArchive = "6.4.2-0-202212131055qtwebengine-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
             multimediaArchive = "6.4.2-0-202212131055qtmultimedia-Linux-RHEL_8_4-GCC-Linux-RHEL_8_4-X86_64.7z";
@@ -524,6 +525,7 @@ int main(string[] args)
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtqml-documentation.7z",
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtquick-documentation.7z",
                 "qt.qt6.642.doc/6.4.2-0-202212131055qtquickcontrols-documentation.7z",
+                "qt.qt6.642.doc/6.4.2-0-202212131055qtsvg-documentation.7z",
                 "qt.qt6.642.doc.qtwebengine/6.4.2-0-202212131055qtwebengine-documentation.7z",
                 "qt.qt6.642.doc.qtmultimedia/6.4.2-0-202212131055qtmultimedia-documentation.7z",
                 "qt.qt6.642.doc.qtpdf/6.4.2-0-202212131055qtpdf-documentation.7z",
@@ -540,6 +542,8 @@ int main(string[] args)
                 "-Iqt6/orig/qtbase/QtQml",
                 "-Iqt6/orig/qtbase/QtQuick",
                 "-Iqt6/orig/qtbase/QtQuickControls2",
+                "-Iqt6/orig/qtbase/QtSvg",
+                "-Iqt6/orig/qtbase/QtSvgWidgets",
                 "-Iqt6/orig/qtwebengine",
                 "-Iqt6/orig/qtwebengine/QtWebEngineCore",
                 "-Iqt6/orig/qtwebengine/QtWebEngineWidgets",

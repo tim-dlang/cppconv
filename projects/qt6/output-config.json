@@ -35,6 +35,7 @@
         {"match": {"filename": "qt[0-9]*/orig/qtpdf/Qt(?P<P>.*)/qt?pdf(?P<M>.*).h"}, "moduleName": "qt.pdf.\\L%M", "extraPrefix": "\\L%P"},
         {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>Qml)/qt?qml(?P<M>..*).h"}, "moduleName": "qt.\\L%P.\\L%M"},
         {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>Quick.*)/qt?quick(?P<M>.*).h"}, "moduleName": "qt.\\L%P.\\L%M"},
+        {"match": {"filename": "qt[0-9]*/orig/qt.*/Qt(?P<P>Svg.*)/qt?svg(?P<M>.*).h"}, "moduleName": "qt.svg.\\L%M", "extraPrefix": "\\L%P"},
 
         {"match": {"filename": "qt[0-9]*/orig/qtbase/QtCore/qchar.h"}, "moduleName": "qt.core.qchar"},
         {"match": {"filename": "qt[0-9]*/orig/qtbase/QtCore/qtmetamacros.h"}, "moduleName": "qt.core.metamacros"},
