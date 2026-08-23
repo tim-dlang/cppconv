@@ -823,13 +823,22 @@ immutable(LocationContext)* removeLocationPrefix(immutable(LocationContext)* lc,
         assert(lc is prefix);
         return null;
     }
+
+    if (auto inCache = LocationContextMap.RemoveLocationPrefixCacheKey(lc, prefix) in locationContextMap.removeLocationPrefixCache)
+    {
+        return *inCache;
+    }
+
     auto c = removeLocationPrefix(lc.prev, prefix, locationContextMap);
+    immutable(LocationContext)* r;
     if (c is null)
-        return locationContextMap.getLocationContext(immutable(LocationContext)(c, LocationN(),
+        r = locationContextMap.getLocationContext(immutable(LocationContext)(c, LocationN(),
                 LocationN.LocationDiff(), lc.name, lc.filename, lc.isPreprocLocation));
     else
-        return locationContextMap.getLocationContext(immutable(LocationContext)(c,
+        r = locationContextMap.getLocationContext(immutable(LocationContext)(c,
                 lc.startInPrev, lc.lengthInPrev, lc.name, lc.filename, lc.isPreprocLocation));
+    locationContextMap.removeLocationPrefixCache[LocationContextMap.RemoveLocationPrefixCacheKey(lc, prefix)] = r;
+    return r;
 }
 
 LocationX removeLocationPrefix(LocationX l, immutable(LocationContext)* prefix,

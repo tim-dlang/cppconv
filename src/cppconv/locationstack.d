@@ -523,6 +523,13 @@ class LocationContextMap
         numLocationContextsCreated++;
         return r;
     }
+
+    static struct RemoveLocationPrefixCacheKey
+    {
+        immutable(LocationContext)* lc;
+        immutable(LocationContext)* prefix;
+    }
+    immutable(LocationContext)*[RemoveLocationPrefixCacheKey] removeLocationPrefixCache;
 }
 
 immutable(LocationContext)* stackLocations(immutable(LocationContext)* a,
