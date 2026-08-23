@@ -650,16 +650,21 @@ class SingleParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
             return;
         }
 
+        ParseException exception;
         try
         {
-            pushParser.pushToken(token.content, start);
+            pushParser.pushToken(token.content, start, exception);
         }
         catch (ParseException e)
         {
-            errorNodes ~= Tree("#error " ~ e.msg, SymbolID.max,
+            assert(false);
+        }
+        if (exception !is null)
+        {
+            errorNodes ~= Tree("#error " ~ exception.msg, SymbolID.max,
                     ProductionID.max, NodeType.token, []);
 
-            context.addError(start, condition, e.msg);
+            context.addError(start, condition, exception.msg);
 
             //dumpStates("  ", true);
             return;
@@ -675,7 +680,11 @@ class SingleParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
             loc = Location(LocationN.init, locationContextX);
             void w(string str)
             {
-                pushParser.pushToken(str, loc);
+                if (exception !is null)
+                    return;
+                pushParser.pushToken(str, loc, exception);
+                if (exception !is null)
+                    return;
                 loc = loc + Location.LocationDiff.fromStr(str);
                 loc = loc + Location.LocationDiff.fromStr(" ");
             }
@@ -694,10 +703,14 @@ class SingleParallelParser(ParserWrapper) : ParallelParser!(ParserWrapper)
             }
             catch (ParseException e)
             {
-                errorNodes ~= Tree("#error " ~ e.msg, SymbolID.max,
+                assert(false);
+            }
+            if (exception !is null)
+            {
+                errorNodes ~= Tree("#error " ~ exception.msg, SymbolID.max,
                         ProductionID.max, NodeType.token, []);
 
-                context.addError(start, condition, e.msg);
+                context.addError(start, condition, exception.msg);
 
                 //dumpStates("  ", true);
                 return;

@@ -127,14 +127,15 @@ struct ParserWrapper
         return r;
     }
 
-    void pushToken(string token, Location start)
+    void pushToken(string token, Location start, ref ParseException exception)
     {
         L2 lexer = L2(token);
         lexer.front.currentLocation = start;
 
         if (lexer.empty)
         {
-            throw new SingleParseException!Location("can't lex token", Location.init, Location.init);
+            exception = new SingleParseException!Location("can't lex token", Location.init, Location.init);
+            return;
         }
         while (!lexer.empty)
         {
@@ -164,13 +165,16 @@ struct ParserWrapper
             }
 
             pushParser.pushToken(symbolID, lexer.front.content,
-                    lexer.front.currentLocation, lexer.front.currentTokenEnd);
+                    lexer.front.currentLocation, lexer.front.currentTokenEnd, exception);
+            if (exception !is null)
+                return;
             lexer.popFront();
         }
         if (lexer.input.length)
         {
-            throw new SingleParseException!Location("token not completely parsed",
+            exception = new SingleParseException!Location("token not completely parsed",
                     Location.init, Location.init);
+            return;
         }
     }
 
