@@ -354,7 +354,7 @@ string typeToString(const QualType type)
 
     if (type.kind == TypeKind.condition)
     {
-        auto ctype = cast(ConditionType) type.type;
+        auto ctype = cast(const(ConditionType)) type.type;
         string r = "ConditionType" /*~ "@" ~ text(cast(void*)(ctype))*/  ~ "(";
 
         foreach (i, c; ctype.types)
@@ -379,7 +379,7 @@ string typeToString(const QualType type)
 
     if (type.kind == TypeKind.record)
     {
-        RecordType rtype = cast(RecordType) type.type;
+        const RecordType rtype = cast(const(RecordType)) type.type;
         line ~= " " ~ rtype.declarationSet.scope_.toString;
     }
     line ~= "(";
@@ -391,19 +391,19 @@ string typeToString(const QualType type)
     }
     if (type.kind == TypeKind.function_)
     {
-        FunctionType ftype = cast(FunctionType) type.type;
+        const FunctionType ftype = cast(const(FunctionType)) type.type;
         if (ftype.functionQualifiers & FunctionQualifiers.variadic)
             line ~= ", ...";
     }
     if (type.kind == TypeKind.array)
     {
-        ArrayType atype = cast(ArrayType) type.type;
+        const ArrayType atype = cast(const(ArrayType)) type.type;
         line ~= ", " ~ atype.declarator.toString;
     }
     line ~= ")";
     if (type.kind == TypeKind.function_)
     {
-        FunctionType ftype = cast(FunctionType) type.type;
+        const FunctionType ftype = cast(const(FunctionType)) type.type;
         if (ftype.functionQualifiers & FunctionQualifiers.const_)
             line ~= " const";
         if (ftype.functionQualifiers & FunctionQualifiers.noExcept)

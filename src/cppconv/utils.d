@@ -356,14 +356,14 @@ struct ArrayL(T)
         data = null;
     }
 
-    T[] toSlice()
+    inout(T)[] toSlice() inout
     {
         if (data is null)
             return [];
         return (cast(T*)(data + 1))[0 .. data.length];
     }
 
-    T[] opIndex()
+    inout(T)[] opIndex() inout
     {
         if (data is null)
             return [];
@@ -420,7 +420,7 @@ struct ArrayL(T)
         toSlice[i] = x;
     }
 
-    ref T opIndex(size_t i)
+    ref inout(T) opIndex(size_t i) inout
     {
         return toSlice[i];
     }

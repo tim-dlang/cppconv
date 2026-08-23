@@ -290,7 +290,7 @@ class Scope
 
     ConditionMap!string className;
 
-    override string toString()
+    override string toString() const
     {
         string r;
         if (parentScope !is null)
