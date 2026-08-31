@@ -337,8 +337,8 @@ int main(string[] args)
 
         foreach (c, def; context2.defineSets.aliasMap)
         {
-            if (c in mergedAliasMap)
-                enforce(mergedAliasMap[c] == def);
+            if (auto inAliasMap = c in mergedAliasMap)
+                enforce(*inAliasMap == def);
             else
                 mergedAliasMap[c] = def;
         }

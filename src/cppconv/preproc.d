@@ -136,9 +136,9 @@ class DefineSet
         size_t[LocationX] byLoc;
         foreach (i, d; defines)
         {
-            if (d.definition.start in byLoc)
+            if (auto inByLoc = d.definition.start in byLoc)
             {
-                auto k = byLoc[d.definition.start];
+                auto k = *inByLoc;
                 defines[k].condition = logicSystem.simplify(logicSystem.or(defines[k].condition,
                         d.condition));
                 continue;
@@ -1220,9 +1220,9 @@ immutable(Formula)* removeLocationInstanceConditions(immutable(Formula)* f,
             if (name !is null)
             {
                 immutable(Formula)* last = logicSystem.true_;
-                if (name in chosen)
+                if (auto nameInChosen = name in chosen)
                 {
-                    last = chosen[name];
+                    last = *nameInChosen;
                     if (logicSystem.and(last, f2).isFalse)
                         return logicSystem.false_;
                     if (logicSystem.and(last, f2.negated).isFalse)

@@ -151,8 +151,8 @@ void collectDeclSeqTokensImpl(ref CodeWriter code, Tree tree, ref IteratePPVersi
         if (d2 !is null)
             d = d2;
 
-        if (d in data.forwardDecls)
-            if (!isInCorrectVersion(ppVersion, data.forwardDecls[d].negated))
+        if (auto inForwardDecls = d in data.forwardDecls)
+            if (!isInCorrectVersion(ppVersion, (*inForwardDecls).negated))
                 return;
         string name = declarationNameToCode(d, data, contextScope, ppVersion.condition);
 
@@ -1033,8 +1033,8 @@ string typeToCode(QualType type, DWriterData data, immutable(Formula)* condition
             {
                 d = getSelfTypedefTarget(d, data);
             }
-            if (d in data.forwardDecls)
-                newCondition = logicSystem.and(newCondition, data.forwardDecls[d].negated);
+            if (auto inForwardDecls = d in data.forwardDecls)
+                newCondition = logicSystem.and(newCondition, (*inForwardDecls).negated);
             string name = declarationNameToCode(d, data, currentScope, newCondition);
             if (d !in data.fileByDecl && realId.conditionAll !is null)
                 newCondition = logicSystem.and(newCondition, realId.conditionAll.negated);

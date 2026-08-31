@@ -143,8 +143,8 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         return null;
 
     static DependencyInfo[Declaration][Declaration] cache;
-    if (d in cache)
-        return cache[d];
+    if (auto inCache = d in cache)
+        return *inCache;
 
     DependencyInfo[Declaration] r;
     void add2(Declaration d2, immutable(Formula)* condition,
@@ -320,11 +320,12 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
         Tree parent = getRealParent(tree, semantic);
         if (currentMacroInstance)
         {
-            if (currentMacroInstance in macroDone && tree in macroDone[currentMacroInstance])
-                return;
+            if (auto inMacroDone = currentMacroInstance in macroDone)
+                if (tree in *inMacroDone)
+                    return;
             macroDone[currentMacroInstance][tree] = true;
         }
-        if (tree in data.macroReplacement)
+        if (auto inReplacement = tree in data.macroReplacement)
         {
             bool foundThisMacro;
             bool isValueMacro;
@@ -382,7 +383,7 @@ DependencyInfo[Declaration] getDeclDependencies(Declaration d, DWriterData data)
                     visitTree(t, condition, flags, instance2, outsideFunction, outsideMixin && !isMixinMacro);
             }
 
-            onDep(data.macroReplacement[tree]);
+            onDep(*inReplacement);
             if (isValueMacro || isMacroParam || hasSubMacros)
                 return;
         }
@@ -604,18 +605,19 @@ void selectDeclarations(DWriterData data)
         else if (d.type == DeclarationType.type)
             category = "type";
         Scope s = d.scope_;
-        if (d.scope_ !is null && d.tree in d.scope_.childScopeByTree)
-        {
-            foreach (e; d.scope_.childScopeByTree[d.tree].extraParentScopes.entries)
+        if (d.scope_ !is null)
+            if (auto childScope = d.tree in d.scope_.childScopeByTree)
             {
-                if (e.data.type != ExtraScopeType.namespace)
-                    continue;
-                if (!isInCorrectVersion(ppVersion, e.condition))
-                    continue;
-                s = e.data.scope_;
-                break;
+                foreach (e; childScope.extraParentScopes.entries)
+                {
+                    if (e.data.type != ExtraScopeType.namespace)
+                        continue;
+                    if (!isInCorrectVersion(ppVersion, e.condition))
+                        continue;
+                    s = e.data.scope_;
+                    break;
+                }
             }
-        }
         while (s !is null && s.tree.isValid) // not namespace
             s = s.parentScope;
         if (s !is null)
@@ -686,8 +688,8 @@ void selectDeclarations(DWriterData data)
                 hasNonForwardDecl[category] = null;
                 e = category in hasNonForwardDecl;
             }
-            if (d.name in *e)
-                prev = (*e)[d.name];
+            if (auto inE = d.name in *e)
+                prev = *inE;
             (*e)[d.name] = semantic.logicSystem.or(prev, ppVersion.condition);
         }
     }
@@ -715,22 +717,25 @@ void selectDeclarations(DWriterData data)
                     || (d.flags & DeclarationFlags.typedef_) != 0)
             {
                 auto e = category in hasNonForwardDecl;
-                if (e && d.name in *e)
-                    skipForward = semantic.logicSystem.or(skipForward,
-                            semantic.logicSystem.and(ppVersion.condition, (*e)[d.name]));
+                if (e)
+                    if (auto inE = d.name in *e)
+                        skipForward = semantic.logicSystem.or(skipForward,
+                                semantic.logicSystem.and(ppVersion.condition, *inE));
                 e = category in doneForwardDecl;
-                if (e && d.name in *e)
-                    skipForward = semantic.logicSystem.or(skipForward,
-                            semantic.logicSystem.and(ppVersion.condition, (*e)[d.name]));
+                if (e)
+                    if (auto inE = d.name in *e)
+                        skipForward = semantic.logicSystem.or(skipForward,
+                                semantic.logicSystem.and(ppVersion.condition, *inE));
             }
             if (d.type == DeclarationType.varOrFunc && d.declaratorTree.name != "InitDeclarator"
                     && (d.flags & DeclarationFlags.function_) == 0)
             {
                 string category2 = "Init " ~ category;
                 auto e = category2 in hasNonForwardDecl;
-                if (e && d.name in *e)
-                    skipForward = semantic.logicSystem.or(skipForward,
-                            semantic.logicSystem.and(ppVersion.condition, (*e)[d.name]));
+                if (e)
+                    if (auto inE = d.name in *e)
+                        skipForward = semantic.logicSystem.or(skipForward,
+                                semantic.logicSystem.and(ppVersion.condition, *inE));
             }
             if (d.flags & DeclarationFlags.enumerator)
                 continue;
@@ -855,14 +860,14 @@ void selectDeclarations(DWriterData data)
                 immutable(Formula)* condition = semantic.logicSystem.and(
                         semantic.logicSystem.and(semantic.logicSystem.and(d.condition,
                         d2.condition), forwardDecls[d].negated), t2[1]);
-                if (d2 in forwardDecls)
-                    condition = semantic.logicSystem.and(condition, forwardDecls[d2].negated);
+                if (auto inFowrardDecls = d2 in forwardDecls)
+                    condition = semantic.logicSystem.and(condition, (*inFowrardDecls).negated);
                 if (filenameNoExt != name.moduleName && !condition.isFalse)
                 {
                     ImportInfo importInfo;
-                    if (filenameNoExt in neededImports)
+                    if (auto inImports = filenameNoExt in neededImports)
                     {
-                        importInfo = neededImports[filenameNoExt];
+                        importInfo = *inImports;
                         importInfo.condition = semantic.logicSystem.or(importInfo.condition,
                                 condition);
                         importInfo.outsideFunction |= t2[2];

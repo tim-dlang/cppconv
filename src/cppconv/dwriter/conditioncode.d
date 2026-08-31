@@ -489,14 +489,14 @@ void conditionToDCode(O)(ref O outRange, immutable(Formula)* condition, DWriterD
         }
         outRange.put(")");
     }
-    else if (condition in data.mergedAliasMap)
+    else if (auto inMap = condition in data.mergedAliasMap)
     {
-        outRange.put("versionIsSet!(\"" ~ data.mergedAliasMap[condition] ~ "\")");
+        outRange.put("versionIsSet!(\"" ~ *inMap ~ "\")");
     }
-    else if (condition.negated in data.mergedAliasMap)
+    else if (auto inMap = condition.negated in data.mergedAliasMap)
     {
         outRange.put("!");
-        outRange.put("versionIsSet!(\"" ~ data.mergedAliasMap[condition.negated] ~ "\")");
+        outRange.put("versionIsSet!(\"" ~ *inMap ~ "\")");
     }
     else
     {
@@ -723,11 +723,11 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
         }
         foreach (c; condition.subFormulas)
         {
-            if (c in data.mergedAliasMap)
+            if (auto inMap = c in data.mergedAliasMap)
             {
                 if (needsNewline)
                     code.writeln();
-                code.write("version (" ~ data.mergedAliasMap[c] ~ ")");
+                code.write("version (" ~ *inMap ~ ")");
                 needsNewline = true;
                 continue;
             }
@@ -765,16 +765,16 @@ void versionConditionToDCode(ref CodeWriter code, immutable(Formula)* condition,
             code.writeln();
         return;
     }
-    else if (condition in data.mergedAliasMap)
+    else if (auto inMap = condition in data.mergedAliasMap)
     {
-        code.write("version (" ~ data.mergedAliasMap[condition] ~ ")");
+        code.write("version (" ~ *inMap ~ ")");
         if (addNewline)
             code.writeln();
         return;
     }
-    else if (condition.negated in data.mergedAliasMap)
+    else if (auto inMap = condition.negated in data.mergedAliasMap)
     {
-        code.write("version (" ~ data.mergedAliasMap[condition.negated] ~ ") {} else");
+        code.write("version (" ~ *inMap ~ ") {} else");
         if (addNewline)
             code.writeln();
         return;
@@ -829,14 +829,14 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
                 commonMacro = "";
         }
     }
-    if (commonMacro.length && commonMacro in data.options.macroReplacements)
+    if (auto inReplacements = commonMacro.length ? commonMacro in data.options.macroReplacements : null)
     {
         if (data.sourceTokenManager.tokensLeft.data.length)
         {
             writeComments(code, data, tree.start);
             data.sourceTokenManager.collectTokens(tree.end);
         }
-        parseTreeToCodeTerminal(code, data.options.macroReplacements[commonMacro]);
+        parseTreeToCodeTerminal(code, *inReplacements);
         return;
     }
 
@@ -847,17 +847,17 @@ void conditionTreeToDCode(T)(ref CodeWriter code, DWriterData data, Tree tree, T
         size_t[string] macroCodes;
         foreach (i, c; childs)
         {
-            if (childs[i] in data.macroReplacement)
+            if (auto inReplacement = childs[i] in data.macroReplacement)
             {
-                auto instance = data.macroReplacement[childs[i]];
+                auto instance = *inReplacement;
 
                 CodeWriter code2;
                 writeMacroInstance(code2, data, childs[i], logicSystem.and(condition, conditions[i]), currentScope, TreeToCodeFlags.none, false);
                 data.afterStringLiteral = afterStringLiteralBak;
 
-                if (code2.data in macroCodes)
+                if (auto inMacroCodes = code2.data in macroCodes)
                 {
-                    size_t j = macroCodes[code2.data];
+                    size_t j = *inMacroCodes;
                     conditions[j] = logicSystem.or(conditions[j], conditions[i]);
                     continue;
                 }

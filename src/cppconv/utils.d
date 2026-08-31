@@ -313,8 +313,8 @@ struct SimpleArrayAllocator2(T, SimpleArrayAllocatorFlags flags = SimpleArrayAll
 immutable(GrammarInfo)* getDummyGrammarInfo(ushort start = 30000)(string name)
 {
     static immutable(GrammarInfo)*[string] infos;
-    if (name in infos)
-        return infos[name];
+    if (auto inInfos = name in infos)
+        return *inInfos;
 
     SymbolID nonterminalID = cast(SymbolID)(start + infos.length * 2);
     SymbolID productionID = cast(SymbolID)(start + infos.length * 2 + 1);

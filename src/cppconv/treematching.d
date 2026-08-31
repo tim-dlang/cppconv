@@ -217,9 +217,9 @@ static const(char)[] generateMatchTreeCode(Funcs...)()
         size_t bucketId = size_t.max;
         foreach (p; productions)
         {
-            if (p in bucketByProductionID)
+            if (auto inBucket = p in bucketByProductionID)
             {
-                size_t bucketId2 = bucketByProductionID[p];
+                size_t bucketId2 = *inBucket;
                 if (bucketId != size_t.max && bucketId != bucketId2)
                 {
                     buckets[bucketId].funcs ~= buckets[bucketId2].funcs;
@@ -509,8 +509,8 @@ const(char)[] matchTreePatternGenCode(string pattern, immutable GrammarInfo* gra
         else if (tree.nonterminalID == nonterminalIDFor!"PatternNonterminal")
         {
             SymbolID nonterminalID = SymbolID.max;
-            if (tree.childs[0].content in nonterminalByName)
-                nonterminalID = nonterminalByName[tree.childs[0].content];
+            if (auto inNonterminalByName = tree.childs[0].content in nonterminalByName)
+                nonterminalID = *inNonterminalByName;
             else
                 throw new Exception("Unknown nonterminal " ~ tree.childs[0].content);
             immutable Nonterminal *nonterminalInfo = &grammarInfo.allNonterminals[nonterminalID - grammarInfo.startNonterminalID];

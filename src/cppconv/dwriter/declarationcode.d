@@ -159,8 +159,8 @@ string chooseDeclarationName(Declaration d, DWriterData data)
     auto declarationData = data.declarationData(d);
     if (d.type == DeclarationType.varOrFunc && (d.flags & DeclarationFlags.function_) != 0)
     {
-        if (d.declarationSet in data.functionChosenName)
-            return data.functionChosenName[d.declarationSet];
+        if (auto inChosenName = d.declarationSet in data.functionChosenName)
+            return *inChosenName;
     }
     else
     {
@@ -169,8 +169,8 @@ string chooseDeclarationName(Declaration d, DWriterData data)
     }
 
     immutable(Formula)* skipForward = semantic.logicSystem.false_;
-    if (d in data.forwardDecls)
-        skipForward = data.forwardDecls[d];
+    if (auto inForwardDecls = d in data.forwardDecls)
+        skipForward = *inForwardDecls;
     immutable(Formula)* condition2 = semantic.logicSystem.and(d.condition, skipForward.negated);
     if (d.realDeclaration.conditionAll !is null)
         condition2 = semantic.logicSystem.and(condition2, d.realDeclaration.conditionAll.negated);
@@ -395,8 +395,8 @@ void findParams(Tree t, immutable(Formula)* condition3,
     }
     else if (t.nonterminalID.nonterminalIDAmong!("ParametersAndQualifiers", "LambdaParametersAndQualifiers"))
     {
-        if (currentScope !is null && t in currentScope.childScopeByTree)
-            currentScope = currentScope.childScopeByTree[t];
+        if (auto childScope = (currentScope !is null) ? t in currentScope.childScopeByTree : null)
+            currentScope = *childScope;
 
         findParams(t.childs[0], condition3, info, data, currentScope);
 
@@ -628,8 +628,8 @@ void declarationToDCode2(ref CodeWriter code, DWriterData data, Declaration d,
         writeComments(code, data, declarationTokens.tokensBefore);
 
     immutable(Formula)* skipForward = logicSystem.false_;
-    if (d in data.forwardDecls)
-        skipForward = data.forwardDecls[d];
+    if (auto inForwardDecls = d in data.forwardDecls)
+        skipForward = *inForwardDecls;
 
     string lastLineIndent;
     if (getLastLineIndent(code, lastLineIndent) && data.options.addDeclComments)
@@ -858,8 +858,8 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
     if (d.tree.isValid && d.tree.nameOrContent == "ClassSpecifier"
             && d.tree in semantic.rootScope.childScopeByTree)
         currentScope = semantic.rootScope.childScopeByTree[d.tree];
-    if (currentScope !is null && d.tree in currentScope.childScopeByTree)
-        currentScope = currentScope.childScopeByTree[d.tree];
+    if (auto childScope = (currentScope !is null) ? d.tree in currentScope.childScopeByTree : null)
+        currentScope = *childScope;
 
     bool closeStaticIf;
     if (!simplified.isTrue && !condition.isFalse)
@@ -890,12 +890,12 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
     if (d.scope_ !is null && (d.flags & DeclarationFlags.forward) == 0)
     {
         string fname = fullyQualifiedName(semantic, d);
-        if (fname in data.options.docComments)
+        if (auto inDocComments = fname in data.options.docComments)
         {
             string lastLineIndentUnused;
             if (getLastLineIndent(code, lastLineIndentUnused))
                 code.writeln();
-            code.writeln("/// ", data.options.docComments[fname]);
+            code.writeln("/// ", *inDocComments);
         }
     }
 
@@ -2066,9 +2066,9 @@ void declarationToDCode(ref CodeWriter code, DWriterData data, Declaration d, im
         {
             IteratePPVersions ppVersion = IteratePPVersions(combination,
                     semantic.logicSystem, semantic.logicSystem.true_, null, semantic.mergedTreeDatas);
-            if (d.tree in d.scope_.childScopeByTree)
+            if (auto childScope = d.tree in d.scope_.childScopeByTree)
             {
-                Scope classScope = d.scope_.childScopeByTree[d.tree];
+                Scope classScope = *childScope;
                 foreach (name, ds; classScope.symbols)
                 {
                     foreach (e; ds.entries)
@@ -2364,33 +2364,34 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
     auto semantic = data.semantic;
     immutable(Formula)* conditionInOneModule = semantic.logicSystem.false_;
     immutable(Formula)* conditionInMultipleModules = semantic.logicSystem.false_;
-    if (name in data.modulesBySymbol)
-        foreach (filename, fcondition; data.modulesBySymbol[name])
+    if (auto inModules = name in data.modulesBySymbol)
+        foreach (filename, fcondition; *inModules)
             if (filename in data.importGraphHere || filename == data.currentFilename.moduleName)
             {
                 immutable(Formula)* condition2 = fcondition;
-                if (filename in data.importGraphHere)
+                if (auto inImportGraph = filename in data.importGraphHere)
                     condition2 = semantic.logicSystem.and(fcondition,
-                            data.importGraphHere[filename].condition);
+                            inImportGraph.condition);
                 conditionInMultipleModules = semantic.logicSystem.or(conditionInMultipleModules,
                         semantic.logicSystem.and(conditionInOneModule, condition2));
                 conditionInOneModule = semantic.logicSystem.or(conditionInOneModule, condition2);
             }
 
     Scope realScope = d.scope_;
-    if (realScope !is null && d.tree in d.scope_.childScopeByTree)
-    {
-        foreach (e; d.scope_.childScopeByTree[d.tree].extraParentScopes.entries)
+    if (realScope !is null)
+        if (auto childScope = d.tree in d.scope_.childScopeByTree)
         {
-            if (e.data.type != ExtraScopeType.namespace)
-                continue;
-            if (semantic.logicSystem.and(e.condition, condition).isFalse)
-                continue;
-            enforce(semantic.logicSystem.and(e.condition.negated, condition).isFalse);
-            realScope = e.data.scope_;
-            break;
+            foreach (e; childScope.extraParentScopes.entries)
+            {
+                if (e.data.type != ExtraScopeType.namespace)
+                    continue;
+                if (semantic.logicSystem.and(e.condition, condition).isFalse)
+                    continue;
+                enforce(semantic.logicSystem.and(e.condition.negated, condition).isFalse);
+                realScope = e.data.scope_;
+                break;
+            }
         }
-    }
 
     Scope realScopeNoNamespace = realScope;
     while (realScopeNoNamespace !is null && realScopeNoNamespace.parentScope !is null && !realScopeNoNamespace.tree.isValid) // Skip over namespaces
@@ -2416,20 +2417,21 @@ string qualifyName(string name, Declaration d, DWriterData data, Scope currentSc
         }
     }
 
-    if (d in data.fileByDecl
+    auto inFileByDecl = d in data.fileByDecl;
+    if (inFileByDecl
         && ((realScope !is null && realScope.parentScope is null) || d.type == DeclarationType.macro_)
         && data.currentMacroInstance !is null
         && data.currentMacroInstance.macroDeclaration !is null
         && data.currentMacroInstance.macroDeclaration.type == DeclarationType.macro_
         && data.currentMacroInstance.macroTranslation == MacroTranslation.mixin_)
-        name = data.options.importedSymbol ~ "!q{" ~ data.fileByDecl[d].moduleName ~ "}." ~ name;
-    else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
+        name = data.options.importedSymbol ~ "!q{" ~ inFileByDecl.moduleName ~ "}." ~ name;
+    else if (inFileByDecl && data.fileByDecl[d] != data.currentFilename
             && (!conditionInMultipleModules.isFalse || name in data.importedPackagesGraphHere))
-        name = data.fileByDecl[d].moduleName ~ "." ~ name;
-    else if (d in data.fileByDecl && data.fileByDecl[d] != data.currentFilename
+        name = inFileByDecl.moduleName ~ "." ~ name;
+    else if (inFileByDecl && data.fileByDecl[d] != data.currentFilename
             && realScope !is null && !realScope.tree.isValid
             && d.declarationSet.scope_.parentScope !is null)
-        name = data.fileByDecl[d].moduleName ~ "." ~ name; // Namespace
+        name = inFileByDecl.moduleName ~ "." ~ name; // Namespace
     else if (hasConflictingName)
         name = "." ~ name;
 
@@ -2451,9 +2453,9 @@ string declarationNameToCode(Declaration d, DWriterData data, Scope currentScope
     }
 
     Scope realScope = d.scope_;
-    if (d.tree in d.scope_.childScopeByTree)
+    if (auto childScope = d.tree in d.scope_.childScopeByTree)
     {
-        foreach (e; d.scope_.childScopeByTree[d.tree].extraParentScopes.entries)
+        foreach (e; childScope.extraParentScopes.entries)
         {
             if (e.data.type != ExtraScopeType.namespace)
                 continue;

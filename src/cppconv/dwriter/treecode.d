@@ -71,8 +71,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         return;
 
     Scope origScope = currentScope;
-    if (currentScope !is null && tree in currentScope.childScopeByTree)
-        currentScope = currentScope.childScopeByTree[tree];
+    if (currentScope !is null)
+        if (auto childScope = tree in currentScope.childScopeByTree)
+            currentScope = *childScope;
 
     size_t indexInParent;
     size_t indexInParent2;
@@ -111,9 +112,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
 
     bool skipCasts = (treeToCodeFlags & TreeToCodeFlags.skipCasts) != 0;
 
-    if (tree in data.macroReplacement)
+    if (auto inReplacement = tree in data.macroReplacement)
     {
-        auto instance = data.macroReplacement[tree];
+        auto instance = *inReplacement;
         if (tree !is instance.firstUsedTree)
             return;
         if (instance.macroDeclaration.type == DeclarationType.macroParam)
@@ -342,8 +343,9 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
             code.customIndent = origCustomIndent;
         }
 
-        if (currentScope !is null && compoundStmt in currentScope.childScopeByTree)
-            currentScope = currentScope.childScopeByTree[compoundStmt];
+        if (currentScope !is null)
+            if (auto childScope = compoundStmt in currentScope.childScopeByTree)
+                currentScope = *childScope;
 
         if (putCloseNewline && compoundStmt.childs[1].isValid
                 && compoundStmt.childs[1].childs.length)
@@ -2244,12 +2246,13 @@ void parseTreeToDCode(T)(ref CodeWriter code, DWriterData data, T tree, immutabl
         skipToken(code, data, tree.childs[0], false, true);
 
         Scope currentScope2 = currentScope;
-        if (currentScope2 !is null && tree.childs[1] in currentScope2.childScopeByTree)
-            currentScope2 = currentScope2.childScopeByTree[tree.childs[1]];
+        if (currentScope2 !is null)
+            if (auto childScope = tree.childs[1] in currentScope2.childScopeByTree)
+                currentScope2 = *childScope;
         Scope currentScope3 = currentScope;
-        if (currentScope3 !is null
-                && match.savedc in currentScope3.childScopeByTree)
-            currentScope3 = currentScope3.childScopeByTree[match.savedc];
+        if (currentScope3 !is null)
+            if (auto childScope = match.savedc in currentScope3.childScopeByTree)
+                currentScope3 = *childScope;
 
         parseTreeToDCode(code, data, tree.childs[1].childs[0], condition, currentScope2); // {
         writeComments(code, data,

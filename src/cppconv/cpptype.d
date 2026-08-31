@@ -1543,8 +1543,8 @@ bool hasMutableIndirection(QualType type, Semantic semantic)
     if (type.kind == TypeKind.builtin)
         return false;
 
-    if (type in semantic.hasMutableIndirectionCache)
-        return semantic.hasMutableIndirectionCache[type];
+    if (auto inCache = type in semantic.hasMutableIndirectionCache)
+        return *inCache;
     semantic.hasMutableIndirectionCache[type] = true; // prevent endless recursion
 
     bool r;
@@ -1580,8 +1580,8 @@ bool hasMutableIndirection(QualType type, Semantic semantic)
         {
             auto d = e.data;
 
-            if (d.tree.isValid && d.tree in d.scope_.childScopeByTree)
-                foreach (ds2; d.scope_.childScopeByTree[d.tree].symbols)
+            if (auto childScope = d.tree.isValid ? d.tree in d.scope_.childScopeByTree : null)
+                foreach (ds2; childScope.symbols)
                 {
                     foreach (e2; ds2.entries)
                     {

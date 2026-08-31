@@ -270,8 +270,9 @@ void collectMacroInstances(DWriterData data, Semantic mergedSemantic,
             instance.macroTrees = macroTrees;
 
             foreach (t; instance.macroTrees)
-                if (t in data.macroReplacement && data.macroReplacement[t] !is null)
-                    instance.extraDeps.addOnce(data.macroReplacement[t]);
+                if (auto inReplacement = t in data.macroReplacement)
+                    if (*inReplacement !is null)
+                        instance.extraDeps.addOnce(*inReplacement);
 
             foreach (t; instance.macroTrees)
             {
@@ -461,9 +462,9 @@ void selectMacroParamNames(DWriterData data, Semantic mergedSemantic, MacroDecla
                     canReplaceStringifiedParam = false;
                 if (instance2.hasParamExpansion)
                     continue;
-                if (key in instance2.macroDeclaration.nameByCode)
+                if (auto inNameByCode = key in instance2.macroDeclaration.nameByCode)
                 {
-                    instance2.usedName = instance2.macroDeclaration.nameByCode[key];
+                    instance2.usedName = *inNameByCode;
                 }
                 else
                 {
@@ -496,9 +497,9 @@ void selectMacroParamNames(DWriterData data, Semantic mergedSemantic, MacroDecla
                        no extra version of the parameter is necessary. */
                     instance2.usedName = nonStringifiedName;
                 }
-                else if (key in instance2.macroDeclaration.nameByCode)
+                else if (auto inNameByCode = key in instance2.macroDeclaration.nameByCode)
                 {
-                    instance2.usedName = instance2.macroDeclaration.nameByCode[key];
+                    instance2.usedName = *inNameByCode;
                 }
                 else
                 {
@@ -578,19 +579,18 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
 
                 Tuple!(string, LocationRangeX) key = tuple!(string, LocationRangeX)(macroName, l);
 
-                if (locationContextMacro in data.macroInstanceByLocation)
-                    instance2 = data.macroInstanceByLocation[locationContextMacro]
-                        .entries[0].data;
+                if (auto inMacroInstanceByLocation = locationContextMacro in data.macroInstanceByLocation)
+                    instance2 = inMacroInstanceByLocation.entries[0].data;
 
-                if (key in data.sourceTokenManager.macroDeclarations
-                        && instance2 !is null && instance2.macroDeclaration !is null
-                        && instance2.macroDeclaration.type == DeclarationType.macro_)
-                {
-                    macroDeclaration2 = data.sourceTokenManager.macroDeclarations[key];
-                    assert(instance2.macroDeclaration is macroDeclaration2);
-                    if (instance2.macroTranslation == MacroTranslation.none)
-                        macroDeclaration2 = null;
-                }
+                if (instance2 !is null && instance2.macroDeclaration !is null
+                    && instance2.macroDeclaration.type == DeclarationType.macro_)
+                    if (auto inMacroDeclarations = key in data.sourceTokenManager.macroDeclarations)
+                    {
+                        macroDeclaration2 = *inMacroDeclarations;
+                        assert(instance2.macroDeclaration is macroDeclaration2);
+                        if (instance2.macroTranslation == MacroTranslation.none)
+                            macroDeclaration2 = null;
+                    }
             }
         }
         else
@@ -718,13 +718,14 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     }
     else
     {
-        if (usedTrees.length == 1 && usedTrees[0] in data.macroReplacement)
-        {
-            auto instance3 = data.macroReplacement[usedTrees[0]];
-            if (instance3.macroDeclaration.type != DeclarationType.macroParam
-                && instance3.macroTranslation == MacroTranslation.mixin_)
-                instance.canForwardMacroMixin = true;
-        }
+        if (usedTrees.length == 1)
+            if (auto inReplacement = usedTrees[0] in data.macroReplacement)
+            {
+                auto instance3 = *inReplacement;
+                if (instance3.macroDeclaration.type != DeclarationType.macroParam
+                    && instance3.macroTranslation == MacroTranslation.mixin_)
+                    instance.canForwardMacroMixin = true;
+            }
 
         foreach (usedTree; usedTrees)
         {
@@ -777,8 +778,8 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
                     paramName = "__VA_ARGS__";
 
                 MacroDeclarationInstance[] paramInstances;
-                if (paramName in instance.params)
-                    paramInstances = instance.params[paramName].instances;
+                if (auto inParams = paramName in instance.params)
+                    paramInstances = inParams.instances;
                 bool[string] paramAdded;
                 foreach (p2; paramInstances)
                 {
@@ -802,9 +803,9 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
     {
         auto key = text(instance.macroTranslation, " ",
                 instance.paramNames, " ", instance.instanceCode);
-        if (key in instance.macroDeclaration.nameByCode)
+        if (auto inNameByCode = key in instance.macroDeclaration.nameByCode)
         {
-            instance.usedName = instance.macroDeclaration.nameByCode[key];
+            instance.usedName = *inNameByCode;
         }
         else
         {
@@ -834,9 +835,9 @@ void generateMacroCode(DWriterData data, Semantic mergedSemantic, MacroDeclarati
 void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         LocationContextInfo locationContextInfo, ref bool[immutable(LocationContext)*] done)
 {
-    if (locationContextInfo.locationContext in done)
+    if (auto inDone = locationContextInfo.locationContext in done)
     {
-        assert(done[locationContextInfo.locationContext], text(locationStr(locationContextInfo.locationContext)));
+        assert(*inDone, text(locationStr(locationContextInfo.locationContext)));
         return;
     }
 
@@ -845,10 +846,9 @@ void applyMacroInstances(DWriterData data, Semantic mergedSemantic,
         done[locationContextInfo.locationContext] = true;
 
     // Handle macro parameters earlier
-    if (locationContextInfo.locationContext in data.macroInstanceByLocation)
+    if (auto inMacroInstanceByLocation = locationContextInfo.locationContext in data.macroInstanceByLocation)
     {
-        foreach (instanceEntry; data
-                .macroInstanceByLocation[locationContextInfo.locationContext].entries)
+        foreach (instanceEntry; inMacroInstanceByLocation.entries)
         {
             MacroDeclarationInstance instance = instanceEntry.data;
 
@@ -1063,9 +1063,9 @@ void writeMacroInstance(ref CodeWriter code, DWriterData data, Tree tree, immuta
                     codePrefix = "q{";
                     codeSuffix = "}";
                 }
-                if (paramName.realName in instance.params)
+                if (auto inParams = paramName.realName in instance.params)
                 {
-                    auto paramInstances = instance.params[paramName.realName].instances;
+                    auto paramInstances = inParams.instances;
                     MacroDeclarationInstance x;
                     bool allCodesSame = true;
                     foreach (y; paramInstances)

@@ -1106,9 +1106,9 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
             d.declaredType = combineTypes(d.declaredType, QualType(type,
                 Qualifiers.none), oldCondition, ppVersion.condition, semantic);
 
-            if (d.name && targetScope2 !is null && d.name in targetScope2.symbols)
+            if (auto nameInSymbols = (d.name && targetScope2 !is null) ? d.name in targetScope2.symbols : null)
             {
-                foreach (e; targetScope2.symbols[d.name].entries)
+                foreach (e; nameInSymbols.entries)
                 {
                     auto d2 = e.data;
                     if (d2.type != d.type)
@@ -1131,7 +1131,7 @@ void runSemantic(ref SemanticRunInfo semantic, ref Tree tree, Tree parent,
                 }
                 if ((d.flags & DeclarationFlags.forward) == 0 && d.type == DeclarationType.type)
                 {
-                    foreach (e; targetScope2.symbols[d.name].entriesRedundant)
+                    foreach (e; nameInSymbols.entriesRedundant)
                     {
                         auto d2 = e.data;
                         if (d2.type != d.type)

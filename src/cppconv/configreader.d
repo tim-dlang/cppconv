@@ -342,11 +342,11 @@ void readConfig(T)(ref T config, string filename)
         input = removeComments(input);
         JSONValue json = parseJSON(input);
         auto obj = json.objectNoRef;
-        if ("include" in obj)
+        if (auto includeInObj = "include" in obj)
         {
-            if (obj["include"].type() == JSONType.array)
+            if (includeInObj.type() == JSONType.array)
             {
-                foreach (c; obj["include"].array())
+                foreach (c; includeInObj.array())
                 {
                     string filename2 = c.str;
                     filename2 = absolutePath(filename2, dirName(filename));
@@ -355,7 +355,7 @@ void readConfig(T)(ref T config, string filename)
             }
             else
             {
-                string filename2 = obj["include"].str;
+                string filename2 = includeInObj.str;
                 filename2 = absolutePath(filename2, dirName(filename));
                 readConfigFile(filename2);
             }

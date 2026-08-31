@@ -572,9 +572,9 @@ void mergeFiles(Context rootContext, ref MergedFile[] mergedFiles, MergedFile[] 
 
                 foreach (i, m; mergedFile2.macroInstances)
                 {
-                    if (m.locationContext in locContextMap1)
+                    if (auto inMap = m.locationContext in locContextMap1)
                     {
-                        auto k = locContextMap1[m.locationContext];
+                        auto k = *inMap;
 
                         Tree sourceTokens2 = mergedFile1.macroInstances[k].sourceTokens;
                         assert((m.sourceTokens.isValid) == (sourceTokens2.isValid));

@@ -181,8 +181,8 @@ class Scope
             if (condition.isFalse)
                 return;
 
-            if (name in symbols)
-                foreach (ref e; symbols[name].entries)
+            if (auto nameInSymbols = name in symbols)
+                foreach (ref e; nameInSymbols.entries)
                 {
                     if (e.data.type != DeclarationType.forwardScope)
                     {
@@ -195,13 +195,13 @@ class Scope
 
             conditionLeft = logicSystem.and(conditionLeft, condition.negated);
 
-            if (name in symbols)
-                foreach (ref e; symbols[name].entries)
+            if (auto nameInSymbols = name in symbols)
+                foreach (ref e; nameInSymbols.entries)
                 {
                     if (e.data.type == DeclarationType.forwardScope && e.data.forwardedScope is s2)
                     {
                         e.data.condition = logicSystem.or(e.data.condition, condition);
-                        symbols[name].conditionAll = logicSystem.or(symbols[name].conditionAll,
+                        nameInSymbols.conditionAll = logicSystem.or(nameInSymbols.conditionAll,
                                 condition);
                         return;
                     }
@@ -219,9 +219,8 @@ class Scope
 
         foreach (s2; extraParentScopes.entries)
         {
-            if (name in s2.data.scope_.symbols)
+            if (auto x = name in s2.data.scope_.symbols)
             {
-                auto x = &s2.data.scope_.symbols[name];
                 immutable(Formula)* condition = logicSystem.false_;
 
                 foreach (e2; x.entries)
@@ -235,9 +234,8 @@ class Scope
                 addScope(s2.data.scope_, condition);
             }
         }
-        if (name in parentScope.symbols)
+        if (auto x = name in parentScope.symbols)
         {
-            auto x = &parentScope.symbols[name];
             immutable(Formula)* condition = logicSystem.and(conditionLeft, x.conditionAll);
             if (condition.isFalse)
                 return;

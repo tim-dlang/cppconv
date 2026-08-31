@@ -253,9 +253,8 @@ SourceToken[] collectTokens(SourceTokenManager sourceTokenManager, LocationX loc
         (sourceTokenManager.collectTokens(loc.context.parentLocation.start));
         assert(sourceTokenManager.tokensLeft.data.length + 1 == loc.context.contextDepth);
 
-        if (RealFilename(loc.context.filename) in sourceTokenManager.sourceTokens)
-            sourceTokenManager.tokensLeft.put(
-                    sourceTokenManager.sourceTokens[RealFilename(loc.context.filename)]);
+        if (auto inSourceTokens = RealFilename(loc.context.filename) in sourceTokenManager.sourceTokens)
+            sourceTokenManager.tokensLeft.put(*inSourceTokens);
         else
             sourceTokenManager.tokensLeft.put(SourceToken[].init);
 
@@ -513,16 +512,11 @@ void processSource(SourceTokenManager sourceTokenManager, Tree tree,
             macroDeclaration.type = DeclarationType.macro_;
             macroDeclaration.name = macroName;
             macroDeclaration.location = l;
-            if (RealFilename(l.context.filename) in sourceTokenManager.mergedFileByName
-                    && sourceTokenManager.mergedFileByName[RealFilename(
-                            l.context.filename)].locConditions.entries.length)
+            macroDeclaration.condition = sourceTokenManager.logicSystem.false_;
+            if (auto inMergedFile = RealFilename(l.context.filename) in sourceTokenManager.mergedFileByName)
             {
-                macroDeclaration.condition = sourceTokenManager.mergedFileByName[RealFilename(
-                            l.context.filename)].locConditions.find(l.start.loc, l.end.loc);
-            }
-            else
-            {
-                macroDeclaration.condition = sourceTokenManager.logicSystem.false_;
+                if ((*inMergedFile).locConditions.entries.length)
+                    macroDeclaration.condition = (*inMergedFile).locConditions.find(l.start.loc, l.end.loc);
             }
             sourceTokenManager.macroDeclarations[key] = macroDeclaration;
 

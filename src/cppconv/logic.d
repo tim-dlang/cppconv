@@ -924,9 +924,9 @@ class LogicSystemX(T)
     immutable(Formula)* distributeOrSimple(immutable(Formula)* f1,
             immutable(Formula)* f2, bool nullOnComplex = false)
     {
-        if ([f1, f2] in distributeOrSimpleCache)
+        if (auto inCache = [f1, f2] in distributeOrSimpleCache)
         {
-            auto r = distributeOrSimpleCache[[f1, f2]];
+            auto r = *inCache;
             if (nullOnComplex)
             {
                 if (r[1])
@@ -1103,9 +1103,9 @@ class LogicSystemX(T)
                 numOrs++;
                 foreach (x2; x.subFormulas)
                 {
-                    if (x2 in subsSeen)
+                    if (auto inSubsSeen = x2 in subsSeen)
                     {
-                        subsSeen[x2]++;
+                        (*inSubsSeen)++;
                     }
                     else
                         subsSeen[x2] = 1;
@@ -1472,8 +1472,8 @@ class LogicSystemX(T)
             return simplify(f.negated).negated;
         if (f.type != FormulaType.and)
             return f;
-        if (f in simplifyCache)
-            return simplifyCache[f];
+        if (auto inCache = f in simplifyCache)
+            return *inCache;
 
         static Appender!(immutable(Formula)*[]) tmp;
         size_t sizeBegin = tmp.data.length;

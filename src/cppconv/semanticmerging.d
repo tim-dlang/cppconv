@@ -120,8 +120,8 @@ struct MergeFilesData2
     Scope[Scope] getTargetScopeCache;
     Scope getTargetScope(Scope s)
     {
-        if (s in getTargetScopeCache)
-            return getTargetScopeCache[s];
+        if (auto inCache = s in getTargetScopeCache)
+            return *inCache;
 
         Tree tree = s.tree;
 

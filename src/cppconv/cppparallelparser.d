@@ -1265,9 +1265,9 @@ string toIdentifierText(Tree toIdentNode, MacroParam[string] paramMap)
     foreach (innerToken; toIdentNode.childs)
     {
         string tokenContent = innerToken.childs[0].content;
-        if (paramMap !is null && tokenContent in paramMap)
+        if (auto inParamMap = (paramMap !is null) ? tokenContent in paramMap : null)
         {
-            foreach (pt; paramMap[tokenContent].tokens)
+            foreach (pt; inParamMap.tokens)
                 allText ~= pt.t.content;
         }
         else
@@ -2052,8 +2052,8 @@ do
             assert(start.context.name == "^");
 
             ParamToken[] paramTokens;
-            if (name in paramMap)
-                paramTokens = paramMap[name].tokens;
+            if (auto inParamMap = name in paramMap)
+                paramTokens = inParamMap.tokens;
 
             assert(token.start.context.filename == start.context.filename);
             auto locationContextX0 = context.getLocationContext(immutable(LocationContext)(start.context,

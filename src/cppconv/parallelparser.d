@@ -221,8 +221,8 @@ void doMerge(alias P)(ref P.PushParser!(CppParseTreeCreator!(P), string) pushPar
     {
         if (nodeA is nodeB)
             return nodeA;
-        if (nodeA in mergeDone)
-            return mergeDone[nodeA];
+        if (auto inDone = nodeA in mergeDone)
+            return *inDone;
         PushParser.StackNode* newNode = new PushParser.StackNode(nodeA.state);
         mergeDone[nodeA] = newNode;
         newNode.previous.length = nodeA.previous.length;

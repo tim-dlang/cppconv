@@ -102,9 +102,8 @@ struct IteratePPVersions
     {
         immutable(Formula)*[] conditions;
         immutable(Formula)* mergedCondition = logicSystem.false_;
-        if (tree.nodeType == NodeType.merged && tree in mergedTreeDatas)
+        if (auto mdata = (tree.nodeType == NodeType.merged) ? tree in mergedTreeDatas : null)
         {
-            auto mdata = &mergedTreeDatas[tree];
             mergedCondition = mdata.mergedCondition;
             if (instanceCondition !is null)
                 mergedCondition = replaceIncludeInstanceCondition(mergedCondition,

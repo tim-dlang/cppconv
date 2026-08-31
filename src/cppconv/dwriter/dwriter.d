@@ -211,8 +211,8 @@ class DWriterData
     Declaration dummyDeclaration(string name, string moduleName)
     {
         string[2] key = [name, moduleName];
-        if (key in dummyDeclarations)
-            return dummyDeclarations[key];
+        if (auto inDummyDeclarations = key in dummyDeclarations)
+            return *inDummyDeclarations;
         Declaration d = new Declaration;
         d.name = name;
         d.type = DeclarationType.dummy;
@@ -847,9 +847,9 @@ void findRealDecl(DeclarationSet ds, bool isTypedef, ref ConditionMap!Declaratio
                     e2.data.condition), e2.data, logicSystem);
         }
 
-        if (e.data in data.forwardDecls)
+        if (auto inForwardDecls = e.data in data.forwardDecls)
         {
-            newCondition = logicSystem.and(newCondition, data.forwardDecls[e.data].negated);
+            newCondition = logicSystem.and(newCondition, (*inForwardDecls).negated);
         }
         if (e.data.realDeclaration.conditionAll !is null)
             newCondition = semantic.logicSystem.and(newCondition,
@@ -926,9 +926,9 @@ void findRealDecl(Tree tree, ref ConditionMap!Declaration realDecl,
                         e2.data.condition), e2.data, logicSystem);
             }
 
-            if (e.data in data.forwardDecls)
+            if (auto inForwardDecls = e.data in data.forwardDecls)
             {
-                newCondition = logicSystem.and(newCondition, data.forwardDecls[e.data].negated);
+                newCondition = logicSystem.and(newCondition, (*inForwardDecls).negated);
             }
             if (e.data.realDeclaration.conditionAll !is null)
                 newCondition = semantic.logicSystem.and(newCondition,
@@ -1223,8 +1223,8 @@ DTypeKind getDTypeKind(Tree tree, DWriterData data)
         if (classKey != "struct" && classKey != "class")
             return DTypeKind.none;
 
-        if (tree in data.dTypeKindCache)
-            return data.dTypeKindCache[tree];
+        if (auto inCache = tree in data.dTypeKindCache)
+            return *inCache;
 
         data.dTypeKindCache[tree] = DTypeKind.none; // Prevent endless recursion
 
@@ -1233,9 +1233,9 @@ DTypeKind getDTypeKind(Tree tree, DWriterData data)
         bool foundClassHint;
         foreach (d; semantic.extraInfo(findWrappingDeclaration(tree, semantic)).declarations)
         {
-            if (d.tree in d.scope_.childScopeByTree)
+            if (auto childScope = d.tree in d.scope_.childScopeByTree)
             {
-                Scope s2 = d.scope_.childScopeByTree[d.tree];
+                Scope s2 = *childScope;
                 foreach (name2, symbols; s2.symbols)
                     foreach (d2; symbols.entries)
                     {
@@ -1777,9 +1777,9 @@ immutable(Formula)* locationReachable(LocationRangeX loc1, LocationRangeX loc2, 
     foreach (tu, instances1; data.mergedFileByName[RealFilename(filename1)].tuToInstances)
     {
         MergedFileInstance[] instances2;
-        if (RealFilename(filename2) in data.mergedFileByName
-                && tu in data.mergedFileByName[RealFilename(filename2)].tuToInstances)
-            instances2 = data.mergedFileByName[RealFilename(filename2)].tuToInstances[tu];
+        if (auto inMergedFile = RealFilename(filename2) in data.mergedFileByName)
+            if (auto inInstances = tu in (*inMergedFile).tuToInstances)
+                instances2 = *inInstances;
         foreach (ref inst1; instances1)
         {
             foreach (ref inst2; instances2)
@@ -2058,10 +2058,10 @@ ImportInfo[string] getNeededImportsLocal(Declaration d, DWriterData data)
         if (d2.type != DeclarationType.dummy && d2 !in data.forwardDecls)
             continue;
         immutable(Formula)* condition = semantic.logicSystem.and(d.condition, d2.condition);
-        if (d in data.forwardDecls)
-            condition = semantic.logicSystem.and(condition, data.forwardDecls[d].negated);
-        if (d2 in data.forwardDecls)
-            condition = semantic.logicSystem.and(condition, data.forwardDecls[d2].negated);
+        if (auto inForwardDecls = d in data.forwardDecls)
+            condition = semantic.logicSystem.and(condition, (*inForwardDecls).negated);
+        if (auto inForwardDecls = d2 in data.forwardDecls)
+            condition = semantic.logicSystem.and(condition, (*inForwardDecls).negated);
         condition = semantic.logicSystem.and(condition, t2[1]);
         if (filenameNoExt != data.currentFilename.moduleName && !condition.isFalse)
         {
@@ -2069,9 +2069,9 @@ ImportInfo[string] getNeededImportsLocal(Declaration d, DWriterData data)
             if (!t2[2] && (filenameNoExt !in data.importGraphHere
                     || !data.importGraphHere[filenameNoExt].outsideFunction))
             {
-                if (filenameNoExt in neededImportsLocal)
+                if (auto inImports = filenameNoExt in neededImportsLocal)
                 {
-                    importInfo = neededImportsLocal[filenameNoExt];
+                    importInfo = *inImports;
                     importInfo.condition = semantic.logicSystem.or(importInfo.condition, condition);
                     importInfo.outsideFunction |= t2[2];
                 }
@@ -2210,8 +2210,8 @@ bool isCommentLike(Declaration d, DWriterData data)
     }
 
     immutable(Formula)* skipForward = data.logicSystem.false_;
-    if (d in data.forwardDecls)
-        skipForward = data.forwardDecls[d];
+    if (auto inForwardDecls = d in data.forwardDecls)
+        skipForward = *inForwardDecls;
 
     if (data.logicSystem.and(d.condition, skipForward.negated).isFalse)
         return true;
@@ -2668,9 +2668,9 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
     CodeWriter code;
     code.indentStr = data.options.indent;
 
-    if (data.currentFilename in data.sourceTokensPrefix)
+    if (auto inPrefix = data.currentFilename in data.sourceTokensPrefix)
     {
-        auto sourceTokensPrefix = data.sourceTokensPrefix[data.currentFilename];
+        auto sourceTokensPrefix = *inPrefix;
         sourceTokensPrefix.sort!((a, b) {
             if (a.length == 0 || b.length == 0)
                 return a.length < b.length;
@@ -2746,10 +2746,10 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
 
     data.importGraphHere = null;
     data.importedPackagesGraphHere = null;
-    if (data.currentFilename in data.importGraph)
-        data.importGraphHere = data.importGraph[data.currentFilename];
-    if (data.currentFilename in data.importedPackagesGraph)
-        data.importedPackagesGraphHere = data.importedPackagesGraph[data.currentFilename];
+    if (auto inImportGraph = data.currentFilename in data.importGraph)
+        data.importGraphHere = *inImportGraph;
+    if (auto inImportGraph = data.currentFilename in data.importedPackagesGraph)
+        data.importedPackagesGraphHere = *inImportGraph;
 
     data.versionReplacementsOr = null;
     void addVersionOrCondition2(immutable(Formula)* condition)
@@ -2773,14 +2773,14 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
         {
             if (name.length)
                 name ~= "Or";
-            if (c in data.mergedAliasMap)
+            if (auto inMap = c in data.mergedAliasMap)
             {
-                name ~= data.mergedAliasMap[c];
+                name ~= *inMap;
                 continue;
             }
-            else if (c.negated in data.mergedAliasMap)
+            else if (auto inMap = c.negated in data.mergedAliasMap)
             {
-                name ~= "Not" ~ data.mergedAliasMap[c.negated];
+                name ~= "Not" ~ *inMap;
                 continue;
             }
             bool positive = isLiteralPositive(c);
@@ -2801,15 +2801,15 @@ void writeDCode(File outfile, FileCache fileCache, DWriterData data,
             name = "Apple";
         foreach (c; condition.subFormulas)
         {
-            if (c in data.mergedAliasMap)
+            if (auto inMap = c in data.mergedAliasMap)
             {
-                code.writeln("version (", data.mergedAliasMap[c], ")");
+                code.writeln("version (", *inMap, ")");
                 code.writeln(code.indentStr, "version = ", name, ";");
                 continue;
             }
-            else if (c.negated in data.mergedAliasMap)
+            else if (auto inMap = c.negated in data.mergedAliasMap)
             {
-                code.writeln("version (", data.mergedAliasMap[c.negated], ") {} else");
+                code.writeln("version (", *inMap, ") {} else");
                 code.writeln(code.indentStr, "version = ", name, ";");
                 continue;
             }
@@ -2964,8 +2964,8 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
     data.mergedAliasMap = mergedAliasMap;
     foreach (k, ref v; mergedAliasMap)
     {
-        if (v in data.options.versionReplacements)
-            v = data.options.versionReplacements[v];
+        if (auto inReplacements = v in data.options.versionReplacements)
+            v = *inReplacements;
     }
 
     foreach (filename, mergedFile; data.mergedFileByName)
@@ -3138,9 +3138,9 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
                             data.importGraph[f] = null;
 
                         ImportInfo importInfo;
-                        if ("qt.core.typeinfo" in data.importGraph[f])
+                        if (auto inImportGraph = "qt.core.typeinfo" in data.importGraph[f])
                         {
-                            importInfo = data.importGraph[f]["qt.core.typeinfo"];
+                            importInfo = *inImportGraph;
                             importInfo.condition = mergedSemantic.logicSystem.or(importInfo.condition,
                                     e2.condition);
                             importInfo.outsideFunction |= true;
@@ -3226,9 +3226,9 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
                         data.importGraph[f] = null;
 
                     ImportInfo importInfo;
-                    if ("qt.core.metatype" in data.importGraph[f])
+                    if (auto inImportGraph = "qt.core.metatype" in data.importGraph[f])
                     {
-                        importInfo = data.importGraph[f]["qt.core.metatype"];
+                        importInfo = *inImportGraph;
                         importInfo.condition = mergedSemantic.logicSystem.or(importInfo.condition,
                                 e2.condition);
                         importInfo.outsideFunction |= true;
@@ -3244,8 +3244,8 @@ void writeAllDCode(string outputPath, bool outputIsDir, DCodeOptions options, Se
             }
         }
     }
-    if ("QMetaTypeId" in data.semantic.rootScope.symbols)
-        foreach (e; data.semantic.rootScope.symbols["QMetaTypeId"].entries)
+    if (auto inSymbols = "QMetaTypeId" in data.semantic.rootScope.symbols)
+        foreach (e; inSymbols.entries)
         {
             if (!(e.data.flags & DeclarationFlags.templateSpecialization))
                 continue;

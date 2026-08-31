@@ -2385,8 +2385,8 @@ Scope scopeForRecord(Type type, ref IteratePPVersions ppVersion, Semantic semant
 
         if (type.kind == TypeKind.namespace)
             scope_ = d.scope_.childNamespaces[declarationSet.name];
-        else if (d.tree in d.scope_.childScopeByTree)
-            scope_ = d.scope_.childScopeByTree[d.tree];
+        else if (auto childScope = d.tree in d.scope_.childScopeByTree)
+            scope_ = *childScope;
         else
             scope_ = null;
     }
