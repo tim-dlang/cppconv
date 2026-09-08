@@ -399,7 +399,7 @@
 #include <QtWidgets/qgroupbox.h>
 #include <QtWidgets/qheaderview.h>
 #include <QtWidgets/qinputdialog.h>
-//#include <QtWidgets/qitemdelegate.h>
+#include <QtWidgets/qitemdelegate.h>
 //#include <QtWidgets/qitemeditorfactory.h>
 //#include <QtWidgets/qkeyeventtransition.h>
 #include <QtWidgets/qkeysequenceedit.h>
@@ -442,7 +442,7 @@
 #include <QtWidgets/qstackedwidget.h>
 #include <QtWidgets/qstatusbar.h>
 #include <QtWidgets/qstyle.h>
-//#include <QtWidgets/qstyleditemdelegate.h>
+#include <QtWidgets/qstyleditemdelegate.h>
 //#include <QtWidgets/qstylefactory.h>
 #include <QtWidgets/qstyleoption.h>
 //#include <QtWidgets/qstylepainter.h>
