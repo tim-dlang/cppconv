@@ -321,8 +321,8 @@
 //#include <QtGui/qtguiversion.h>
 //#include <QtGui/qtgui-config.h>
 #include <QtGui/qtransform.h>
-//#include <QtGui/qundogroup.h>
-//#include <QtGui/qundostack.h>
+#include <QtGui/qundogroup.h>
+#include <QtGui/qundostack.h>
 #include <QtGui/qvalidator.h>
 #include <QtGui/qvector2d.h>
 #include <QtGui/qvector3d.h>
@@ -455,9 +455,9 @@
 #include <QtWidgets/qtwidgetsglobal.h>
 //#include <QtWidgets/qtwidgetsversion.h>
 //#include <QtWidgets/qtwidgets-config.h>
-//#include <QtWidgets/qundogroup.h>
-//#include <QtWidgets/qundostack.h>
-//#include <QtWidgets/qundoview.h>
+#include <QtWidgets/qundogroup.h>
+#include <QtWidgets/qundostack.h>
+#include <QtWidgets/qundoview.h>
 //#include <QtWidgets/qwhatsthis.h>
 #include <QtWidgets/qwidget.h>
 //#include <QtWidgets/qwidgetaction.h>

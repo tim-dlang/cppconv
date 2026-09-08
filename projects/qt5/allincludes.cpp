@@ -465,9 +465,9 @@
 #include <QtWidgets/qtwidgetsglobal.h>
 //#include <QtWidgets/qtwidgetsversion.h>
 //#include <QtWidgets/qtwidgets-config.h>
-//#include <QtWidgets/qundogroup.h>
-//#include <QtWidgets/qundostack.h>
-//#include <QtWidgets/qundoview.h>
+#include <QtWidgets/qundogroup.h>
+#include <QtWidgets/qundostack.h>
+#include <QtWidgets/qundoview.h>
 //#include <QtWidgets/qwhatsthis.h>
 #include <QtWidgets/qwidget.h>
 //#include <QtWidgets/qwidgetaction.h>
