@@ -304,6 +304,8 @@
         "QString::vsprintf",
         ".*::qt_check_for_QGADGET_macro",
         "QTestEventLoop::instance",
+        "QTest::QTouchEventSequence",
+        "QTest::QTouchEventWidgetSequence",
         "QTextStream",
         "QTextStreamManipulator",
         "QTextStreamPrivate",

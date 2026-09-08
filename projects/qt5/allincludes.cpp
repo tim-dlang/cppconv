@@ -169,7 +169,7 @@
 //#include <QtCore/qtcore-config.h>
 //#include <QtCore/qtemporarydir.h>
 //#include <QtCore/qtemporaryfile.h>
-//#include <QtCore/qtestsupport_core.h>
+#include <QtCore/qtestsupport_core.h>
 //#include <QtCore/qtextboundaryfinder.h>
 #include <QtCore/qtextcodec.h>
 #include <QtCore/qtextstream.h>
@@ -312,7 +312,7 @@
 #include <QtGui/qsurface.h>
 #include <QtGui/qsurfaceformat.h>
 #include <QtGui/qsyntaxhighlighter.h>
-//#include <QtGui/qtestsupport_gui.h>
+#include <QtGui/qtestsupport_gui.h>
 #include <QtGui/qtextcursor.h>
 #include <QtGui/qtextdocument.h>
 #include <QtGui/qtextdocumentfragment.h>
@@ -452,7 +452,7 @@
 #include <QtWidgets/qtableview.h>
 #include <QtWidgets/qtablewidget.h>
 #include <QtWidgets/qtabwidget.h>
-//#include <QtWidgets/qtestsupport_widgets.h>
+#include <QtWidgets/qtestsupport_widgets.h>
 #include <QtWidgets/qtextbrowser.h>
 #include <QtWidgets/qtextedit.h>
 #include <QtWidgets/qtoolbar.h>
