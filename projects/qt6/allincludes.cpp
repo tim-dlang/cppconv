@@ -146,7 +146,7 @@
 #include <QtCore/qregularexpression.h>
 //#include <QtCore/qresource.h>
 //#include <QtCore/qresultstore.h>
-//#include <QtCore/qrunnable.h>
+#include <QtCore/qrunnable.h>
 //#include <QtCore/qsavefile.h>
 #include <QtCore/qscopedpointer.h>
 //#include <QtCore/qscopedvaluerollback.h>

@@ -132,7 +132,7 @@
 #include <QtCore/qregularexpression.h>
 //#include <QtCore/qresource.h>
 //#include <QtCore/qresultstore.h>
-//#include <QtCore/qrunnable.h>
+#include <QtCore/qrunnable.h>
 //#include <QtCore/qsavefile.h>
 #include <QtCore/qscopedpointer.h>
 //#include <QtCore/qscopedvaluerollback.h>
@@ -174,7 +174,7 @@
 #include <QtCore/qtextcodec.h>
 #include <QtCore/qtextstream.h>
 #include <QtCore/qthread.h>
-//#include <QtCore/qthreadpool.h>
+#include <QtCore/qthreadpool.h>
 //#include <QtCore/qthreadstorage.h>
 //#include <QtCore/qtimeline.h>
 #include <QtCore/qtimer.h>
